@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-panel">
+        <div class="mb-4">
+            <p class="section-label mb-2">Connexion</p>
+            <h1 class="h3 mb-2">Accéder à votre espace</h1>
+            <p class="text-muted mb-0">Connectez-vous pour continuer.</p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% for error in form.password.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <button class="btn btn-dark w-100" type="submit">Se connecter</button>
+        </form>
+
+        <p class="auth-switch text-muted">
+            Pas encore de compte ?
+            <a href="{% url 'accounts:signup' %}">Créer un compte</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

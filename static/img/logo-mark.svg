@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-hidden="true">
+  <rect x="1" y="1" width="46" height="46" rx="13" fill="url(#bw-logo-gradient)"/>
+  <rect x="1" y="1" width="46" height="46" rx="13" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+  <text x="24" y="31.5" text-anchor="middle" font-family="'Fraunces', 'Source Serif Pro', Georgia, serif" font-size="19" font-weight="600" fill="#ffffff">bw</text>
+  <defs>
+    <linearGradient id="bw-logo-gradient" x1="1" y1="1" x2="47" y2="47" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f4c3a"/>
+      <stop offset="1" stop-color="#1c6e52"/>
+    </linearGradient>
+  </defs>
+</svg>

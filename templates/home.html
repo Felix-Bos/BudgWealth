@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="home-panel">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="content-panel home-hero">
+                <p class="section-label mb-2">Espace privé</p>
+                <h1 class="h2 mb-3">Bienvenue, {{ user.get_full_name|default:user.get_username }}</h1>
+                <p class="lead text-muted mb-0">Votre espace financier personnel est prêt.</p>
+
+                <div class="stat-row">
+                    <div class="stat-card">
+                        <div class="stat-value">—</div>
+                        <div class="stat-label">Solde</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">—</div>
+                        <div class="stat-label">Ce mois-ci</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">—</div>
+                        <div class="stat-label">Épargne</div>
+                    </div>
+                </div>
+
+                <form method="post" action="{% url 'accounts:logout' %}" class="mt-4">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-secondary" type="submit">Se déconnecter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
