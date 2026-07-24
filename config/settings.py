@@ -54,6 +54,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "finance.context_processors.quick_add_transaction_form",
             ],
         },
     },
@@ -113,7 +114,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "finance:dashboard"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 CSRF_TRUSTED_ORIGINS = [

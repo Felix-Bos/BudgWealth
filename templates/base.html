@@ -48,11 +48,13 @@
             <div class="collapse navbar-collapse" id="mainNavbar">
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                     {% if user.is_authenticated %}
-                        <span class="nav-link text-muted">{{ user.get_username }}</span>
-                        <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout-form">
-                            {% csrf_token %}
-                            <button class="btn btn-outline-secondary btn-sm" type="submit">Se déconnecter</button>
-                        </form>
+                        <a class="nav-link" href="{% url 'finance:dashboard' %}">Dashboard</a>
+                        <a class="nav-link nav-link-settings" href="{% url 'finance:settings' %}" title="Paramètres">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            <span>Paramètres</span>
+                        </a>
+                        <span class="nav-link text-muted d-none d-lg-inline">{{ user.get_username }}</span>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#quickAddModal">+ Ajouter une dépense</button>
                     {% else %}
                         <a class="nav-link" href="{% url 'accounts:login' %}">Connexion</a>
                         <a class="btn btn-dark btn-sm" href="{% url 'accounts:signup' %}">Créer un compte</a>
@@ -85,6 +87,52 @@
         </div>
     </footer>
 
+    {% if user.is_authenticated %}
+    <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'finance:add_transaction' quick_add_year quick_add_month %}" id="quickAddForm">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="quickAddModalLabel">Ajouter une dépense</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body row g-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Type</label>
+                            {{ quick_add_transaction_form.transaction_type }}
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Montant</label>
+                            {{ quick_add_transaction_form.amount }}
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Catégorie</label>
+                            {{ quick_add_transaction_form.category }}
+                        </div>
+                        <div class="col-12 col-sm-6 js-subcategory-field">
+                            <label class="form-label">Sous-catégorie</label>
+                            {{ quick_add_transaction_form.subcategory }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            {{ quick_add_transaction_form.description }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Date</label>
+                            {{ quick_add_transaction_form.transaction_date }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (function () {
@@ -105,5 +153,78 @@
             });
         })();
     </script>
+    <script>
+        window.bwSetupEntryTypeForm = function (form) {
+            if (!form) return;
+
+            var typeSelect = form.querySelector('.js-transaction-type');
+            var categorySelect = form.querySelector('.js-category-select');
+            var subcategorySelect = form.querySelector('.js-subcategory-select');
+            var subcategoryField = form.querySelector('.js-subcategory-field');
+            if (!typeSelect || !categorySelect || !subcategorySelect) return;
+
+            var categoryOptions = Array.prototype.slice.call(categorySelect.options);
+            var subcategoryOptions = Array.prototype.slice.call(subcategorySelect.options);
+
+            function updateSubcategoryVisibility() {
+                var hasSubcategories = subcategorySelect.options.length > 1;
+                var show = typeSelect.value === 'EXPENSE' && hasSubcategories;
+                if (subcategoryField) {
+                    subcategoryField.style.display = show ? '' : 'none';
+                }
+                if (!show) {
+                    subcategorySelect.value = '';
+                }
+            }
+
+            function filterCategories() {
+                var type = typeSelect.value;
+                var previousValue = categorySelect.value;
+                categorySelect.innerHTML = '';
+                categoryOptions.forEach(function (opt) {
+                    var entryType = opt.getAttribute('data-entry-type');
+                    if (!opt.value || entryType === type) {
+                        categorySelect.appendChild(opt.cloneNode(true));
+                    }
+                });
+                if (Array.prototype.some.call(categorySelect.options, function (o) { return o.value === previousValue; })) {
+                    categorySelect.value = previousValue;
+                } else {
+                    categorySelect.value = '';
+                }
+                filterSubcategories();
+            }
+
+            function filterSubcategories() {
+                var categoryId = categorySelect.value;
+                var previousValue = subcategorySelect.value;
+                subcategorySelect.innerHTML = '';
+                subcategoryOptions.forEach(function (opt) {
+                    var optCategory = opt.getAttribute('data-category');
+                    if (!opt.value || optCategory === categoryId) {
+                        subcategorySelect.appendChild(opt.cloneNode(true));
+                    }
+                });
+                if (Array.prototype.some.call(subcategorySelect.options, function (o) { return o.value === previousValue; })) {
+                    subcategorySelect.value = previousValue;
+                } else {
+                    subcategorySelect.value = '';
+                }
+                updateSubcategoryVisibility();
+            }
+
+            typeSelect.addEventListener('change', filterCategories);
+            categorySelect.addEventListener('change', filterSubcategories);
+            filterCategories();
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var quickAddForm = document.getElementById('quickAddForm');
+            if (quickAddForm) {
+                window.bwSetupEntryTypeForm(quickAddForm);
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

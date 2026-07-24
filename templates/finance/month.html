@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}{{ month_label }} - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-month">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <p class="section-label mb-2">Mon mois</p>
+            <h1 class="h3 mb-0">{{ month_label }}</h1>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:month' prev_year prev_month %}">&larr; Précédent</a>
+            {% if is_current_month %}
+            <button class="btn btn-outline-secondary btn-sm" disabled title="Vous êtes sur le mois en cours">Suivant &rarr;</button>
+            {% else %}
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:month' next_year next_month %}">Suivant &rarr;</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content-panel mb-4">
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_income }} €</div>
+                <div class="stat-label">Revenus</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_expense }} €</div>
+                <div class="stat-label">Charges</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ balance }} €</div>
+                <div class="stat-label">Solde</div>
+            </div>
+        </div>
+
+        {% if not budget %}
+        <div class="mt-4">
+            <p class="text-muted mb-3">
+                Ce mois n'a pas encore été démarré.
+                {% if has_recurring_items %}
+                    Démarrez-le pour générer automatiquement vos postes fixes (loyer, salaire...).
+                {% else %}
+                    Vous n'avez pas encore de poste fixe : vous pouvez tout de même démarrer le mois et ajouter vos dépenses au fur et à mesure.
+                {% endif %}
+            </p>
+            <form method="post" action="{% url 'finance:start_month' year month %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Démarrer ce mois</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="content-panel mb-4">
+        <h2 class="h5 mb-3">Ajouter une ligne</h2>
+        <form method="post" action="{% url 'finance:add_transaction' year month %}" class="row g-3">
+            {% csrf_token %}
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="id_transaction_type">Type</label>
+                {{ transaction_form.transaction_type }}
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="id_amount">Montant</label>
+                {{ transaction_form.amount }}
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="id_category">Catégorie</label>
+                {{ transaction_form.category }}
+            </div>
+            <div class="col-12 col-md-3 js-subcategory-field">
+                <label class="form-label" for="id_subcategory">Sous-catégorie</label>
+                {{ transaction_form.subcategory }}
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="id_description">Description</label>
+                {{ transaction_form.description }}
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="id_transaction_date">Date</label>
+                {{ transaction_form.transaction_date }}
+            </div>
+            <div class="col-12 col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+            </div>
+        </form>
+        <p class="form-text mt-3 mb-0">
+            Besoin d'une nouvelle catégorie ou d'un nouveau poste fixe ?
+            <a href="{% url 'finance:settings' %}?tab=categories">Gérer les catégories</a> ·
+            <a href="{% url 'finance:settings' %}?tab=postes-fixes">Gérer les postes fixes</a>
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.querySelector('form[action="{% url "finance:add_transaction" year month %}"]');
+            window.bwSetupEntryTypeForm(form);
+        });
+    </script>
+
+    {% if recurring_transactions %}
+    <div class="content-panel mb-4">
+        <h2 class="h5 mb-3">Postes fixes de ce mois</h2>
+        <div class="table-responsive">
+            <table class="table finance-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Poste</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th>Date</th>
+                        <th class="text-end">Montant</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in recurring_transactions %}
+                    <tr>
+                        <td>{{ transaction.description }}</td>
+                        <td>{{ transaction.get_transaction_type_display }}</td>
+                        <td>{{ transaction.category|default:"—" }}</td>
+                        <td>{{ transaction.transaction_date|date:"d/m/Y" }}</td>
+                        <td class="text-end">{{ transaction.amount }} €</td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'finance:delete_transaction' year month transaction.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="form-text mb-0">Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant.</p>
+    </div>
+    {% endif %}
+
+    <div class="content-panel">
+        <h2 class="h5 mb-3">Dépenses et revenus du mois</h2>
+        {% if other_transactions %}
+        <div class="table-responsive">
+            <table class="table finance-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th>Date</th>
+                        <th class="text-end">Montant</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in other_transactions %}
+                    <tr>
+                        <td>{{ transaction.description|default:"—" }}</td>
+                        <td>{{ transaction.get_transaction_type_display }}</td>
+                        <td>{{ transaction.category|default:"—" }}</td>
+                        <td>{{ transaction.transaction_date|date:"d/m/Y" }}</td>
+                        <td class="text-end">{{ transaction.amount }} €</td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'finance:delete_transaction' year month transaction.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Aucune dépense ou revenu enregistré pour ce mois pour l'instant.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

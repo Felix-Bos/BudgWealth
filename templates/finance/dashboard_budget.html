@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Budget - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard viz-root">
+    <p class="section-label mb-2">
+        <a href="{% url 'finance:dashboard' %}" class="dashboard-breadcrumb-link">Dashboard</a>
+        <span class="dashboard-breadcrumb-sep">/</span> Budget
+    </p>
+    <h1 class="h3 mb-4">Dashboard Budget</h1>
+
+    <div class="content-panel mb-4">
+        <h2 class="h5 mb-1">Ce mois-ci</h2>
+        <p class="text-muted small mb-3">{{ month_label }}</p>
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-value">{{ current_income }} €</div>
+                <div class="stat-label">Revenus</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ current_expense }} €</div>
+                <div class="stat-label">Charges</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ current_balance }} €</div>
+                <div class="stat-label">Solde</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Répartition des dépenses du mois</h2>
+                {% if category_breakdown %}
+                <div class="dashboard-chart-wrap">
+                    <canvas id="categoryChart" role="img" aria-label="Répartition des dépenses du mois par catégorie"></canvas>
+                </div>
+                <ul class="dashboard-legend" id="categoryLegend"></ul>
+                {% else %}
+                <p class="text-muted mb-0">Aucune dépense enregistrée ce mois-ci pour l'instant.</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Revenus vs charges — 12 derniers mois</h2>
+                <div class="dashboard-chart-wrap">
+                    <canvas id="trendChart" role="img" aria-label="Revenus contre charges sur les douze derniers mois"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <h2 class="h5 mb-1">Récapitulatif mensuel</h2>
+        <p class="text-muted small mb-3">Cliquez sur un mois pour voir le détail des transactions.</p>
+        <div class="table-responsive">
+            <table class="table finance-table align-middle finance-table-clickable">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th class="text-end">Revenus</th>
+                        <th class="text-end">Charges</th>
+                        <th class="text-end">Solde</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history reversed %}
+                    <tr class="finance-table-row-link" onclick="window.location='{% url 'finance:month' row.year row.month %}'">
+                        <td>{{ row.label }}</td>
+                        <td class="text-end">{{ row.income }} €</td>
+                        <td class="text-end">{{ row.expense }} €</td>
+                        <td class="text-end">{{ row.balance }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<style>
+    .viz-root {
+        color-scheme: light;
+        --surface-1: #fcfcfb;
+        --text-primary: #0b0b0b;
+        --text-secondary: #52514e;
+        --text-muted: #898781;
+        --gridline: #e1e0d9;
+        --series-income: #1baf7a;
+        --series-expense: #e34948;
+        --cat-1: #2a78d6;
+        --cat-2: #eb6834;
+        --cat-3: #1baf7a;
+        --cat-4: #eda100;
+        --cat-5: #e87ba4;
+        --cat-6: #008300;
+        --cat-7: #4a3aa7;
+        --cat-8: #e34948;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .viz-root {
+            color-scheme: dark;
+            --surface-1: #171d1a;
+            --text-primary: #ffffff;
+            --text-secondary: #c3c2b7;
+            --text-muted: #9aa6a0;
+            --gridline: #2c2c2a;
+            --series-income: #199e70;
+            --series-expense: #e66767;
+            --cat-1: #3987e5;
+            --cat-2: #d95926;
+            --cat-3: #199e70;
+            --cat-4: #c98500;
+            --cat-5: #d55181;
+            --cat-6: #008300;
+            --cat-7: #9085e9;
+            --cat-8: #e66767;
+        }
+    }
+    :root[data-theme="dark"] .viz-root {
+        color-scheme: dark;
+        --surface-1: #171d1a;
+        --text-primary: #ffffff;
+        --text-secondary: #c3c2b7;
+        --text-muted: #9aa6a0;
+        --gridline: #2c2c2a;
+        --series-income: #199e70;
+        --series-expense: #e66767;
+        --cat-1: #3987e5;
+        --cat-2: #d95926;
+        --cat-3: #199e70;
+        --cat-4: #c98500;
+        --cat-5: #d55181;
+        --cat-6: #008300;
+        --cat-7: #9085e9;
+        --cat-8: #e66767;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var root = document.querySelector('.viz-root');
+        var style = getComputedStyle(root);
+        var textSecondary = style.getPropertyValue('--text-secondary').trim();
+        var textMuted = style.getPropertyValue('--text-muted').trim();
+        var gridline = style.getPropertyValue('--gridline').trim();
+        var seriesIncome = style.getPropertyValue('--series-income').trim();
+        var seriesExpense = style.getPropertyValue('--series-expense').trim();
+        var catColors = [1, 2, 3, 4, 5, 6, 7, 8].map(function (i) {
+            return style.getPropertyValue('--cat-' + i).trim();
+        });
+
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        Chart.defaults.color = textSecondary;
+
+        var trendCanvas = document.getElementById('trendChart');
+        if (trendCanvas) {
+            var labels = JSON.parse('{{ history_labels_json|escapejs }}');
+            var income = JSON.parse('{{ history_income_json|escapejs }}').map(Number);
+            var expense = JSON.parse('{{ history_expense_json|escapejs }}').map(Number);
+
+            new Chart(trendCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Revenus',
+                            data: income,
+                            backgroundColor: seriesIncome,
+                            borderRadius: { topLeft: 4, topRight: 4 },
+                            borderSkipped: false,
+                            maxBarThickness: 22,
+                        },
+                        {
+                            label: 'Charges',
+                            data: expense,
+                            backgroundColor: seriesExpense,
+                            borderRadius: { topLeft: 4, topRight: 4 },
+                            borderSkipped: false,
+                            maxBarThickness: 22,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'start',
+                            labels: { color: textSecondary, usePointStyle: true, pointStyle: 'circle' },
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ctx.dataset.label + ' : ' + ctx.parsed.y.toLocaleString('fr-FR') + ' €';
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textMuted },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridline },
+                            ticks: {
+                                color: textMuted,
+                                callback: function (value) { return value.toLocaleString('fr-FR') + ' €'; },
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        var categoryCanvas = document.getElementById('categoryChart');
+        if (categoryCanvas) {
+            var catLabels = JSON.parse('{{ category_labels_json|escapejs }}');
+            var catValues = JSON.parse('{{ category_values_json|escapejs }}').map(Number);
+            var colors = catLabels.map(function (_, i) { return catColors[i % catColors.length]; });
+            var total = catValues.reduce(function (a, b) { return a + b; }, 0);
+
+            new Chart(categoryCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: colors,
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bw-bg-elevated') || '#ffffff',
+                        borderWidth: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    var value = ctx.parsed;
+                                    var pct = total ? Math.round((value / total) * 100) : 0;
+                                    return ctx.label + ' : ' + value.toLocaleString('fr-FR') + ' € (' + pct + '%)';
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            var legend = document.getElementById('categoryLegend');
+            if (legend) {
+                catLabels.forEach(function (label, i) {
+                    var value = catValues[i];
+                    var pct = total ? Math.round((value / total) * 100) : 0;
+                    var li = document.createElement('li');
+                    li.innerHTML =
+                        '<span class="dashboard-legend-dot" style="background:' + colors[i] + '"></span>' +
+                        '<span class="dashboard-legend-label">' + label + '</span>' +
+                        '<span class="dashboard-legend-value">' + value.toLocaleString('fr-FR') + ' € · ' + pct + '%</span>';
+                    legend.appendChild(li);
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

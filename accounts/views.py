@@ -4,19 +4,22 @@ from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
+from finance.default_categories import create_default_categories
+
 from .forms import LoginForm, SignUpForm
 
 
 def signup(request):
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect("finance:dashboard")
 
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
+            create_default_categories(user)
             login(request, user)
-            return redirect("home")
+            return redirect("finance:dashboard")
     else:
         form = SignUpForm()
 

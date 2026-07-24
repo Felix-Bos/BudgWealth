@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard-hub">
+    <p class="section-label mb-2">Vue d'ensemble</p>
+    <h1 class="h3 mb-4">Dashboard</h1>
+
+    <div class="dashboard-hub-grid">
+        <a href="{% url 'finance:dashboard_budget' %}" class="dashboard-hub-card">
+            <span class="dashboard-hub-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+            </span>
+            <h3>Budget</h3>
+            <p>Revenus, charges et tendances mois par mois.</p>
+        </a>
+
+        <span class="dashboard-hub-card is-disabled" title="Bientôt disponible">
+            <span class="dashboard-hub-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+            </span>
+            <h3>Épargne</h3>
+            <p>Bientôt disponible.</p>
+        </span>
+    </div>
+</section>
+{% endblock %}

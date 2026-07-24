@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-settings">
+    <p class="section-label mb-2">Votre espace</p>
+    <h1 class="h3 mb-4">Paramètres</h1>
+
+    <ul class="nav nav-tabs settings-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'compte' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=compte">Compte</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'postes-fixes' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=postes-fixes">Postes fixes</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'categories' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=categories">Catégories</a>
+        </li>
+    </ul>
+
+    {% if active_tab == 'compte' %}
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Vos informations</h2>
+                <form method="post" action="{% url 'finance:update_account' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <label class="form-label">Nom d'utilisateur</label>
+                        {{ account_form.username }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Email</label>
+                        {{ account_form.email }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Changer de mot de passe</h2>
+                <form method="post" action="{% url 'finance:update_password' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <label class="form-label">Mot de passe actuel</label>
+                        {{ password_form.old_password }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Nouveau mot de passe</label>
+                        {{ password_form.new_password1 }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                        {{ password_form.new_password2 }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Mettre à jour le mot de passe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="content-panel d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h2 class="h5 mb-1">Se déconnecter</h2>
+                    <p class="text-muted mb-0">Vous serez déconnecté de cet appareil.</p>
+                </div>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary">Se déconnecter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if active_tab == 'postes-fixes' %}
+    <div class="content-panel mb-4">
+        <h2 class="h5 mb-3">Ajouter un poste fixe</h2>
+        <p class="text-muted small mb-3">Un poste fixe (loyer, salaire, abonnement...) est généré automatiquement chaque mois avec son montant par défaut. Vous pourrez toujours ajuster le montant d'un mois précis directement depuis "Mon mois".</p>
+        <form method="post" action="{% url 'finance:add_recurring_item' %}" class="row g-3" id="add-recurring-item-form">
+            {% csrf_token %}
+            <div class="col-12 col-md-4">
+                <label class="form-label">Nom</label>
+                {{ recurring_item_form.name }}
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label">Type</label>
+                {{ recurring_item_form.entry_type }}
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label">Montant par défaut</label>
+                {{ recurring_item_form.default_amount }}
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label">Catégorie</label>
+                {{ recurring_item_form.category }}
+            </div>
+            <div class="col-12 col-md-2 js-subcategory-field">
+                <label class="form-label">Sous-catégorie</label>
+                {{ recurring_item_form.subcategory }}
+            </div>
+            <div class="col-12 d-flex align-items-center gap-2">
+                {{ recurring_item_form.is_active }}
+                <label class="form-label mb-0" for="{{ recurring_item_form.is_active.id_for_label }}">Actif (généré chaque mois)</label>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Ajouter</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.bwSetupEntryTypeForm(document.getElementById('add-recurring-item-form'));
+        });
+    </script>
+
+    <div class="content-panel">
+        <h2 class="h5 mb-3">Vos postes fixes</h2>
+        {% if items %}
+        <div class="d-flex flex-column gap-3">
+            {% for item in items %}
+            <div class="finance-recurring-row">
+                <div class="finance-recurring-summary" data-bs-toggle="collapse" data-bs-target="#edit-item-{{ item.pk }}" role="button" aria-expanded="false">
+                    <div class="finance-recurring-main">
+                        <strong>{{ item.name }}</strong>
+                        <span class="text-muted">{{ item.get_entry_type_display }} · {{ item.category|default:"Sans catégorie" }}</span>
+                    </div>
+                    <div class="finance-recurring-amount">
+                        <span class="fw-semibold">{{ item.default_amount }} €</span>
+                        {% if not item.is_active %}<span class="badge text-bg-secondary">Inactif</span>{% endif %}
+                        <span class="finance-edit-hint">Modifier ▾</span>
+                    </div>
+                </div>
+                <div class="collapse" id="edit-item-{{ item.pk }}">
+                    <form method="post" action="{% url 'finance:edit_recurring_item' item.pk %}" class="row g-3 finance-recurring-edit-form">
+                        {% csrf_token %}
+                        <div class="col-12 col-md-4">
+                            <label class="form-label">Nom</label>
+                            <input type="text" name="name" class="form-control" value="{{ item.name }}">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label">Type</label>
+                            <select name="entry_type" class="form-control">
+                                <option value="EXPENSE" {% if item.entry_type == "EXPENSE" %}selected{% endif %}>Dépense</option>
+                                <option value="INCOME" {% if item.entry_type == "INCOME" %}selected{% endif %}>Revenu</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label">Montant par défaut</label>
+                            <input type="number" step="0.01" min="0" name="default_amount" class="form-control" value="{{ item.default_amount }}">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label">Catégorie</label>
+                            <select name="category" class="form-control">
+                                <option value="">—</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.pk }}" {% if item.category_id == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label">Sous-catégorie</label>
+                            <select name="subcategory" class="form-control">
+                                <option value="">—</option>
+                                {% for cat in categories %}
+                                    {% for sub in cat.subcategories.all %}
+                                    <option value="{{ sub.pk }}" {% if item.subcategory_id == sub.pk %}selected{% endif %}>{{ sub.name }}</option>
+                                    {% endfor %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex align-items-center gap-2">
+                            <input type="checkbox" name="is_active" id="is_active_{{ item.pk }}" class="form-check-input" {% if item.is_active %}checked{% endif %}>
+                            <label class="form-label mb-0" for="is_active_{{ item.pk }}">Actif (généré chaque mois)</label>
+                        </div>
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                        </div>
+                    </form>
+                    <form method="post" action="{% url 'finance:delete_recurring_item' item.pk %}" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer ce poste fixe</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Aucun poste fixe pour l'instant. Ajoutez par exemple votre loyer ou votre salaire.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if active_tab == 'categories' %}
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Ajouter une catégorie</h2>
+                <form method="post" action="{% url 'finance:add_category' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <label class="form-label">Nom</label>
+                        {{ category_form.name }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Type</label>
+                        {{ category_form.entry_type }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="content-panel h-100">
+                <h2 class="h5 mb-3">Ajouter une sous-catégorie</h2>
+                <form method="post" action="{% url 'finance:add_subcategory' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <label class="form-label">Catégorie parente</label>
+                        {{ subcategory_form.category }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Nom</label>
+                        {{ subcategory_form.name }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <h2 class="h5 mb-3">Vos catégories</h2>
+        {% if categories %}
+        <div class="row g-3">
+            {% for category in categories %}
+            <div class="col-12 col-md-6">
+                <div class="finance-category-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>{{ category.name }}</strong>
+                            <span class="text-muted"> · {{ category.get_entry_type_display }}</span>
+                        </div>
+                        <form method="post" action="{% url 'finance:delete_category' category.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
+                        </form>
+                    </div>
+                    {% if category.subcategories.all %}
+                    <ul class="finance-subcategory-list">
+                        {% for sub in category.subcategories.all %}
+                        <li>
+                            <span>{{ sub.name }}</span>
+                            <form method="post" action="{% url 'finance:delete_subcategory' sub.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0 small">Aucune sous-catégorie.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Aucune catégorie pour l'instant.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
