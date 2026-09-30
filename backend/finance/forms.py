@@ -1,6 +1,17 @@
+import re
+
 from django import forms
 
-from .models import Category, EntryType, RecurringItem, Subcategory, Transaction
+from .models import (
+    BankConnection,
+    Category,
+    EntryType,
+    RecurrenceKind,
+    RecurrenceUnit,
+    RecurringItem,
+    Subcategory,
+    Transaction,
+)
 
 
 class BootstrapFormMixin:
@@ -70,6 +81,28 @@ class EntryTypeAwareFormMixin:
 
 class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelForm):
     type_field_name = "transaction_type"
+    create_recurring = forms.BooleanField(
+        required=False,
+        label="Rendre cette ligne récurrente",
+    )
+    recurring_kind = forms.ChoiceField(
+        choices=RecurrenceKind.choices,
+        initial=RecurrenceKind.SUBSCRIPTION,
+        required=False,
+        label="Type de récurrence",
+    )
+    frequency_interval = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        required=False,
+        label="Tous les",
+    )
+    frequency_unit = forms.ChoiceField(
+        choices=RecurrenceUnit.choices,
+        initial=RecurrenceUnit.MONTH,
+        required=False,
+        label="Période",
+    )
 
     class Meta:
         model = Transaction
@@ -96,6 +129,30 @@ class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelFo
         self.fields["subcategory"].required = False
         self._style_fields()
         self._setup_entry_type_awareness(user)
+        self.fields["create_recurring"].widget.attrs[
+            "class"
+        ] = "form-check-input js-create-recurring"
+        self.fields["recurring_kind"].widget.attrs["class"] += " js-recurring-kind"
+        self.fields["frequency_interval"].widget.attrs[
+            "class"
+        ] += " js-recurring-frequency"
+        self.fields["frequency_unit"].widget.attrs[
+            "class"
+        ] += " js-recurring-frequency-unit"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("create_recurring"):
+            cleaned_data["recurring_kind"] = (
+                cleaned_data.get("recurring_kind") or RecurrenceKind.SUBSCRIPTION
+            )
+            cleaned_data["frequency_interval"] = (
+                cleaned_data.get("frequency_interval") or 1
+            )
+            cleaned_data["frequency_unit"] = (
+                cleaned_data.get("frequency_unit") or RecurrenceUnit.MONTH
+            )
+        return cleaned_data
 
 
 class RecurringItemForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelForm):
@@ -103,14 +160,22 @@ class RecurringItemForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.Model
         model = RecurringItem
         fields = [
             "name",
+            "kind",
             "entry_type",
             "category",
             "subcategory",
             "default_amount",
+            "frequency_interval",
+            "frequency_unit",
+            "start_date",
+            "end_date",
             "is_active",
         ]
         widgets = {
             "default_amount": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "frequency_interval": forms.NumberInput(attrs={"min": "1"}),
+            "start_date": forms.DateInput(attrs={"type": "date"}),
+            "end_date": forms.DateInput(attrs={"type": "date"}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -122,6 +187,11 @@ class RecurringItemForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.Model
         )
         self.fields["category"].required = False
         self.fields["subcategory"].required = False
+        self.fields["start_date"].required = False
+        self.fields["end_date"].required = False
+        self.fields["frequency_interval"].initial = (
+            self.fields["frequency_interval"].initial or 1
+        )
         self._style_fields()
         self._setup_entry_type_awareness(user)
 
@@ -167,3 +237,40 @@ class SubcategoryForm(BootstrapFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.filter(user=user)
         self._style_fields()
+
+
+class BankConnectionForm(BootstrapFormMixin, forms.ModelForm):
+    # Plus long que le champ du modèle : on accepte "123 456 789 01", nettoyé ensuite
+    login_id = forms.CharField(
+        label="Identifiant Crédit Agricole",
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={"inputmode": "numeric", "autocomplete": "off", "placeholder": "11 chiffres"}
+        ),
+    )
+
+    class Meta:
+        model = BankConnection
+        fields = ["postal_code", "login_id"]
+        labels = {"postal_code": "Code postal de l'agence"}
+        widgets = {
+            "postal_code": forms.TextInput(
+                attrs={"inputmode": "numeric", "autocomplete": "postal-code", "placeholder": "75001"}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style_fields()
+
+    def clean_postal_code(self):
+        value = self.cleaned_data["postal_code"].strip()
+        if not re.fullmatch(r"\d{5}", value):
+            raise forms.ValidationError("Le code postal doit contenir 5 chiffres.")
+        return value
+
+    def clean_login_id(self):
+        value = re.sub(r"\s", "", self.cleaned_data["login_id"])
+        if not re.fullmatch(r"\d{11}", value):
+            raise forms.ValidationError("L'identifiant doit contenir 11 chiffres.")
+        return value

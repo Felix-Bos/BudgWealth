@@ -1,0 +1,36 @@
+<li class="tx-row" {% if row.bank_label %}title="{{ row.bank_label }}"{% endif %}>
+    <span class="tx-avatar tx-tone-{{ row.tone }}" aria-hidden="true">{{ row.initial }}</span>
+
+    <div class="tx-main">
+        <div class="tx-title">{{ row.description }}</div>
+        <div class="tx-meta">
+            {% if row.category %}
+                <span>{{ row.category }}{% if row.subcategory %} › {{ row.subcategory }}{% endif %}</span>
+            {% else %}
+                <span class="tx-unclassified">À classer</span>
+            {% endif %}
+            {% if show_date %}<span>{{ row.transaction_date|date:"j F" }}</span>{% endif %}
+            {% if row.is_bank %}
+                <span class="tx-source" title="Importée depuis la banque">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18M12 3l9 5H3z"></path></svg>
+                    <span class="tx-source-label">Banque</span>
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tx-amount {% if row.is_income %}is-income{% endif %}">
+        {% if row.is_income %}+{% else %}−{% endif %}{{ row.amount|floatformat:"2g" }} €
+    </div>
+
+    <div class="tx-actions">
+        {% if not row.is_preview %}
+        <form method="post" action="{% url 'finance:delete_transaction' year month row.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="tx-delete" aria-label="Supprimer « {{ row.description }} »" title="Supprimer">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></svg>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</li>

@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Budget - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard viz-root">
+    <p class="section-label mb-2">
+        <a href="{% url 'finance:dashboard' %}" class="dashboard-breadcrumb-link">Dashboard</a>
+        <span class="dashboard-breadcrumb-sep">/</span> Budget
+    </p>
+    <div class="dashboard-title-row">
+        <div>
+            <h1 class="h3 mb-1">Dashboard Budget</h1>
+            <p class="text-muted mb-0">{{ month_label }}</p>
+        </div>
+    </div>
+
+    <div class="content-panel dashboard-overview mb-4">
+        <div class="stat-row dashboard-stat-row">
+            <div class="stat-card stat-card-income">
+                <div class="stat-value">{{ current_income }} €</div>
+                <div class="stat-label">Revenus</div>
+            </div>
+            <div class="stat-card stat-card-expense">
+                <div class="stat-value">{{ current_expense }} €</div>
+                <div class="stat-label">Charges</div>
+            </div>
+            <div class="stat-card stat-card-balance">
+                <div class="stat-value">{{ current_balance }} €</div>
+                <div class="stat-label">Solde</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ savings_rate }}%</div>
+                <div class="stat-label">Taux d'épargne</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-panel dashboard-subscriptions mb-4">
+        <div class="dashboard-card-head mb-3">
+            <div>
+                <h2 class="h5 mb-1">Abonnements</h2>
+                <p class="text-muted small mb-0">{{ subscription_calendar.count }} abonnement(s) actif(s) · {{ subscription_calendar.monthly_total }} € prévus ce mois-ci</p>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:settings' %}?tab=postes-fixes">Gérer</a>
+        </div>
+        {% if subscription_calendar.events %}
+        <div class="subscription-calendar">
+            {% for day in subscription_calendar.days %}
+            <div class="subscription-calendar-day {% if day.is_today %}is-today{% endif %} {% if day.events %}has-events{% endif %}">
+                <div class="subscription-calendar-day-number">{{ day.day }}</div>
+                {% for event in day.events %}
+                <a class="subscription-calendar-event" href="{% url 'finance:month' event.date.year event.date.month %}">
+                    <span class="subscription-event-name">{{ event.name }}</span>
+                    <span class="subscription-event-amount">{{ event.amount }} €</span>
+                </a>
+                {% endfor %}
+                {% if day.total %}
+                <div class="subscription-calendar-day-total">{{ day.total }} €</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="subscription-list">
+            {% for event in subscription_calendar.events %}
+            <a class="subscription-list-item" href="{% url 'finance:month' event.date.year event.date.month %}">
+                <span class="subscription-list-date">{{ event.date|date:"d/m" }}</span>
+                <span class="subscription-list-main">
+                    <strong>{{ event.name }}</strong>
+                    <span>{{ event.category }} · {{ event.frequency }}</span>
+                </span>
+                <span class="subscription-list-amount">{{ event.amount }} €</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="subscription-empty">
+            <p class="text-muted mb-3">Aucun abonnement actif prévu ce mois-ci.</p>
+            <a class="btn btn-primary btn-sm" href="{% url 'finance:settings' %}?tab=postes-fixes">Ajouter un abonnement</a>
+        </div>
+        {% endif %}
+
+        <div class="subscription-history-panel">
+            <div class="dashboard-card-head mb-3">
+                <div>
+                    <h3 class="h6 mb-1">Historique des abonnements</h3>
+                    <p class="text-muted small mb-0">Coût mensuel et nombre d'abonnements suivis sur 12 mois</p>
+                </div>
+            </div>
+            <div class="subscription-history-layout">
+                <div class="dashboard-chart-wrap subscription-history-chart-wrap">
+                    <canvas id="subscriptionHistoryChart" role="img" aria-label="Historique du coût des abonnements sur douze mois"></canvas>
+                </div>
+                <div class="subscription-history-list">
+                    {% for row in subscription_history reversed %}
+                    <a class="subscription-history-item" href="{% url 'finance:month' row.year row.month %}">
+                        <span>{{ row.label }}</span>
+                        <strong>{{ row.total }} €</strong>
+                        <small>{{ row.count }} abonnement(s)</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if subscription_roster %}
+        <div class="subscription-roster">
+            <div class="dashboard-card-head mb-3">
+                <div>
+                    <h3 class="h6 mb-1">Suivi des abonnements</h3>
+                    <p class="text-muted small mb-0">Abonnements actifs et annulés conservés dans l'historique</p>
+                </div>
+            </div>
+            <div class="subscription-roster-grid">
+                {% for subscription in subscription_roster %}
+                <div class="subscription-roster-item {% if subscription.is_cancelled %}is-cancelled{% endif %}">
+                    <div class="subscription-roster-main">
+                        <strong>{{ subscription.name }}</strong>
+                        <span>{{ subscription.category }} · {{ subscription.frequency }}</span>
+                    </div>
+                    <div class="subscription-roster-meta">
+                        <span class="subscription-roster-amount">{{ subscription.amount }} €</span>
+                        <span class="subscription-roster-status">{{ subscription.status }}</span>
+                        {% if subscription.end_date %}
+                        <small>Fin {{ subscription.end_date|date:"d/m/Y" }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-chart-grid mb-4">
+        <div class="content-panel dashboard-chart-card">
+            <div class="dashboard-card-head">
+                <div>
+                    <h2 class="h5 mb-1">Évolution mensuelle</h2>
+                    <p class="text-muted small mb-0">Revenus, charges et solde net sur 12 mois</p>
+                </div>
+            </div>
+            <div class="dashboard-chart-wrap dashboard-chart-wrap-wide">
+                <canvas id="trendChart" role="img" aria-label="Évolution des revenus, charges et soldes sur les douze derniers mois"></canvas>
+            </div>
+        </div>
+
+        <div class="content-panel dashboard-chart-card">
+            <div class="dashboard-card-head">
+                <div>
+                    <h2 class="h5 mb-1">Dépenses du mois</h2>
+                    <p class="text-muted small mb-0">Répartition par catégorie</p>
+                </div>
+            </div>
+            <div class="dashboard-category-layout">
+                {% if category_breakdown %}
+                <div class="dashboard-chart-wrap">
+                    <canvas id="categoryChart" role="img" aria-label="Répartition des dépenses du mois par catégorie"></canvas>
+                </div>
+                <ul class="dashboard-legend" id="categoryLegend"></ul>
+                {% else %}
+                <p class="text-muted mb-0">Aucune dépense enregistrée ce mois-ci pour l'instant.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <div class="dashboard-card-head mb-3">
+            <div>
+                <h2 class="h5 mb-1">Récapitulatif mensuel</h2>
+                <p class="text-muted small mb-0">Cliquez sur un mois pour voir le détail. Dépense moyenne : {{ average_expense }} € par mois.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table finance-table align-middle finance-table-clickable dashboard-history-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th>
+                        <th class="text-end">Revenus</th>
+                        <th class="text-end">Charges</th>
+                        <th class="text-end">Solde</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history reversed %}
+                    <tr class="finance-table-row-link" onclick="window.location='{% url 'finance:month' row.year row.month %}'">
+                        <td>{{ row.label }}</td>
+                        <td class="text-end">{{ row.income }} €</td>
+                        <td class="text-end">{{ row.expense }} €</td>
+                        <td class="text-end">{{ row.balance }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<style>
+    .viz-root {
+        color-scheme: light;
+        --surface-1: #fcfcfb;
+        --text-primary: #0b0b0b;
+        --text-secondary: #52514e;
+        --text-muted: #898781;
+        --gridline: #e1e0d9;
+        --series-income: #1baf7a;
+        --series-expense: #e34948;
+        --series-balance: #2a78d6;
+        --cat-1: #2a78d6;
+        --cat-2: #eb6834;
+        --cat-3: #1baf7a;
+        --cat-4: #eda100;
+        --cat-5: #e87ba4;
+        --cat-6: #008300;
+        --cat-7: #4a3aa7;
+        --cat-8: #e34948;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .viz-root {
+            color-scheme: dark;
+            --surface-1: #171d1a;
+            --text-primary: #ffffff;
+            --text-secondary: #c3c2b7;
+            --text-muted: #9aa6a0;
+            --gridline: #2c2c2a;
+            --series-income: #199e70;
+            --series-expense: #e66767;
+            --series-balance: #61a7f2;
+            --cat-1: #3987e5;
+            --cat-2: #d95926;
+            --cat-3: #199e70;
+            --cat-4: #c98500;
+            --cat-5: #d55181;
+            --cat-6: #008300;
+            --cat-7: #9085e9;
+            --cat-8: #e66767;
+        }
+    }
+    :root[data-theme="dark"] .viz-root {
+        color-scheme: dark;
+        --surface-1: #171d1a;
+        --text-primary: #ffffff;
+        --text-secondary: #c3c2b7;
+        --text-muted: #9aa6a0;
+        --gridline: #2c2c2a;
+        --series-income: #199e70;
+        --series-expense: #e66767;
+        --series-balance: #61a7f2;
+        --cat-1: #3987e5;
+        --cat-2: #d95926;
+        --cat-3: #199e70;
+        --cat-4: #c98500;
+        --cat-5: #d55181;
+        --cat-6: #008300;
+        --cat-7: #9085e9;
+        --cat-8: #e66767;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var root = document.querySelector('.viz-root');
+        var style = getComputedStyle(root);
+        var textSecondary = style.getPropertyValue('--text-secondary').trim();
+        var textMuted = style.getPropertyValue('--text-muted').trim();
+        var gridline = style.getPropertyValue('--gridline').trim();
+        var seriesIncome = style.getPropertyValue('--series-income').trim();
+        var seriesExpense = style.getPropertyValue('--series-expense').trim();
+        var seriesBalance = style.getPropertyValue('--series-balance').trim();
+        var catColors = [1, 2, 3, 4, 5, 6, 7, 8].map(function (i) {
+            return style.getPropertyValue('--cat-' + i).trim();
+        });
+        var smallScreenQuery = window.matchMedia('(max-width: 575.98px)');
+        function isSmallScreen() {
+            return smallScreenQuery.matches;
+        }
+        var money = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        Chart.defaults.color = textSecondary;
+
+        var trendCanvas = document.getElementById('trendChart');
+        if (trendCanvas) {
+            var labels = JSON.parse('{{ history_labels_json|escapejs }}');
+            var income = JSON.parse('{{ history_income_json|escapejs }}').map(Number);
+            var expense = JSON.parse('{{ history_expense_json|escapejs }}').map(Number);
+            var balance = JSON.parse('{{ history_balance_json|escapejs }}').map(Number);
+
+            new Chart(trendCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Revenus',
+                            data: income,
+                            backgroundColor: seriesIncome,
+                            borderRadius: { topLeft: 4, topRight: 4 },
+                            borderSkipped: false,
+                            maxBarThickness: isSmallScreen() ? 14 : 22,
+                        },
+                        {
+                            label: 'Charges',
+                            data: expense,
+                            backgroundColor: seriesExpense,
+                            borderRadius: { topLeft: 4, topRight: 4 },
+                            borderSkipped: false,
+                            maxBarThickness: isSmallScreen() ? 14 : 22,
+                        },
+                        {
+                            type: 'line',
+                            label: 'Solde',
+                            data: balance,
+                            borderColor: seriesBalance,
+                            backgroundColor: seriesBalance,
+                            borderWidth: 3,
+                            pointRadius: isSmallScreen() ? 2 : 3,
+                            pointHoverRadius: 5,
+                            tension: 0.35,
+                            yAxisID: 'y',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'start',
+                            labels: {
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                color: textSecondary,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                            },
+                        },
+                        tooltip: {
+                            backgroundColor: '#111816',
+                            borderColor: 'rgba(255,255,255,0.12)',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function (ctx) {
+                                    return ctx.dataset.label + ' : ' + money.format(ctx.parsed.y) + ' €';
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: textMuted,
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: isSmallScreen() ? 5 : 12,
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridline },
+                            ticks: {
+                                color: textMuted,
+                                maxTicksLimit: isSmallScreen() ? 5 : 7,
+                                callback: function (value) { return money.format(value) + ' €'; },
+                            },
+                        },
+                    },
+                },
+            });
+
+            var trendChart = Chart.getChart(trendCanvas);
+            if (trendChart) {
+                smallScreenQuery.addEventListener('change', function () {
+                    var compact = isSmallScreen();
+                    trendChart.data.datasets[0].maxBarThickness = compact ? 14 : 22;
+                    trendChart.data.datasets[1].maxBarThickness = compact ? 14 : 22;
+                    trendChart.data.datasets[2].pointRadius = compact ? 2 : 3;
+                    trendChart.options.scales.x.ticks.maxTicksLimit = compact ? 5 : 12;
+                    trendChart.options.scales.y.ticks.maxTicksLimit = compact ? 5 : 7;
+                    trendChart.update();
+                });
+            }
+        }
+
+        var subscriptionHistoryCanvas = document.getElementById('subscriptionHistoryChart');
+        if (subscriptionHistoryCanvas) {
+            var subscriptionLabels = JSON.parse('{{ subscription_history_labels_json|escapejs }}');
+            var subscriptionTotals = JSON.parse('{{ subscription_history_totals_json|escapejs }}').map(Number);
+            var subscriptionCounts = JSON.parse('{{ subscription_history_counts_json|escapejs }}').map(Number);
+
+            new Chart(subscriptionHistoryCanvas, {
+                type: 'bar',
+                data: {
+                    labels: subscriptionLabels,
+                    datasets: [{
+                        label: 'Abonnements',
+                        data: subscriptionTotals,
+                        backgroundColor: seriesBalance,
+                        borderRadius: { topLeft: 4, topRight: 4 },
+                        borderSkipped: false,
+                        maxBarThickness: isSmallScreen() ? 16 : 24,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#111816',
+                            borderColor: 'rgba(255,255,255,0.12)',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                afterLabel: function (ctx) {
+                                    return subscriptionCounts[ctx.dataIndex] + ' abonnement(s)';
+                                },
+                                label: function (ctx) {
+                                    return money.format(ctx.parsed.y) + ' €';
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: textMuted,
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: isSmallScreen() ? 5 : 12,
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridline },
+                            ticks: {
+                                color: textMuted,
+                                maxTicksLimit: isSmallScreen() ? 4 : 6,
+                                callback: function (value) { return money.format(value) + ' €'; },
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        var categoryCanvas = document.getElementById('categoryChart');
+        if (categoryCanvas) {
+            var catLabels = JSON.parse('{{ category_labels_json|escapejs }}');
+            var catValues = JSON.parse('{{ category_values_json|escapejs }}').map(Number);
+            var colors = catLabels.map(function (_, i) { return catColors[i % catColors.length]; });
+            var total = catValues.reduce(function (a, b) { return a + b; }, 0);
+
+            new Chart(categoryCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: colors,
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bw-bg-elevated') || '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 8,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '66%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#111816',
+                            borderColor: 'rgba(255,255,255,0.12)',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function (ctx) {
+                                    var value = ctx.parsed;
+                                    var pct = total ? Math.round((value / total) * 100) : 0;
+                                    return ctx.label + ' : ' + money.format(value) + ' € (' + pct + '%)';
+                                },
+                            },
+                        },
+                    },
+                },
+                plugins: [{
+                    id: 'centerTotal',
+                    afterDraw: function (chart) {
+                        var meta = chart.getDatasetMeta(0);
+                        if (!meta.data.length) return;
+                        var center = meta.data[0];
+                        var ctx = chart.ctx;
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = textMuted;
+                        ctx.font = '600 12px Inter, sans-serif';
+                        ctx.fillText('Total', center.x, center.y - 12);
+                        ctx.fillStyle = textSecondary;
+                        ctx.font = '700 20px Inter, sans-serif';
+                        ctx.fillText(money.format(total) + ' €', center.x, center.y + 12);
+                        ctx.restore();
+                    },
+                }],
+            });
+
+            var legend = document.getElementById('categoryLegend');
+            if (legend) {
+                catLabels.forEach(function (label, i) {
+                    var value = catValues[i];
+                    var pct = total ? Math.round((value / total) * 100) : 0;
+                    var li = document.createElement('li');
+                    var dot = document.createElement('span');
+                    var labelNode = document.createElement('span');
+                    var valueNode = document.createElement('span');
+                    dot.className = 'dashboard-legend-dot';
+                    dot.style.background = colors[i];
+                    labelNode.className = 'dashboard-legend-label';
+                    labelNode.textContent = label;
+                    valueNode.className = 'dashboard-legend-value';
+                    valueNode.textContent = money.format(value) + ' € · ' + pct + '%';
+                    li.appendChild(dot);
+                    li.appendChild(labelNode);
+                    li.appendChild(valueNode);
+                    legend.appendChild(li);
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

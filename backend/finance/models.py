@@ -7,6 +7,23 @@ class EntryType(models.TextChoices):
     INCOME = "INCOME", "Revenu"
 
 
+class TransactionSource(models.TextChoices):
+    MANUAL = "MANUAL", "Saisie manuelle"
+    BANK = "BANK", "Import bancaire"
+
+
+class RecurrenceKind(models.TextChoices):
+    FIXED = "FIXED", "Poste fixe"
+    SUBSCRIPTION = "SUBSCRIPTION", "Abonnement"
+
+
+class RecurrenceUnit(models.TextChoices):
+    DAY = "DAY", "jour"
+    WEEK = "WEEK", "semaine"
+    MONTH = "MONTH", "mois"
+    YEAR = "YEAR", "an"
+
+
 class Category(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -63,6 +80,11 @@ class RecurringItem(models.Model):
         related_name="recurring_items",
     )
     name = models.CharField(max_length=150)
+    kind = models.CharField(
+        max_length=20,
+        choices=RecurrenceKind.choices,
+        default=RecurrenceKind.FIXED,
+    )
     entry_type = models.CharField(max_length=20, choices=EntryType.choices)
     category = models.ForeignKey(
         Category,
@@ -79,14 +101,35 @@ class RecurringItem(models.Model):
         blank=True,
     )
     default_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    frequency_interval = models.PositiveSmallIntegerField(default=1)
+    frequency_unit = models.CharField(
+        max_length=20,
+        choices=RecurrenceUnit.choices,
+        default=RecurrenceUnit.MONTH,
+    )
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["entry_type", "name"]
+        ordering = ["entry_type", "kind", "name"]
 
     def __str__(self):
         return f"{self.name} ({self.default_amount})"
+
+    @property
+    def frequency_label(self):
+        interval = self.frequency_interval or 1
+        unit = self.get_frequency_unit_display()
+        if interval == 1:
+            return f"Tous les {unit}"
+        plural = "mois" if self.frequency_unit == RecurrenceUnit.MONTH else f"{unit}s"
+        return f"Tous les {interval} {plural}"
+
+    @property
+    def is_cancelled(self):
+        return not self.is_active and self.end_date is not None
 
 
 class MonthlyBudget(models.Model):
@@ -158,6 +201,16 @@ class Transaction(models.Model):
         blank=True,
     )
     transaction_date = models.DateField()
+    source = models.CharField(
+        max_length=20,
+        choices=TransactionSource.choices,
+        default=TransactionSource.MANUAL,
+    )
+    # Empreinte de l'opération bancaire : évite les doublons quand on
+    # resynchronise un mois déjà importé.
+    external_id = models.CharField(max_length=64, blank=True, default="")
+    # Libellé brut de la banque (utile pour la catégorisation automatique).
+    bank_label = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -167,6 +220,74 @@ class Transaction(models.Model):
             models.Index(fields=["user", "transaction_date"]),
             models.Index(fields=["user", "transaction_type"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "external_id"],
+                condition=~models.Q(external_id=""),
+                name="unique_bank_operation_per_user",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.user} - {self.transaction_type} - {self.amount}"
+
+
+class BankConnection(models.Model):
+    """Paramètres de connexion à la banque. Le code personnel n'est jamais
+    stocké : l'utilisateur le tape lui-même sur le site de la banque."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bank_connection",
+    )
+    postal_code = models.CharField(max_length=5)
+    login_id = models.CharField(max_length=11)
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} - Crédit Agricole ({self.postal_code})"
+
+
+class BankSyncStatus(models.TextChoices):
+    PENDING = "PENDING", "En attente"
+    CONNECTING = "CONNECTING", "Connexion à la banque"
+    WAITING_PASSWORD = "WAITING_PASSWORD", "En attente du code personnel"
+    DOWNLOADING = "DOWNLOADING", "Téléchargement des opérations"
+    IMPORTING = "IMPORTING", "Import des opérations"
+    DONE = "DONE", "Terminé"
+    ERROR = "ERROR", "Erreur"
+
+
+class BankSync(models.Model):
+    """Une synchronisation d'un mois avec la banque, exécutée en arrière-plan."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bank_syncs",
+    )
+    year = models.PositiveIntegerField()
+    month = models.PositiveSmallIntegerField()
+    status = models.CharField(
+        max_length=20,
+        choices=BankSyncStatus.choices,
+        default=BankSyncStatus.PENDING,
+    )
+    message = models.CharField(max_length=255, blank=True)
+    created_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.user} - {self.month:02d}/{self.year} - {self.status}"
+
+    @property
+    def is_finished(self):
+        return self.status in {BankSyncStatus.DONE, BankSyncStatus.ERROR}

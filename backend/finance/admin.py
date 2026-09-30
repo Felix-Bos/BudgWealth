@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import Category, MonthlyBudget, RecurringItem, Subcategory, Transaction
+from .models import (
+    BankConnection,
+    BankSync,
+    Category,
+    MonthlyBudget,
+    RecurringItem,
+    Subcategory,
+    Transaction,
+)
 
 
 @admin.register(Category)
@@ -21,13 +29,16 @@ class SubcategoryAdmin(admin.ModelAdmin):
 class RecurringItemAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "kind",
         "entry_type",
         "default_amount",
         "category",
+        "start_date",
+        "end_date",
         "user",
         "is_active",
     )
-    list_filter = ("entry_type", "is_active", "category")
+    list_filter = ("kind", "entry_type", "is_active", "category")
     search_fields = ("name", "user__username", "user__email")
 
 
@@ -47,8 +58,22 @@ class TransactionAdmin(admin.ModelAdmin):
         "category",
         "subcategory",
         "transaction_date",
+        "source",
         "created_at",
     )
-    list_filter = ("transaction_type", "category", "transaction_date")
+    list_filter = ("transaction_type", "source", "category", "transaction_date")
     search_fields = ("description", "category__name", "user__username", "user__email")
     date_hierarchy = "transaction_date"
+
+
+@admin.register(BankConnection)
+class BankConnectionAdmin(admin.ModelAdmin):
+    list_display = ("user", "postal_code", "last_sync_at")
+    search_fields = ("user__username", "user__email")
+
+
+@admin.register(BankSync)
+class BankSyncAdmin(admin.ModelAdmin):
+    list_display = ("user", "year", "month", "status", "created_count", "skipped_count", "started_at")
+    list_filter = ("status",)
+    search_fields = ("user__username", "user__email")

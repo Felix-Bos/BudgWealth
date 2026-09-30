@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Scraping Crédit Agricole (session bancaire + relevés)
+.ca_session/
+backend/.ca_session/
+backend/data/
