@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Connecter ma banque - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-panel">
+        <div class="mb-4">
+            <p class="section-label mb-2">Dernière étape</p>
+            <h1 class="h3 mb-2">Connecter votre banque</h1>
+            <p class="text-muted mb-0">
+                BudgWealth peut récupérer vos opérations automatiquement depuis le Crédit Agricole.
+                Votre code personnel n'est jamais enregistré : vous le taperez vous-même sur le site de la banque.
+            </p>
+        </div>
+
+        <form method="post" action="{% url 'finance:bank_connect' %}" novalidate>
+            {% csrf_token %}
+
+            {% if bank_form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">{{ bank_form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label" for="{{ bank_form.postal_code.id_for_label }}">{{ bank_form.postal_code.label }}</label>
+                {{ bank_form.postal_code }}
+                {% if bank_form.postal_code.errors %}<div class="form-error">{{ bank_form.postal_code.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="{{ bank_form.login_id.id_for_label }}">{{ bank_form.login_id.label }}</label>
+                {{ bank_form.login_id }}
+                {% if bank_form.login_id.errors %}<div class="form-error">{{ bank_form.login_id.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="bank-connect-note mb-4">
+                Juste après, nous importerons vos <strong>12 derniers mois</strong> d'opérations
+                pour que votre espace soit prêt tout de suite.
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Connecter et importer l'historique</button>
+                <a class="btn btn-link text-muted" href="{% url 'finance:dashboard' %}">Plus tard</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

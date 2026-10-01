@@ -10,10 +10,10 @@ from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
 from .bank_import import import_operations
-from .bank_sync import is_month_syncable, run_bank_sync, sync_period
+from .bank_sync import initial_period, is_month_syncable, run_bank_sync, sync_period
 from .ca_csv import parse_ca_csv
 from .default_categories import create_default_categories
-from .models import BankConnection, BankSync, BankSyncStatus, EntryType, Transaction, TransactionSource
+from .models import BankConnection, BankSync, BankSyncKind, BankSyncStatus, EntryType, Transaction, TransactionSource
 
 
 # Relevé fictif au format de l'export Crédit Agricole (Windows-1252, libellés multi-lignes)
@@ -281,7 +281,8 @@ class BankViewsTests(TestCase):
             {"postal_code": "75001", "login_id": "123 456 789 01"},
         )
 
-        self.assertRedirects(response, f"{reverse('finance:settings')}?tab=banque")
+        # Première connexion : on enchaîne sur l'import de l'historique
+        self.assertRedirects(response, reverse("finance:bank_initial_sync"))
         connection = BankConnection.objects.get(user=self.user)
         self.assertEqual(connection.login_id, "12345678901")
 
@@ -322,10 +323,106 @@ class BankViewsTests(TestCase):
         self.assertFalse(status["finished"])
 
     def test_month_page_shows_sync_button(self):
-        BankConnection.objects.create(user=self.user, postal_code="75001", login_id="12345678901")
+        BankConnection.objects.create(
+            user=self.user, postal_code="75001", login_id="12345678901", initial_import_done=True
+        )
         today = date.today()
 
         response = self.client.get(reverse("finance:month", args=[today.year, today.month]))
 
         self.assertContains(response, "Synchroniser avec la banque")
         self.assertContains(response, "bankSyncModal")
+
+
+class InitialImportTests(TransactionTestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.user = get_user_model().objects.create_user("jean", password="x")
+        create_default_categories(self.user)
+
+    def test_initial_period_covers_12_months(self):
+        start, end = initial_period(today=date(2026, 10, 1))
+        self.assertEqual(start, date(2025, 11, 1))
+        self.assertEqual(end, date(2026, 10, 1))
+
+    def test_initial_sync_imports_and_marks_done(self):
+        BankConnection.objects.create(user=self.user, postal_code="75001", login_id="12345678901")
+        sync = BankSync.objects.create(user=self.user, kind=BankSyncKind.INITIAL, year=2026, month=10)
+
+        def fake_download(**kwargs):
+            # L'import initial demande bien une large période
+            self.assertLess((kwargs["end"] - kwargs["start"]).days, 400)
+            self.assertGreater((kwargs["end"] - kwargs["start"]).days, 300)
+            return write_sample_export(kwargs["target_dir"])
+
+        with mock.patch("finance.bank_sync.download_ca_operations", side_effect=fake_download):
+            run_bank_sync(sync.pk)
+
+        sync.refresh_from_db()
+        self.assertEqual(sync.status, BankSyncStatus.DONE, sync.message)
+        self.assertTrue(BankConnection.objects.get(user=self.user).initial_import_done)
+
+
+class OnboardingViewsTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("jean", password="x")
+        self.client.force_login(self.user)
+
+    def test_signup_redirects_to_bank_connect(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse("accounts:signup"),
+            {"username": "neo", "email": "neo@ex.fr",
+             "password1": "Tr3sL0ngMotDePasse2026", "password2": "Tr3sL0ngMotDePasse2026"},
+        )
+        self.assertRedirects(response, reverse("finance:bank_connect"))
+
+    def test_bank_connect_saves_and_goes_to_initial_sync(self):
+        response = self.client.post(
+            reverse("finance:bank_connect"),
+            {"postal_code": "92130", "login_id": "65053051450"},
+        )
+        self.assertRedirects(response, reverse("finance:bank_initial_sync"))
+        self.assertTrue(BankConnection.objects.filter(user=self.user).exists())
+
+    def test_initial_sync_page_renders_before_import(self):
+        BankConnection.objects.create(user=self.user, postal_code="75001", login_id="12345678901")
+        response = self.client.get(reverse("finance:bank_initial_sync"))
+        self.assertContains(response, "12 derniers mois")
+
+    def test_initial_sync_page_redirects_when_already_done(self):
+        BankConnection.objects.create(
+            user=self.user, postal_code="75001", login_id="12345678901", initial_import_done=True
+        )
+        response = self.client.get(reverse("finance:bank_initial_sync"))
+        self.assertRedirects(response, reverse("finance:dashboard"))
+
+    def test_updating_bank_connection_first_time_goes_to_initial_sync(self):
+        response = self.client.post(
+            reverse("finance:update_bank_connection"),
+            {"postal_code": "75001", "login_id": "12345678901"},
+        )
+        self.assertRedirects(response, reverse("finance:bank_initial_sync"))
+
+    def test_month_sync_button_hidden_until_initial_done(self):
+        BankConnection.objects.create(user=self.user, postal_code="75001", login_id="12345678901")
+        today = date.today()
+        response = self.client.get(reverse("finance:month", args=[today.year, today.month]))
+        self.assertContains(response, "Importer l'historique")
+        self.assertNotContains(response, "bankSyncModal")
+
+    def test_month_sync_button_shown_after_initial_done(self):
+        BankConnection.objects.create(
+            user=self.user, postal_code="75001", login_id="12345678901", initial_import_done=True
+        )
+        today = date.today()
+        response = self.client.get(reverse("finance:month", args=[today.year, today.month]))
+        self.assertContains(response, "Synchroniser avec la banque")
+
+    def test_initial_sync_start_blocked_when_already_done(self):
+        BankConnection.objects.create(
+            user=self.user, postal_code="75001", login_id="12345678901", initial_import_done=True
+        )
+        response = self.client.post(reverse("finance:bank_initial_sync_start"))
+        self.assertEqual(response.status_code, 400)

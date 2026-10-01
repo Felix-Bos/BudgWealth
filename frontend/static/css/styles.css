@@ -1526,3 +1526,18 @@ a:hover {
         display: none;
     }
 }
+
+
+.bank-connect-note {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--bw-accent-soft);
+    color: var(--bw-text);
+    font-size: 0.925rem;
+}
+
+.form-error {
+    color: #c0392b;
+    font-size: 0.85rem;
+    margin-top: 4px;
+}

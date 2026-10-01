@@ -243,6 +243,8 @@ class BankConnection(models.Model):
     )
     postal_code = models.CharField(max_length=5)
     login_id = models.CharField(max_length=11)
+    # L'import initial (12 mois d'historique) a-t-il déjà été fait ?
+    initial_import_done = models.BooleanField(default=False)
     last_sync_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -261,14 +263,28 @@ class BankSyncStatus(models.TextChoices):
     ERROR = "ERROR", "Erreur"
 
 
+class BankSyncKind(models.TextChoices):
+    MONTH = "MONTH", "Un mois"
+    INITIAL = "INITIAL", "Import initial (12 mois)"
+
+
 class BankSync(models.Model):
-    """Une synchronisation d'un mois avec la banque, exécutée en arrière-plan."""
+    """Une synchronisation avec la banque, exécutée en arrière-plan.
+    Soit un seul mois (MONTH), soit l'historique complet des 12 derniers mois
+    (INITIAL), déclenché à la première connexion bancaire."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="bank_syncs",
     )
+    kind = models.CharField(
+        max_length=10,
+        choices=BankSyncKind.choices,
+        default=BankSyncKind.MONTH,
+    )
+    # Pour un import mensuel : le mois visé. Pour l'import initial : le mois
+    # de fin (le mois en cours) ; la période couvre les 12 mois précédents.
     year = models.PositiveIntegerField()
     month = models.PositiveSmallIntegerField()
     status = models.CharField(
@@ -286,7 +302,7 @@ class BankSync(models.Model):
         ordering = ["-started_at"]
 
     def __str__(self):
-        return f"{self.user} - {self.month:02d}/{self.year} - {self.status}"
+        return f"{self.user} - {self.get_kind_display()} - {self.month:02d}/{self.year} - {self.status}"
 
     @property
     def is_finished(self):

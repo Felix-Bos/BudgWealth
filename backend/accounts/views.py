@@ -19,7 +19,8 @@ def signup(request):
             user = form.save()
             create_default_categories(user)
             login(request, user)
-            return redirect("finance:dashboard")
+            # Juste après l'inscription : proposer de connecter sa banque
+            return redirect("finance:bank_connect")
     else:
         form = SignUpForm()
 

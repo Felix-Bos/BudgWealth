@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bw-bg" x1="4" y1="2" x2="44" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f7a5a"/>
+      <stop offset="1" stop-color="#0a3327"/>
+    </linearGradient>
+    <linearGradient id="bw-bar" x1="0" y1="14" x2="0" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.72"/>
+    </linearGradient>
+    <radialGradient id="bw-coin" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(32.4 9.6) scale(6.4)">
+      <stop offset="0" stop-color="#fbe3a1"/>
+      <stop offset="1" stop-color="#e2a93b"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fond -->
+  <rect x="1" y="1" width="46" height="46" rx="14" fill="url(#bw-bg)"/>
+  <rect x="1.5" y="1.5" width="45" height="45" rx="13.5" stroke="#ffffff" stroke-opacity="0.12"/>
+
+  <!-- Budget : barres montantes -->
+  <rect x="11" y="27" width="6.5" height="11" rx="3.25" fill="url(#bw-bar)" fill-opacity="0.7"/>
+  <rect x="20.75" y="21" width="6.5" height="17" rx="3.25" fill="url(#bw-bar)" fill-opacity="0.85"/>
+  <rect x="30.5" y="16.5" width="6.5" height="21.5" rx="3.25" fill="url(#bw-bar)"/>
+
+  <!-- Patrimoine : la pièce qui s'élève -->
+  <circle cx="33.75" cy="10.5" r="4.25" fill="url(#bw-coin)"/>
+  <circle cx="33.75" cy="10.5" r="2.4" stroke="#a8741a" stroke-opacity="0.45" stroke-width="0.9"/>
+</svg>

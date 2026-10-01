@@ -104,6 +104,12 @@
                         <button type="submit" class="btn btn-primary">Enregistrer</button>
                     </div>
                 </form>
+                {% if bank_connection and not bank_connection.initial_import_done %}
+                <div class="bank-connect-note mt-3">
+                    Votre historique n'a pas encore été importé.
+                    <a href="{% url 'finance:bank_initial_sync' %}">Importer mes 12 derniers mois</a>.
+                </div>
+                {% endif %}
                 {% if bank_connection %}
                 <form method="post" action="{% url 'finance:delete_bank_connection' %}" class="mt-3">
                     {% csrf_token %}

@@ -21,7 +21,7 @@ from django.utils import timezone
 from .bank_import import import_operations
 from .ca_csv import parse_ca_csv
 from .ca_scraper import BankSyncError, download_ca_operations
-from .models import BankConnection, BankSync, BankSyncStatus
+from .models import BankConnection, BankSync, BankSyncKind, BankSyncStatus
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,22 @@ def sync_period(year, month, today=None):
     return start, min(end, today)
 
 
+def initial_period(today=None):
+    """
+    Import initial : du 1er du mois d'il y a 11 mois jusqu'à aujourd'hui,
+    soit les 12 mois d'historique que la banque autorise (mois en cours inclus).
+    """
+
+    today = today or date.today()
+    start_year = today.year
+    start_month = today.month - (MAX_MONTHS_BACK - 1)
+    while start_month <= 0:
+        start_month += 12
+        start_year -= 1
+
+    return date(start_year, start_month, 1), today
+
+
 def is_month_syncable(year, month, today=None):
 
     today = today or date.today()
@@ -55,10 +71,11 @@ def is_month_syncable(year, month, today=None):
     return 0 <= months_back <= MAX_MONTHS_BACK
 
 
-def start_bank_sync(user, year, month):
+def start_bank_sync(user, year=None, month=None, kind=BankSyncKind.MONTH):
     """
     Crée le BankSync et lance la synchronisation en arrière-plan.
     Renvoie le BankSync (existant s'il y en a déjà un en cours).
+    Pour un import initial (kind=INITIAL), year/month sont ignorés (mois en cours).
     """
 
     with _running_lock:
@@ -70,7 +87,11 @@ def start_bank_sync(user, year, month):
 
         _running_users.add(user.pk)
 
-    sync = BankSync.objects.create(user=user, year=year, month=month)
+    if kind == BankSyncKind.INITIAL:
+        today = date.today()
+        year, month = today.year, today.month
+
+    sync = BankSync.objects.create(user=user, kind=kind, year=year, month=month)
 
     thread = threading.Thread(
         target=run_bank_sync,
@@ -110,7 +131,10 @@ def run_bank_sync(sync_id):
         if not connection:
             raise BankSyncError("Renseignez votre identifiant bancaire dans les paramètres.")
 
-        start, end = sync_period(sync.year, sync.month)
+        if sync.kind == BankSyncKind.INITIAL:
+            start, end = initial_period()
+        else:
+            start, end = sync_period(sync.year, sync.month)
 
         # Le relevé contient des données bancaires : il ne vit que le temps de l'import
         export_dir = tempfile.mkdtemp(prefix="ca_export_")
@@ -134,7 +158,11 @@ def run_bank_sync(sync_id):
             shutil.rmtree(export_dir, ignore_errors=True)
 
         connection.last_sync_at = timezone.now()
-        connection.save(update_fields=["last_sync_at"])
+        update_fields = ["last_sync_at"]
+        if sync.kind == BankSyncKind.INITIAL:
+            connection.initial_import_done = True
+            update_fields.append("initial_import_done")
+        connection.save(update_fields=update_fields)
 
         sync.created_count = result.created
         sync.skipped_count = result.skipped

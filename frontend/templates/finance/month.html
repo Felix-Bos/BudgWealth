@@ -42,7 +42,9 @@
                 <strong>Import depuis la banque</strong>
                 <p class="text-muted small mb-0">
                     {% if not has_bank_connection %}
-                        Renseignez votre identifiant Crédit Agricole pour importer vos opérations automatiquement.
+                        Connectez votre banque pour importer vos opérations automatiquement.
+                    {% elif not bank_ready %}
+                        Importez d'abord vos 12 derniers mois pour activer la synchronisation.
                     {% elif not is_bank_syncable %}
                         La banque ne donne accès qu'aux 12 derniers mois.
                     {% else %}
@@ -51,7 +53,9 @@
                 </p>
             </div>
             {% if not has_bank_connection %}
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:settings' %}?tab=banque">Configurer</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_connect' %}">Connecter ma banque</a>
+            {% elif not bank_ready %}
+            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_initial_sync' %}">Importer l'historique</a>
             {% else %}
             <button type="button" class="btn btn-primary btn-sm js-bank-sync" {% if not is_bank_syncable %}disabled{% endif %}
                     data-start-url="{% url 'finance:bank_sync_start' year month %}"
@@ -190,7 +194,7 @@
     </div>
 </section>
 
-{% if has_bank_connection %}
+{% if bank_ready %}
 <div class="modal fade" id="bankSyncModal" tabindex="-1" aria-labelledby="bankSyncTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bank-sync-modal">

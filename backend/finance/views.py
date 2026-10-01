@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 from accounts.forms import AccountForm, AccountPasswordChangeForm
 
 from .bank_sync import is_month_syncable, start_bank_sync
+from .models import BankSyncKind
 from .forms import (
     BankConnectionForm,
     CategoryForm,
@@ -553,6 +554,8 @@ def month_view(request, year, month):
             total_income = demo_detail["totals"]["income"]
             total_expense = demo_detail["totals"]["expense"]
 
+    _bank_connection = BankConnection.objects.filter(user=request.user).first()
+
     context = {
         **_month_context(year, month),
         "budget": budget,
@@ -571,7 +574,9 @@ def month_view(request, year, month):
             user=request.user, is_active=True
         ).exists(),
         "is_current_month": (year, month) == (today.year, today.month),
-        "has_bank_connection": BankConnection.objects.filter(user=request.user).exists(),
+        "bank_connection": _bank_connection,
+        "has_bank_connection": _bank_connection is not None,
+        "bank_ready": bool(_bank_connection and _bank_connection.initial_import_done),
         "is_bank_syncable": is_month_syncable(year, month, today),
     }
     return render(request, "finance/month.html", context)
@@ -1198,6 +1203,9 @@ def update_bank_connection(request):
         bank_connection = form.save(commit=False)
         bank_connection.user = request.user
         bank_connection.save()
+        # Première connexion : on enchaîne sur l'import des 12 mois d'historique
+        if not bank_connection.initial_import_done:
+            return redirect("finance:bank_initial_sync")
         messages.success(request, "Connexion bancaire enregistrée.")
     else:
         errors = " ".join(error for field_errors in form.errors.values() for error in field_errors)
@@ -1239,6 +1247,56 @@ def bank_sync_start(request, year, month):
             status=400,
         )
     sync = start_bank_sync(request.user, year, month)
+    return JsonResponse(_bank_sync_payload(sync))
+
+
+@login_required
+def bank_connect(request):
+    """Étape de connexion bancaire (à l'inscription ou depuis les paramètres).
+    L'utilisateur saisit code postal + identifiant, ou passe l'étape."""
+    connection = BankConnection.objects.filter(user=request.user).first()
+
+    # Déjà connecté et historique importé : rien à faire ici
+    if connection and connection.initial_import_done:
+        return redirect(f"{reverse('finance:settings')}?tab=banque")
+
+    if request.method == "POST":
+        form = BankConnectionForm(request.POST, instance=connection)
+        if form.is_valid():
+            connection = form.save(commit=False)
+            connection.user = request.user
+            connection.save()
+            return redirect("finance:bank_initial_sync")
+    else:
+        form = BankConnectionForm(instance=connection)
+
+    return render(request, "finance/bank_connect.html", {"bank_form": form})
+
+
+@login_required
+def bank_initial_sync(request):
+    """Écran d'import de l'historique (12 mois), après la première connexion."""
+    connection = BankConnection.objects.filter(user=request.user).first()
+    if not connection:
+        return redirect("finance:bank_connect")
+    if connection.initial_import_done:
+        return redirect("finance:dashboard")
+    return render(request, "finance/bank_initial_sync.html")
+
+
+@login_required
+@require_POST
+def bank_initial_sync_start(request):
+    connection = BankConnection.objects.filter(user=request.user).first()
+    if not connection:
+        return JsonResponse(
+            {"error": "Renseignez d'abord votre identifiant bancaire."}, status=400
+        )
+    if connection.initial_import_done:
+        return JsonResponse(
+            {"error": "Votre historique a déjà été importé."}, status=400
+        )
+    sync = start_bank_sync(request.user, kind=BankSyncKind.INITIAL)
     return JsonResponse(_bank_sync_payload(sync))
 
 
