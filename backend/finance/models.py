@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -110,6 +112,10 @@ class RecurringItem(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    # Abonnement détecté sur le relevé bancaire : clé du commerçant utilisée
+    # pour rattacher les paiements importés. Ces postes ne génèrent pas de
+    # ligne automatique (la banque fournit déjà le paiement réel).
+    match_key = models.CharField(max_length=100, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -211,6 +217,17 @@ class Transaction(models.Model):
     external_id = models.CharField(max_length=64, blank=True, default="")
     # Libellé brut de la banque (utile pour la catégorisation automatique).
     bank_label = models.CharField(max_length=255, blank=True, default="")
+    # Dépense alimentaire réglée avec la carte tickets restaurant :
+    # elle consomme le solde de tickets, pas le compte bancaire.
+    paid_with_meal_voucher = models.BooleanField(default=False)
+    # Versement d'épargne affecté à un projet (ex. achat d'un vélo).
+    savings_project = models.ForeignKey(
+        "SavingsProject",
+        on_delete=models.SET_NULL,
+        related_name="contributions",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -307,3 +324,159 @@ class BankSync(models.Model):
     @property
     def is_finished(self):
         return self.status in {BankSyncStatus.DONE, BankSyncStatus.ERROR}
+
+
+class IncomeMode(models.TextChoices):
+    AUTO = "AUTO", "Moyenne de mes salaires"
+    MANUAL = "MANUAL", "Montant fixe"
+
+
+class BudgetSection(models.TextChoices):
+    FIXED = "FIXED", "Charges fixes"
+    VARIABLE = "VARIABLE", "Charges variables"
+    SUBSCRIPTION = "SUBSCRIPTION", "Abonnements"
+    PROVISION = "PROVISION", "Provisions annuelles"
+
+
+class BudgetPlan(models.Model):
+    """Budget type : il s'applique à chaque mois à partir de `valid_from`,
+    jusqu'à la version suivante. Les mois passés gardent la version qui
+    était en vigueur, ce qui permet de les analyser."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="budget_plans",
+    )
+    # Toujours le 1er du mois
+    valid_from = models.DateField()
+    income_mode = models.CharField(
+        max_length=10,
+        choices=IncomeMode.choices,
+        default=IncomeMode.AUTO,
+    )
+    manual_income = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    # Nombre de mois de salaire utilisés pour la moyenne (mode AUTO)
+    income_average_months = models.PositiveSmallIntegerField(default=6)
+    savings_target_monthly = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-valid_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "valid_from"],
+                name="unique_budget_plan_per_month",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - budget depuis {self.valid_from:%m/%Y}"
+
+
+class BudgetLine(models.Model):
+    """Objectif de dépense mensuel pour une catégorie (ou sous-catégorie)."""
+
+    plan = models.ForeignKey(
+        BudgetPlan,
+        on_delete=models.CASCADE,
+        related_name="lines",
+    )
+    section = models.CharField(max_length=20, choices=BudgetSection.choices)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name="budget_lines",
+    )
+    subcategory = models.ForeignKey(
+        Subcategory,
+        on_delete=models.CASCADE,
+        related_name="budget_lines",
+        null=True,
+        blank=True,
+    )
+    label = models.CharField(max_length=150, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["section", "order", "id"]
+
+    def __str__(self):
+        return f"{self.display_label} ({self.amount})"
+
+    @property
+    def display_label(self):
+        if self.label:
+            return self.label
+        if self.subcategory:
+            return self.subcategory.name
+        return self.category.name
+
+
+class SavingsProject(models.Model):
+    """Projet d'épargne : un montant à réunir pour une date donnée."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="savings_projects",
+    )
+    name = models.CharField(max_length=150)
+    target_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    target_date = models.DateField()
+    # Ce qui était déjà de côté avant de suivre le projet dans l'app
+    initial_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_done = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["is_done", "target_date", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class MealVoucherSettings(models.Model):
+    """Tickets restaurant sur une carte dédiée (Swile, Edenred...)."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="meal_voucher_settings",
+    )
+    enabled = models.BooleanField(default=True)
+    face_value = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("9.50"))
+    # Part payée par le salarié (retenue sur le salaire), en % de la valeur faciale
+    employee_share_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("50")
+    )
+    # Vide = jours ouvrés du mois (lundi-vendredi)
+    days_per_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} - tickets restaurant {self.face_value} €"
+
+
+class DismissedSubscription(models.Model):
+    """Suggestion d'abonnement que l'utilisateur a choisi d'ignorer."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="dismissed_subscriptions",
+    )
+    key = models.CharField(max_length=150)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "key"], name="unique_dismissed_subscription"),
+        ]

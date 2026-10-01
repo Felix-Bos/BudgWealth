@@ -221,3 +221,6 @@ __marimo__/
 .ca_session/
 backend/.ca_session/
 backend/data/
+
+# Sauvegardes locales de la base
+*.sqlite3.*.bak

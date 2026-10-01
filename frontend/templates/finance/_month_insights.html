@@ -1,0 +1,180 @@
+{# ---------- Graphiques du mois ---------- #}
+<div class="month-charts mb-4">
+    <div class="content-panel month-chart-card">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1 js-donut-title">Charges par catégorie</h2>
+                <p class="text-muted small mb-0 js-donut-subtitle">Clique sur une catégorie pour voir ses sous-catégories</p>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm js-donut-back" hidden>&larr; Toutes</button>
+        </div>
+        {% if has_charges %}
+        <div class="month-donut-layout">
+            <div class="month-donut-wrap">
+                <canvas id="categoryDonut" role="img" aria-label="Répartition des charges du mois par catégorie"></canvas>
+            </div>
+            <ul class="month-legend js-donut-legend"></ul>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Aucune charge enregistrée ce mois-ci.</p>
+        {% endif %}
+    </div>
+
+    <div class="content-panel month-chart-card">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">Au fil du mois</h2>
+                <p class="text-muted small mb-0">Cumul des revenus, charges et épargne{% if tracking %}, comparé au rythme du budget{% endif %}</p>
+            </div>
+        </div>
+        <div class="month-line-wrap">
+            <canvas id="dailyChart" role="img" aria-label="Cumul des revenus, charges et épargne jour par jour"></canvas>
+        </div>
+    </div>
+</div>
+
+{# ---------- Abonnements du mois ---------- #}
+{% if month_subscriptions.count %}
+<div class="content-panel mb-4">
+    <div class="month-card-head">
+        <div>
+            <h2 class="h5 mb-1">Abonnements du mois</h2>
+            <p class="text-muted small mb-0">
+                {{ month_subscriptions.paid_total }} € payés
+                {% if month_subscriptions.remaining %}· {{ month_subscriptions.remaining_total }} € restent à payer{% endif %}
+            </p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">Gérer</a>
+    </div>
+    <div class="month-subs">
+        <div>
+            <h3 class="month-subs-title">Payés <span>{{ month_subscriptions.paid|length }}</span></h3>
+            {% for row in month_subscriptions.paid %}
+            <div class="month-sub is-paid">
+                <span class="month-sub-dot"></span>
+                <span class="month-sub-name">{{ row.item.name }}</span>
+                <span class="month-sub-date">{{ row.date|date:"j M" }}</span>
+                <strong>{{ row.amount }} €</strong>
+            </div>
+            {% empty %}
+            <p class="text-muted small mb-0">Aucun pour l'instant.</p>
+            {% endfor %}
+        </div>
+        <div>
+            <h3 class="month-subs-title">Reste à payer <span>{{ month_subscriptions.remaining|length }}</span></h3>
+            {% for row in month_subscriptions.remaining %}
+            <div class="month-sub is-{{ row.state }}">
+                <span class="month-sub-dot"></span>
+                <span class="month-sub-name">{{ row.item.name }}</span>
+                <span class="month-sub-date">{% if row.state == "pending" %}attendu le {% endif %}{{ row.date|date:"j M" }}</span>
+                <strong>{{ row.amount }} €</strong>
+            </div>
+            {% empty %}
+            <p class="text-muted small mb-0">Tout est payé ✔</p>
+            {% endfor %}
+            {% for row in month_subscriptions.problems %}
+            <div class="month-sub is-{{ row.state }}">
+                <span class="month-sub-dot"></span>
+                <span class="month-sub-name">{{ row.item.name }}</span>
+                <span class="month-sub-date">{{ row.label }} · prévu le {{ row.date|date:"j M" }}</span>
+                <strong>{{ row.amount }} €</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ---------- Budget du mois ---------- #}
+{% if tracking %}
+<div class="content-panel budget-tracking mb-4 budget-page">
+    <div class="budget-tracking-head">
+        <div>
+            <h2 class="h5 mb-1">Budget du mois</h2>
+            <p class="text-muted small mb-0">
+                {% if tracking.elapsed_percent < 100 %}Jour {{ tracking.day }} sur {{ tracking.days_in_month }} · {{ tracking.elapsed_percent }} % du mois écoulé{% else %}Mois terminé{% endif %}
+            </p>
+        </div>
+        <span class="budget-badge is-{{ tracking.verdict }}">{{ tracking.verdict_label }}</span>
+    </div>
+
+    <div class="budget-kpis">
+        <div class="budget-kpi">
+            <span>Dépensé</span>
+            <strong>{{ tracking.spent_total }} €</strong>
+            <small>sur {{ tracking.budget_total }} € prévus</small>
+            <div class="budget-progress {% if tracking.spent_percent > 100 %}is-over{% endif %}">
+                <span style="width: {% if tracking.spent_percent > 100 %}100{% else %}{{ tracking.spent_percent }}{% endif %}%"></span>
+                {% if tracking.elapsed_percent < 100 %}<i style="left: {{ tracking.elapsed_percent }}%" title="Rythme attendu"></i>{% endif %}
+            </div>
+        </div>
+        <div class="budget-kpi">
+            <span>{% if tracking.elapsed_percent < 100 %}Projection fin de mois{% else %}Écart au budget{% endif %}</span>
+            <strong>{% if tracking.elapsed_percent < 100 %}{{ tracking.projected_total }} €{% else %}{{ tracking.projected_gap }} €{% endif %}</strong>
+            <small class="{% if tracking.projected_overrun %}is-negative{% else %}is-positive{% endif %}">
+                {% if tracking.projected_overrun %}Dépassement {% if tracking.elapsed_percent < 100 %}prévu {% endif %}de {{ tracking.projected_overrun }} €{% else %}Dans le budget{% endif %}
+            </small>
+        </div>
+        <div class="budget-kpi">
+            <span>Épargne</span>
+            <strong>{{ tracking.savings_actual }} €</strong>
+            <small>objectif {{ tracking.savings_target }} €</small>
+            <div class="budget-progress is-savings"><span style="width: {% if tracking.savings_percent > 100 %}100{% else %}{{ tracking.savings_percent }}{% endif %}%"></span></div>
+        </div>
+        {% if tracking.vouchers %}
+        <div class="budget-kpi">
+            <span>Tickets restaurant</span>
+            <strong>{{ tracking.vouchers.remaining }} €</strong>
+            <small>restants sur {{ tracking.vouchers.credit }} €</small>
+            <div class="budget-progress"><span style="width: {% if tracking.vouchers.spent_percent > 100 %}100{% else %}{{ tracking.vouchers.spent_percent }}{% endif %}%"></span></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="budget-track-sections">
+        {% for section in tracking.sections %}
+        <div class="budget-track-section">
+            <h3>{{ section.label }}</h3>
+            {% for row in section.rows %}
+            <div class="budget-track-row is-{{ row.status }}">
+                <div class="budget-track-label">
+                    <span>{{ row.label }}</span>
+                    <small>
+                        {{ row.spent }} / {{ row.budget }} €
+                        {% if row.status == "over" %}· dépassé de {{ row.overspent }} €
+                        {% elif row.status == "warning" %}· au-dessus du rythme
+                        {% else %}· reste {{ row.remaining }} €{% endif %}
+                    </small>
+                </div>
+                <div class="budget-progress {% if row.status == 'over' %}is-over{% elif row.status == 'warning' %}is-warning{% endif %}">
+                    <span style="width: {% if row.percent > 100 %}100{% else %}{{ row.percent }}{% endif %}%"></span>
+                    {% if row.section == "VARIABLE" and tracking.elapsed_percent < 100 %}<i style="left: {{ row.pace_percent }}%" title="Rythme attendu"></i>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% if tracking.unbudgeted %}
+        <div class="budget-track-section">
+            <h3>Hors budget</h3>
+            {% for item in tracking.unbudgeted %}
+            <div class="budget-track-row is-warning">
+                <div class="budget-track-label">
+                    <span>{{ item.label }}</span>
+                    <small>{{ item.spent }} € non prévus</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="content-panel budget-empty mb-4">
+    <div>
+        <h2 class="h5 mb-1">Pas encore de budget</h2>
+        <p class="text-muted mb-0">Fixe un objectif par poste et un objectif d'épargne pour suivre chaque mois s'il est tenu.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'finance:budget_plan' %}">Créer mon budget</a>
+</div>
+{% endif %}

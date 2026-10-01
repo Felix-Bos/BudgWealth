@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Mon budget - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="budget-page">
+    {% include "finance/_budget_tabs.html" with subtitle="Ton budget type, appliqué chaque mois" %}
+
+    {% if is_new_plan %}
+    <div class="budget-callout mb-4">
+        <strong>Premier budget</strong>
+        <span>On l'a prérempli à partir de tes postes fixes, de tes abonnements et de tes dépenses des 3 derniers mois. Ajuste les montants puis enregistre.</span>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <form method="post" action="{% url 'finance:budget_plan' %}" class="js-budget-form" novalidate>
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                {# ---------- Revenus ---------- #}
+                <div class="content-panel budget-panel mb-4">
+                    <div class="budget-panel-head">
+                        <div>
+                            <h2 class="h5 mb-1">Revenus</h2>
+                            <p class="text-muted small mb-0">La base sur laquelle ton budget est construit.</p>
+                        </div>
+                    </div>
+
+                    <div class="budget-income-modes">
+                        {% for choice in plan_form.income_mode %}
+                        <label class="budget-income-mode">
+                            {{ choice.tag }}
+                            <span class="budget-income-mode-body">
+                                <strong>{{ choice.choice_label }}</strong>
+                                {% if choice.data.value == "AUTO" %}
+                                    {% if salary_months %}
+                                    <span><span class="budget-amount">{{ salary_average }} €</span> en moyenne sur {{ salary_months }} mois</span>
+                                    {% else %}
+                                    <span>Pas encore de salaire enregistré : on utilisera le montant fixe en attendant.</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span>Tu indiques toi-même ton revenu mensuel.</span>
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-6 col-md-4 js-income-auto-field">
+                            <label class="form-label" for="{{ plan_form.income_average_months.id_for_label }}">{{ plan_form.income_average_months.label }}</label>
+                            {{ plan_form.income_average_months }}
+                        </div>
+                        <div class="col-6 col-md-4 js-income-manual-field">
+                            <label class="form-label" for="{{ plan_form.manual_income.id_for_label }}">{{ plan_form.manual_income.label }}</label>
+                            {{ plan_form.manual_income }}
+                            {% for error in plan_form.manual_income.errors %}<div class="budget-error">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {# ---------- Dépenses par section ---------- #}
+                {% for key, label in sections %}
+                <div class="content-panel budget-panel mb-4" data-section="{{ key }}">
+                    <div class="budget-panel-head">
+                        <div>
+                            <h2 class="h5 mb-1">{{ label }}</h2>
+                            <p class="text-muted small mb-0">
+                                {% if key == "FIXED" %}Loyer, assurances, énergie, téléphone…
+                                {% elif key == "VARIABLE" %}Courses, restaurants, sorties : ce qui varie d'un mois à l'autre.
+                                {% elif key == "SUBSCRIPTION" %}Streaming, sport, logiciels…
+                                {% else %}Dépenses annuelles lissées : montant annuel ÷ 12.{% endif %}
+                            </p>
+                        </div>
+                        <div class="budget-panel-total"><span class="js-section-total" data-section="{{ key }}">0</span> €</div>
+                    </div>
+
+                    <div class="budget-lines js-section-lines" data-section="{{ key }}">
+                        <div class="budget-line budget-line-header" aria-hidden="true">
+                            <span>Catégorie</span><span>Sous-catégorie</span><span>Libellé</span><span class="text-end">€ / mois</span><span></span>
+                        </div>
+                        {% for form in formset.forms %}
+                            {% if form.section.value == key %}
+                                {% include "finance/_budget_line.html" %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" class="btn btn-link budget-add-line js-add-line" data-section="{{ key }}">+ Ajouter une ligne</button>
+                </div>
+                {% endfor %}
+
+                {# ---------- Épargne ---------- #}
+                <div class="content-panel budget-panel mb-4">
+                    <div class="budget-panel-head">
+                        <div>
+                            <h2 class="h5 mb-1">Épargne</h2>
+                            <p class="text-muted small mb-0">
+                                Ce que tu veux mettre de côté chaque mois.
+                                {% if projects.active_count %}Tes projets demandent <strong>{{ projects.monthly_needed }} € / mois</strong>.{% endif %}
+                                <a href="{% url 'finance:budget_goals' %}">Gérer mes projets</a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-5">
+                            <label class="form-label" for="{{ plan_form.savings_target_monthly.id_for_label }}">{{ plan_form.savings_target_monthly.label }}</label>
+                            {{ plan_form.savings_target_monthly }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="budget-save-bar">
+                    <div class="budget-save-from">
+                        <label class="form-label mb-0" for="{{ plan_form.valid_from.id_for_label }}">{{ plan_form.valid_from.label }}</label>
+                        {{ plan_form.valid_from }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer le budget</button>
+                </div>
+                <p class="text-muted small mt-2">Les mois précédents gardent la version du budget qui était en vigueur.</p>
+
+                <template id="budgetLineTemplate">
+                    {% with form=formset.empty_form %}{% include "finance/_budget_line.html" %}{% endwith %}
+                </template>
+            </form>
+        </div>
+
+        {# ---------- Résumé ---------- #}
+        <div class="col-12 col-lg-4">
+            <div class="budget-summary content-panel"
+                 data-salary-average="{{ salary_average }}"
+                 data-has-salary="{{ salary_months|yesno:'1,0' }}"
+                 data-voucher-credit="{% if meal_vouchers %}{{ meal_vouchers.credit }}{% else %}0{% endif %}">
+                <h2 class="h5 mb-3">Résumé du mois</h2>
+                <dl class="budget-summary-list">
+                    <div><dt>Revenu</dt><dd><span class="js-summary-income">0</span> €</dd></div>
+                    {% if meal_vouchers %}
+                    <div><dt>Tickets restaurant</dt><dd>+ {{ meal_vouchers.credit }} €</dd></div>
+                    {% endif %}
+                    <div class="is-total"><dt>Ressources</dt><dd><span class="js-summary-resources">0</span> €</dd></div>
+                    {% for key, label in sections %}
+                    <div><dt>{{ label }}</dt><dd>− <span class="js-summary-section" data-section="{{ key }}">0</span> €</dd></div>
+                    {% endfor %}
+                    <div><dt>Épargne</dt><dd>− <span class="js-summary-savings">0</span> €</dd></div>
+                </dl>
+                <div class="budget-left js-summary-left-box">
+                    <span>Reste à vivre</span>
+                    <strong><span class="js-summary-left">0</span> €</strong>
+                </div>
+
+                {% if summary and summary.indicators %}
+                <h3 class="budget-summary-subtitle">Indicateurs du budget enregistré</h3>
+                <ul class="budget-indicators">
+                    {% for indicator in summary.indicators %}
+                    <li class="{% if indicator.ok %}is-ok{% else %}is-ko{% endif %}">
+                        <div>
+                            <span>{{ indicator.label }}</span>
+                            <small>{{ indicator.diagnostic }} · seuil {{ indicator.threshold }}</small>
+                        </div>
+                        <strong>{{ indicator.value }} %</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p class="text-muted small mb-0">Loyer maximum conseillé : {{ summary.max_rent }} € (33 % du revenu).</p>
+                {% endif %}
+            </div>
+
+            {# ---------- Tickets restaurant ---------- #}
+            <div class="content-panel budget-panel mt-4" id="tickets">
+                <h2 class="h5 mb-1">Tickets restaurant</h2>
+                <p class="text-muted small">Uniquement pour l'alimentation. Coche « Payé en tickets restaurant » quand tu saisis une dépense.</p>
+
+                {% if meal_vouchers %}
+                <div class="budget-voucher-month">
+                    <div><span>Crédités ce mois</span><strong>{{ meal_vouchers.credit }} €</strong><small>{{ meal_vouchers.days }} tickets × {{ meal_vouchers.face_value }} €</small></div>
+                    <div><span>Retenue sur salaire</span><strong>{{ meal_vouchers.employee_cost }} €</strong></div>
+                    <div><span>Dépensés</span><strong>{{ meal_vouchers.spent }} €</strong></div>
+                    <div><span>Restant</span><strong>{{ meal_vouchers.remaining }} €</strong></div>
+                </div>
+                <div class="budget-progress mb-3"><span style="width: {{ meal_vouchers.spent_percent|default:0 }}%"></span></div>
+                {% endif %}
+
+                <form method="post" action="{% url 'finance:update_meal_vouchers' %}" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            {{ meal_voucher_form.enabled }}
+                            <label class="form-check-label" for="{{ meal_voucher_form.enabled.id_for_label }}">{{ meal_voucher_form.enabled.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="{{ meal_voucher_form.face_value.id_for_label }}">{{ meal_voucher_form.face_value.label }}</label>
+                        {{ meal_voucher_form.face_value }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="{{ meal_voucher_form.days_per_month.id_for_label }}">{{ meal_voucher_form.days_per_month.label }}</label>
+                        {{ meal_voucher_form.days_per_month }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ meal_voucher_form.employee_share_percent.id_for_label }}">{{ meal_voucher_form.employee_share_percent.label }}</label>
+                        {{ meal_voucher_form.employee_share_percent }}
+                        <div class="form-text">{{ meal_voucher_form.employee_share_percent.help_text }} {{ meal_voucher_form.days_per_month.help_text }}</div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+
+            {% if versions|length > 1 %}
+            <div class="content-panel budget-panel mt-4">
+                <h2 class="h5 mb-2">Versions du budget</h2>
+                <ul class="budget-versions">
+                    {% for version in versions %}
+                    <li>
+                        Depuis {{ version.valid_from|date:"F Y" }}
+                        {% if version == plan %}<span class="budget-badge is-on">En vigueur</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.querySelector('.js-budget-form');
+        if (!form) return;
+
+        var totalForms = form.querySelector('[name="lines-TOTAL_FORMS"]');
+        var template = document.getElementById('budgetLineTemplate');
+        var summary = document.querySelector('.budget-summary');
+        var money = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+        function number(value) {
+            var parsed = parseFloat(String(value || '').replace(',', '.'));
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        // Sous-catégories filtrées selon la catégorie choisie
+        function setupLine(line) {
+            var category = line.querySelector('.js-category-select');
+            var subcategory = line.querySelector('.js-subcategory-select');
+            var options = Array.prototype.slice.call(subcategory.options);
+
+            function filter() {
+                var previous = subcategory.value;
+                subcategory.innerHTML = '';
+                options.forEach(function (option) {
+                    if (!option.value || option.getAttribute('data-category') === category.value) {
+                        subcategory.appendChild(option.cloneNode(true));
+                    }
+                });
+                subcategory.value = Array.prototype.some.call(subcategory.options, function (o) {
+                    return o.value === previous;
+                }) ? previous : '';
+                subcategory.disabled = subcategory.options.length <= 1;
+            }
+
+            category.addEventListener('change', filter);
+            filter();
+
+            line.querySelector('.js-remove-line').addEventListener('click', function () {
+                var deleteBox = line.querySelector('input[name$="-DELETE"]');
+                if (deleteBox) deleteBox.checked = true;
+                line.hidden = true;
+                refresh();
+            });
+        }
+
+        form.querySelectorAll('.js-budget-line').forEach(setupLine);
+
+        form.querySelectorAll('.js-add-line').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var index = Number(totalForms.value);
+                var html = template.innerHTML.replace(/__prefix__/g, index);
+                var wrapper = document.createElement('div');
+                wrapper.innerHTML = html.trim();
+                var line = wrapper.firstElementChild;
+                line.querySelector('.js-line-section').value = button.getAttribute('data-section');
+                form.querySelector('.js-section-lines[data-section="' + button.getAttribute('data-section') + '"]').appendChild(line);
+                totalForms.value = index + 1;
+                setupLine(line);
+                line.querySelector('.js-category-select').focus();
+            });
+        });
+
+        // Revenu : moyenne des salaires ou montant fixe
+        var modeInputs = form.querySelectorAll('input[name="income_mode"]');
+        var manualInput = form.querySelector('[name="manual_income"]');
+
+        function incomeMode() {
+            var checked = form.querySelector('input[name="income_mode"]:checked');
+            return checked ? checked.value : 'AUTO';
+        }
+
+        function refreshIncomeFields() {
+            var auto = incomeMode() === 'AUTO';
+            form.querySelector('.js-income-auto-field').hidden = !auto;
+            form.querySelector('.js-income-manual-field').hidden = auto && summary.getAttribute('data-has-salary') === '1';
+        }
+
+        // Totaux en direct
+        function refresh() {
+            var totals = {};
+            form.querySelectorAll('.js-budget-line').forEach(function (line) {
+                if (line.hidden) return;
+                var section = line.querySelector('.js-line-section').value;
+                totals[section] = (totals[section] || 0) + number(line.querySelector('.js-line-amount').value);
+            });
+
+            var spending = 0;
+            document.querySelectorAll('.js-section-total, .js-summary-section').forEach(function (el) {
+                var value = totals[el.getAttribute('data-section')] || 0;
+                el.textContent = money.format(value);
+            });
+            Object.keys(totals).forEach(function (key) { spending += totals[key]; });
+
+            var income = incomeMode() === 'AUTO' && summary.getAttribute('data-has-salary') === '1'
+                ? number(summary.getAttribute('data-salary-average'))
+                : number(manualInput.value);
+            var resources = income + number(summary.getAttribute('data-voucher-credit'));
+            var savings = number(form.querySelector('[name="savings_target_monthly"]').value);
+            var left = resources - spending - savings;
+
+            summary.querySelector('.js-summary-income').textContent = money.format(income);
+            summary.querySelector('.js-summary-resources').textContent = money.format(resources);
+            summary.querySelector('.js-summary-savings').textContent = money.format(savings);
+            summary.querySelector('.js-summary-left').textContent = money.format(left);
+            summary.querySelector('.js-summary-left-box').classList.toggle('is-negative', left < 0);
+        }
+
+        modeInputs.forEach(function (input) {
+            input.addEventListener('change', function () { refreshIncomeFields(); refresh(); });
+        });
+        form.addEventListener('input', refresh);
+        refreshIncomeFields();
+        refresh();
+    });
+</script>
+{% endblock %}

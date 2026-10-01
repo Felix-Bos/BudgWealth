@@ -1,14 +1,29 @@
-<li class="tx-row" {% if row.bank_label %}title="{{ row.bank_label }}"{% endif %}>
-    <span class="tx-avatar tx-tone-{{ row.tone }}" aria-hidden="true">{{ row.initial }}</span>
+<li class="tx-row is-{{ row.kind }} js-tx-row"
+    data-kind="{{ row.kind }}"
+    {% if row.pk %}
+    data-pk="{{ row.pk }}"
+    data-type="{% if row.is_income %}INCOME{% else %}EXPENSE{% endif %}"
+    data-description="{{ row.raw_description }}"
+    data-category="{{ row.category_id }}"
+    data-subcategory="{{ row.subcategory_id }}"
+    data-edit-url="{% url 'finance:update_transaction_details' year month row.pk %}"
+    data-delete-url="{% url 'finance:delete_transaction' year month row.pk %}"
+    data-track-url="{% url 'finance:track_transaction_subscription' year month row.pk %}"
+    data-subscription="{{ row.subscription }}"
+    {% endif %}
+    {% if row.bank_label %}title="{{ row.bank_label }}"{% endif %}>
+    <span class="tx-avatar tx-tone-{{ row.tone }} js-tx-avatar" aria-hidden="true">{{ row.initial }}</span>
 
-    <div class="tx-main">
-        <div class="tx-title">{{ row.description }}</div>
-        <div class="tx-meta">
-            {% if row.category %}
-                <span>{{ row.category }}{% if row.subcategory %} › {{ row.subcategory }}{% endif %}</span>
-            {% else %}
-                <span class="tx-unclassified">À classer</span>
-            {% endif %}
+    <button type="button" class="tx-main js-tx-edit" {% if not row.pk %}disabled{% endif %} aria-label="Modifier « {{ row.description }} »">
+        <span class="tx-title js-tx-title">{{ row.description }}</span>
+        <span class="tx-meta">
+            <span class="tx-kind tx-kind-{{ row.kind }} js-tx-kind">{% if row.kind == "income" %}Revenu{% elif row.kind == "savings" %}Épargne{% else %}Charge{% endif %}</span>
+            <span class="js-tx-category">
+                {% if row.category %}{{ row.category }}{% if row.subcategory %} › {{ row.subcategory }}{% endif %}{% else %}<span class="tx-unclassified">À classer</span>{% endif %}
+            </span>
+            {% if row.subscription %}<span class="tx-flag js-tx-sub-flag">↻ Abonnement</span>{% endif %}
+            {% if row.meal_voucher %}<span class="tx-flag">Tickets resto</span>{% endif %}
+            {% if row.project %}<span class="tx-flag">{{ row.project }}</span>{% endif %}
             {% if show_date %}<span>{{ row.transaction_date|date:"j F" }}</span>{% endif %}
             {% if row.is_bank %}
                 <span class="tx-source" title="Importée depuis la banque">
@@ -16,16 +31,16 @@
                     <span class="tx-source-label">Banque</span>
                 </span>
             {% endif %}
-        </div>
-    </div>
+        </span>
+    </button>
 
-    <div class="tx-amount {% if row.is_income %}is-income{% endif %}">
+    <div class="tx-amount is-{{ row.kind }} js-tx-amount">
         {% if row.is_income %}+{% else %}−{% endif %}{{ row.amount|floatformat:"2g" }} €
     </div>
 
     <div class="tx-actions">
-        {% if not row.is_preview %}
-        <form method="post" action="{% url 'finance:delete_transaction' year month row.pk %}">
+        {% if row.pk %}
+        <form method="post" action="{% url 'finance:delete_transaction' year month row.pk %}" class="js-tx-delete-form">
             {% csrf_token %}
             <button type="submit" class="tx-delete" aria-label="Supprimer « {{ row.description }} »" title="Supprimer">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></svg>

@@ -16,22 +16,35 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.forms import AccountForm, AccountPasswordChangeForm
 
+from . import budget as budget_calc
+from . import subscriptions as subscription_detection
 from .bank_sync import is_month_syncable, start_bank_sync
 from .models import BankSyncKind
 from .forms import (
     BankConnectionForm,
+    BudgetLineFormSet,
+    BudgetPlanForm,
     CategoryForm,
+    MealVoucherSettingsForm,
     RecurringItemForm,
+    SavingsGoalForm,
+    SavingsProjectForm,
     SubcategoryForm,
     TransactionForm,
+    month_label,
 )
 from .models import (
     BankConnection,
     BankSync,
     BankSyncStatus,
+    BudgetLine,
+    BudgetPlan,
+    BudgetSection,
     Category,
     EntryType,
+    MealVoucherSettings,
     MonthlyBudget,
+    SavingsProject,
     RecurrenceKind,
     RecurrenceUnit,
     RecurringItem,
@@ -100,7 +113,9 @@ def _materialize_recurring_items(user, year, month, kinds=None):
     budget = MonthlyBudget.objects.filter(user=user, year=year, month=month).first()
     created_count = 0
 
-    items = RecurringItem.objects.filter(user=user, is_active=True)
+    # Les abonnements détectés sur le relevé ne génèrent pas de ligne :
+    # le paiement réel arrive par l'import bancaire.
+    items = RecurringItem.objects.filter(user=user, is_active=True, match_key="")
     if kinds:
         items = items.filter(kind__in=kinds)
     for item in items:
@@ -124,204 +139,6 @@ def _materialize_recurring_items(user, year, month, kinds=None):
             )
             created_count += 1
     return created_count
-
-
-def _subscription_calendar(user, today):
-    period_start = date(today.year, today.month, 1)
-    period_end = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
-    subscriptions = RecurringItem.objects.filter(
-        user=user,
-        is_active=True,
-        kind=RecurrenceKind.SUBSCRIPTION,
-        entry_type=EntryType.EXPENSE,
-    ).select_related("category", "subcategory")
-
-    events = []
-    monthly_total = Decimal("0")
-    for subscription in subscriptions:
-        due_dates = _scheduled_dates_for_item(subscription, period_start, period_end)
-        if not due_dates:
-            continue
-        for due_date in due_dates:
-            monthly_total += subscription.default_amount
-            events.append(
-                {
-                    "name": subscription.name,
-                    "amount": subscription.default_amount,
-                    "category": subscription.category.name
-                    if subscription.category
-                    else "Sans catégorie",
-                    "day": due_date.day,
-                    "date": due_date,
-                    "frequency": subscription.frequency_label,
-                }
-            )
-
-    events.sort(key=lambda event: (event["date"], event["name"]))
-    days = []
-    events_by_day = {}
-    for event in events:
-        events_by_day.setdefault(event["day"], []).append(event)
-    for day in range(1, period_end.day + 1):
-        day_events = events_by_day.get(day, [])
-        days.append(
-            {
-                "day": day,
-                "events": day_events,
-                "total": sum((event["amount"] for event in day_events), Decimal("0")),
-                "is_today": day == today.day,
-            }
-        )
-
-    return {
-        "events": events,
-        "days": days,
-        "monthly_total": monthly_total,
-        "count": subscriptions.count(),
-    }
-
-
-DEMO_SUBSCRIPTION_BLUEPRINTS = [
-    {
-        "name": "Netflix",
-        "amount": Decimal("15.99"),
-        "category": "Loisirs & vacances",
-        "day": 10,
-        "start_offset": 0,
-        "end_offset": None,
-    },
-    {
-        "name": "Spotify",
-        "amount": Decimal("10.99"),
-        "category": "Loisirs & vacances",
-        "day": 5,
-        "start_offset": 0,
-        "end_offset": None,
-    },
-    {
-        "name": "iCloud+",
-        "amount": Decimal("2.99"),
-        "category": "High Tech",
-        "day": 18,
-        "start_offset": 0,
-        "end_offset": None,
-    },
-    {
-        "name": "Canal+",
-        "amount": Decimal("24.99"),
-        "category": "Loisirs & vacances",
-        "day": 12,
-        "start_offset": 1,
-        "end_offset": 8,
-    },
-    {
-        "name": "Adobe Photography",
-        "amount": Decimal("11.99"),
-        "category": "High Tech",
-        "day": 22,
-        "start_offset": 4,
-        "end_offset": 10,
-    },
-    {
-        "name": "Salle de sport",
-        "amount": Decimal("29.90"),
-        "category": "Santé",
-        "day": 3,
-        "start_offset": 2,
-        "end_offset": 6,
-    },
-]
-
-
-def _empty_subscription_calendar(today, count=0):
-    period_end = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
-    return {
-        "events": [],
-        "days": [
-            {"day": day, "events": [], "total": Decimal("0"), "is_today": day == today.day}
-            for day in range(1, period_end.day + 1)
-        ],
-        "monthly_total": Decimal("0"),
-        "count": count,
-    }
-
-
-def _demo_subscription_period(today):
-    history_start_year, history_start_month, _ = _history_start(today)
-    months = []
-    cursor_year, cursor_month = history_start_year, history_start_month
-    for offset in range(HISTORY_MONTHS):
-        months.append(
-            {
-                "offset": offset,
-                "date": date(cursor_year, cursor_month, 1),
-                "year": cursor_year,
-                "month": cursor_month,
-                "label": date(cursor_year, cursor_month, 1).strftime("%b %Y").capitalize(),
-            }
-        )
-        cursor_month += 1
-        if cursor_month > 12:
-            cursor_month = 1
-            cursor_year += 1
-    return months
-
-
-def _demo_subscription_events_for_month(today, year, month):
-    events = []
-    for month_info in _demo_subscription_period(today):
-        if month_info["year"] != year or month_info["month"] != month:
-            continue
-        _, last_day = calendar.monthrange(year, month)
-        for subscription in DEMO_SUBSCRIPTION_BLUEPRINTS:
-            start_offset = subscription["start_offset"]
-            end_offset = subscription["end_offset"]
-            month_offset = month_info["offset"]
-            if month_offset < start_offset:
-                continue
-            if end_offset is not None and month_offset > end_offset:
-                continue
-            due_date = date(year, month, min(subscription["day"], last_day))
-            events.append(
-                {
-                    "name": subscription["name"],
-                    "amount": subscription["amount"],
-                    "category": subscription["category"],
-                    "day": due_date.day,
-                    "date": due_date,
-                    "frequency": "Tous les mois",
-                    "is_cancelled": end_offset is not None and month_offset == end_offset,
-                }
-            )
-        break
-    return sorted(events, key=lambda event: (event["date"], event["name"]))
-
-
-def _demo_subscription_calendar(today):
-    events = _demo_subscription_events_for_month(today, today.year, today.month)
-    if not events:
-        return _empty_subscription_calendar(today)
-    events_by_day = {}
-    for event in events:
-        events_by_day.setdefault(event["day"], []).append(event)
-    _, last_day = calendar.monthrange(today.year, today.month)
-    days = []
-    for day in range(1, last_day + 1):
-        day_events = events_by_day.get(day, [])
-        days.append(
-            {
-                "day": day,
-                "events": day_events,
-                "total": sum((event["amount"] for event in day_events), Decimal("0")),
-                "is_today": day == today.day,
-            }
-        )
-    return {
-        "events": events,
-        "days": days,
-        "monthly_total": sum((event["amount"] for event in events), Decimal("0")),
-        "count": len(events),
-    }
 
 
 def _subscription_history(user, today):
@@ -348,8 +165,8 @@ def _subscription_history(user, today):
             {
                 "year": cursor_year,
                 "month": cursor_month,
-                "label": key.strftime("%b %Y").capitalize(),
-                "total": (row["total"] if row else None) or Decimal("0"),
+                "label": f"{budget_calc.SHORT_MONTHS[cursor_month - 1]} {cursor_year}",
+                "total": budget_calc.money(row["total"] if row else None),
                 "count": (row["count"] if row else None) or 0,
             }
         )
@@ -389,63 +206,6 @@ def _subscription_roster(user):
     return sorted(rows, key=lambda row: (row["is_cancelled"], row["name"]))
 
 
-def _demo_subscription_history(today):
-    rows = []
-    for month_info in _demo_subscription_period(today):
-        events = _demo_subscription_events_for_month(
-            today, month_info["year"], month_info["month"]
-        )
-        rows.append(
-            {
-                "year": month_info["year"],
-                "month": month_info["month"],
-                "label": month_info["label"],
-                "total": sum((event["amount"] for event in events), Decimal("0")),
-                "count": len(events),
-            }
-        )
-    return rows
-
-
-def _demo_subscription_roster(today):
-    period = _demo_subscription_period(today)
-    rows = []
-    for subscription in DEMO_SUBSCRIPTION_BLUEPRINTS:
-        start_info = period[subscription["start_offset"]]
-        start_date = date(
-            start_info["year"],
-            start_info["month"],
-            min(
-                subscription["day"],
-                calendar.monthrange(start_info["year"], start_info["month"])[1],
-            ),
-        )
-        end_date = None
-        if subscription["end_offset"] is not None:
-            end_info = period[subscription["end_offset"]]
-            end_date = date(
-                end_info["year"],
-                end_info["month"],
-                min(
-                    subscription["day"],
-                    calendar.monthrange(end_info["year"], end_info["month"])[1],
-                ),
-            )
-        rows.append(
-            {
-                "name": subscription["name"],
-                "amount": subscription["amount"],
-                "category": subscription["category"],
-                "frequency": "Tous les mois",
-                "start_date": start_date,
-                "end_date": end_date,
-                "status": "Annulé" if end_date else "Actif",
-                "is_cancelled": end_date is not None,
-            }
-        )
-    return sorted(rows, key=lambda row: (row["is_cancelled"], row["name"]))
-
-
 TRANSACTION_TONES = 6
 
 
@@ -467,6 +227,7 @@ def _transaction_row(transaction):
         }
     else:
         is_income = transaction.transaction_type == EntryType.INCOME
+        is_savings = budget_calc.is_savings_transaction(transaction)
         category = transaction.category.name if transaction.category else ""
         subcategory = transaction.subcategory.name if transaction.subcategory else ""
         row = {
@@ -477,6 +238,15 @@ def _transaction_row(transaction):
             "is_preview": False,
             "is_bank": transaction.source == TransactionSource.BANK,
             "bank_label": transaction.bank_label,
+            "is_savings": is_savings,
+            "raw_description": transaction.description,
+            "subscription": transaction.recurring_item.name
+            if transaction.recurring_item_id and transaction.recurring_item.kind == RecurrenceKind.SUBSCRIPTION
+            else "",
+            "category_id": transaction.category_id or "",
+            "subcategory_id": transaction.subcategory_id or "",
+            "meal_voucher": transaction.paid_with_meal_voucher,
+            "project": transaction.savings_project.name if transaction.savings_project_id else "",
         }
 
     description = row["description"] or category or "Sans description"
@@ -485,6 +255,7 @@ def _transaction_row(transaction):
             "description": description,
             "initial": description[:1].upper(),
             "is_income": is_income,
+            "kind": "income" if is_income else ("savings" if row.get("is_savings") else "expense"),
             "category": category,
             "subcategory": subcategory,
             # Couleur de la pastille : stable pour une même catégorie
@@ -531,40 +302,64 @@ def month_view(request, year, month):
         user=request.user,
         transaction_date__year=year,
         transaction_date__month=month,
-    ).select_related("category", "subcategory", "recurring_item")
+    ).select_related("category", "subcategory", "recurring_item", "savings_project")
     has_transactions = transactions.exists()
 
     recurring_transactions = transactions.filter(recurring_item__isnull=False)
     other_transactions = transactions.filter(recurring_item__isnull=True)
 
-    totals = transactions.aggregate(
-        income=Sum("amount", filter=Q(transaction_type=EntryType.INCOME)),
-        expense=Sum("amount", filter=Q(transaction_type=EntryType.EXPENSE)),
+    totals = budget_calc.split_totals(
+        transactions.aggregate(**budget_calc.totals_annotations())
     )
-    total_income = totals["income"] or Decimal("0")
-    total_expense = totals["expense"] or Decimal("0")
+    total_income = totals["income"]
+    total_expense = totals["expense"]
     is_preview_data = False
-
-    if not has_transactions and _active_history_month_count(request.user, today) < 3:
-        demo_detail = _demo_month_detail(today, year, month)
-        if demo_detail:
-            is_preview_data = True
-            recurring_transactions = []
-            other_transactions = demo_detail["transactions"]
-            total_income = demo_detail["totals"]["income"]
-            total_expense = demo_detail["totals"]["expense"]
 
     _bank_connection = BankConnection.objects.filter(user=request.user).first()
 
+    subscription_detection.sync_subscriptions(request.user, today)
+    tracking = budget_calc.month_tracking(request.user, year, month, today)
+    all_transactions = list(transactions)
+    daily = budget_calc.daily_cumulative(
+        all_transactions, year, month, today,
+        budget_total=tracking["budget_total"] if tracking else None,
+    )
+    kind_totals = {
+        "income": {"count": 0, "total": Decimal("0")},
+        "expense": {"count": 0, "total": Decimal("0")},
+        "savings": {"count": 0, "total": Decimal("0")},
+    }
+    for transaction in all_transactions:
+        kind = _transaction_row(transaction)["kind"]
+        kind_totals[kind]["count"] += 1
+        kind_totals[kind]["total"] += transaction.amount
+
     context = {
         **_month_context(year, month),
+        "tracking": tracking,
+        "kind_totals": kind_totals,
+        "month_subscriptions": subscription_detection.month_subscriptions(request.user, year, month, today),
+        "category_tree_data": budget_calc.category_tree(all_transactions),
+        "editor_categories": [
+            {
+                "id": category.pk,
+                "name": category.name,
+                "type": category.entry_type,
+                "subs": [{"id": sub.pk, "name": sub.name} for sub in category.subcategories.all()],
+            }
+            for category in Category.objects.filter(user=request.user).prefetch_related("subcategories")
+        ],
+        "daily_data": daily,
+        "has_charges": total_expense > 0,
         "budget": budget,
         "recurring_rows": [_transaction_row(t) for t in recurring_transactions],
         "transaction_days": _transactions_by_day(other_transactions),
         "transaction_count": len(other_transactions),
         "total_income": total_income,
         "total_expense": total_expense,
-        "balance": total_income - total_expense,
+        "total_savings": totals["savings"],
+        "balance": totals["balance"],
+        "after_savings": totals["after_savings"],
         "is_preview_data": is_preview_data,
         "transaction_form": TransactionForm(
             user=request.user,
@@ -659,105 +454,127 @@ def edit_transaction(request, year, month, pk):
     return redirect("finance:month", year=year, month=month)
 
 
+def _wants_json(request):
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
+def _month_live_payload(user, year, month, today=None):
+    """Totaux et données des graphiques d'un mois, renvoyés après une
+    modification faite sans recharger la page."""
+
+    today = today or date.today()
+    transactions = list(
+        Transaction.objects.filter(
+            user=user, transaction_date__year=year, transaction_date__month=month
+        ).select_related("category", "subcategory", "savings_project")
+    )
+    totals = {"income": Decimal("0"), "expense": Decimal("0"), "savings": Decimal("0")}
+    counts = {"income": 0, "expense": 0, "savings": 0}
+    for transaction in transactions:
+        kind = _transaction_row(transaction)["kind"]
+        totals[kind] += transaction.amount
+        counts[kind] += 1
+    tracking = budget_calc.month_tracking(user, year, month, today)
+    return {
+        "totals": {key: str(budget_calc.money(value)) for key, value in totals.items()},
+        "balance": str(budget_calc.money(totals["income"] - totals["expense"])),
+        "counts": counts,
+        "categoryTree": budget_calc.category_tree(transactions),
+        "daily": budget_calc.daily_cumulative(
+            transactions, year, month, today,
+            budget_total=tracking["budget_total"] if tracking else None,
+        ),
+    }
+
+
+def _row_payload(transaction):
+    row = _transaction_row(transaction)
+    return {
+        "pk": transaction.pk,
+        "description": row["description"],
+        "rawDescription": transaction.description,
+        "initial": row["initial"],
+        "kind": row["kind"],
+        "category": row["category"],
+        "subcategory": row["subcategory"],
+        "categoryId": transaction.category_id,
+        "subcategoryId": transaction.subcategory_id,
+        "tone": row["tone"],
+    }
+
+
+@login_required
+@require_POST
+def update_transaction_details(request, year, month, pk):
+    """Intitulé, catégorie et sous-catégorie, modifiés depuis la liste."""
+
+    transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+
+    category = None
+    category_id = request.POST.get("category") or ""
+    if category_id:
+        category = Category.objects.filter(
+            pk=category_id, user=request.user, entry_type=transaction.transaction_type
+        ).first()
+        if category is None:
+            return JsonResponse({"ok": False, "error": "Catégorie invalide."}, status=400)
+
+    subcategory = None
+    subcategory_id = request.POST.get("subcategory") or ""
+    if subcategory_id and category:
+        subcategory = Subcategory.objects.filter(pk=subcategory_id, category=category).first()
+
+    transaction.description = (request.POST.get("description") or "").strip()[:255]
+    transaction.category = category
+    transaction.subcategory = subcategory
+    # Plus une dépense alimentaire / un versement d'épargne : on retire les marqueurs
+    if not category or category.name != budget_calc.FOOD_CATEGORY_NAME:
+        transaction.paid_with_meal_voucher = False
+    if not category or category.name != budget_calc.SAVINGS_CATEGORY_NAME:
+        transaction.savings_project = None
+    transaction.save()
+
+    if not _wants_json(request):
+        messages.success(request, "Opération mise à jour.")
+        return redirect("finance:month", year=year, month=month)
+
+    return JsonResponse({
+        "ok": True,
+        "row": _row_payload(transaction),
+        "month": _month_live_payload(request.user, year, month),
+    })
+
+
+@login_required
+@require_POST
+def track_transaction_subscription(request, year, month, pk):
+    """Déclare une opération comme abonnement depuis la liste du mois."""
+
+    transaction = get_object_or_404(
+        Transaction, pk=pk, user=request.user, transaction_type=EntryType.EXPENSE
+    )
+    unit = RecurrenceUnit.YEAR if request.POST.get("unit") == RecurrenceUnit.YEAR else RecurrenceUnit.MONTH
+    item, count = subscription_detection.track_transaction(transaction, unit)
+
+    message = f"« {item.name} » est suivi comme abonnement ({count} paiement{'s' if count > 1 else ''} rattaché{'s' if count > 1 else ''})."
+    if not _wants_json(request):
+        messages.success(request, message)
+        return redirect("finance:month", year=year, month=month)
+    return JsonResponse({"ok": True, "message": message, "name": item.name})
+
+
 @login_required
 @require_POST
 def delete_transaction(request, year, month, pk):
     transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
     transaction.delete()
+    if _wants_json(request):
+        return JsonResponse({"ok": True, "month": _month_live_payload(request.user, year, month)})
     messages.success(request, "Ligne supprimée.")
     return redirect("finance:month", year=year, month=month)
 
 
 HISTORY_MONTHS = 12
-
-
-DEMO_MONTHLY_PROFILES = [
-    {"income": Decimal("3280.00"), "expense": Decimal("2615.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2478.00")},
-    {"income": Decimal("3340.00"), "expense": Decimal("2726.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2554.00")},
-    {"income": Decimal("3425.00"), "expense": Decimal("2812.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2430.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2668.00")},
-    {"income": Decimal("3560.00"), "expense": Decimal("2875.00")},
-    {"income": Decimal("3340.00"), "expense": Decimal("2522.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2748.00")},
-    {"income": Decimal("3280.00"), "expense": Decimal("2595.00")},
-    {"income": Decimal("3660.00"), "expense": Decimal("2892.00")},
-]
-
-DEMO_CATEGORY_BREAKDOWN = [
-    {"category__name": "Logement & charges", "total": Decimal("1185.00")},
-    {"category__name": "Alimentation & restaurants", "total": Decimal("565.00")},
-    {"category__name": "Transport", "total": Decimal("342.00")},
-    {"category__name": "Épargne & placements", "total": Decimal("300.00")},
-    {"category__name": "Loisirs & vacances", "total": Decimal("218.00")},
-    {"category__name": "Santé", "total": Decimal("122.00")},
-    {"category__name": "Achats & shopping", "total": Decimal("160.00")},
-]
-
-DEMO_EXPENSE_BLUEPRINTS = [
-    {
-        "description": "Loyer",
-        "category": "Logement & charges",
-        "subcategory": "Loyer",
-        "amount": Decimal("1040.00"),
-    },
-    {
-        "description": "Électricité et gaz",
-        "category": "Logement & charges",
-        "subcategory": "Eau, électricité, gaz",
-        "amount": Decimal("92.00"),
-    },
-    {
-        "description": "Internet et mobile",
-        "category": "Logement & charges",
-        "subcategory": "Internet, téléphonie",
-        "amount": Decimal("53.00"),
-    },
-    {
-        "description": "Courses alimentaires",
-        "category": "Alimentation & restaurants",
-        "subcategory": "Supermarché, épicerie",
-        "amount": Decimal("405.00"),
-    },
-    {
-        "description": "Restaurants et pauses déjeuner",
-        "category": "Alimentation & restaurants",
-        "subcategory": "Restaurants, snacks",
-        "amount": Decimal("160.00"),
-    },
-    {
-        "description": "Transport",
-        "category": "Transport",
-        "subcategory": "Transport en commun",
-        "amount": Decimal("342.00"),
-    },
-    {
-        "description": "Versement épargne",
-        "category": "Épargne & placements",
-        "subcategory": "Livret",
-        "amount": Decimal("300.00"),
-    },
-    {
-        "description": "Loisirs et abonnements",
-        "category": "Loisirs & vacances",
-        "subcategory": "Sorties culturelles",
-        "amount": Decimal("218.00"),
-    },
-    {
-        "description": "Santé",
-        "category": "Santé",
-        "subcategory": "Pharmacie",
-        "amount": Decimal("122.00"),
-    },
-    {
-        "description": "Achats ponctuels",
-        "category": "Achats & shopping",
-        "subcategory": "Vêtements, chaussures, accessoires",
-        "amount": Decimal("160.00"),
-    },
-]
 
 
 def _history_start(today):
@@ -777,16 +594,12 @@ def _rolling_history_rows(history_start_year, history_start_month, totals_by_mon
     for _ in range(HISTORY_MONTHS):
         key = date(cursor_year, cursor_month, 1)
         row = totals_by_month.get(key)
-        income = (row["income"] if row else None) or Decimal("0")
-        expense = (row["expense"] if row else None) or Decimal("0")
         history.append(
             {
                 "year": cursor_year,
                 "month": cursor_month,
-                "label": key.strftime("%b %Y").capitalize(),
-                "income": income,
-                "expense": expense,
-                "balance": income - expense,
+                "label": f"{budget_calc.SHORT_MONTHS[cursor_month - 1]} {cursor_year}",
+                **budget_calc.split_totals(row),
             }
         )
         cursor_month += 1
@@ -796,102 +609,19 @@ def _rolling_history_rows(history_start_year, history_start_month, totals_by_mon
     return history
 
 
-def _demo_history(today):
-    history_start_year, history_start_month, _ = _history_start(today)
-    totals_by_month = {}
-    cursor_year, cursor_month = history_start_year, history_start_month
-    for profile in DEMO_MONTHLY_PROFILES:
-        key = date(cursor_year, cursor_month, 1)
-        totals_by_month[key] = profile
-        cursor_month += 1
-        if cursor_month > 12:
-            cursor_month = 1
-            cursor_year += 1
-    return _rolling_history_rows(history_start_year, history_start_month, totals_by_month)
-
-
 def _active_history_month_count(user, today):
     history_start_year, history_start_month, history_start = _history_start(today)
     monthly_totals = (
         Transaction.objects.filter(user=user, transaction_date__gte=history_start)
         .annotate(month=TruncMonth("transaction_date"))
         .values("month")
-        .annotate(
-            income=Sum("amount", filter=Q(transaction_type=EntryType.INCOME)),
-            expense=Sum("amount", filter=Q(transaction_type=EntryType.EXPENSE)),
-        )
+        .annotate(**budget_calc.totals_annotations())
     )
     totals_by_month = {row["month"]: row for row in monthly_totals}
     history = _rolling_history_rows(
         history_start_year, history_start_month, totals_by_month
     )
     return sum(1 for row in history if row["income"] > 0 or row["expense"] > 0)
-
-
-def _demo_month_detail(today, year, month):
-    demo_rows = _demo_history(today)
-    for index, row in enumerate(demo_rows):
-        if row["year"] == year and row["month"] == month:
-            return {
-                "totals": row,
-                "transactions": _demo_transactions_for_month(year, month, index, row),
-            }
-    return None
-
-
-def _demo_transactions_for_month(year, month, index, totals):
-    _, last_day = calendar.monthrange(year, month)
-    transactions = [
-        {
-            "is_preview": True,
-            "description": "Salaire net",
-            "type_label": "Revenu",
-            "category": "Salaire",
-            "subcategory": "",
-            "transaction_date": date(year, month, min(1, last_day)),
-            "amount": min(totals["income"], Decimal("3280.00")),
-        }
-    ]
-    income_extra = totals["income"] - transactions[0]["amount"]
-    if income_extra > 0:
-        transactions.append(
-            {
-                "is_preview": True,
-                "description": "Prime ou mission ponctuelle",
-                "type_label": "Revenu",
-                "category": "Freelance, indépendant",
-                "subcategory": "",
-                "transaction_date": date(year, month, min(15, last_day)),
-                "amount": income_extra,
-            }
-        )
-
-    base_total = sum((item["amount"] for item in DEMO_EXPENSE_BLUEPRINTS), Decimal("0"))
-    factor = totals["expense"] / base_total if base_total else Decimal("1")
-    expense_dates = [1, 3, 5, 8, 11, 14, 18, 21, 24, 27]
-    expense_total = Decimal("0")
-    for expense_index, item in enumerate(DEMO_EXPENSE_BLUEPRINTS):
-        if expense_index == len(DEMO_EXPENSE_BLUEPRINTS) - 1:
-            amount = totals["expense"] - expense_total
-        else:
-            amount = (item["amount"] * factor).quantize(Decimal("0.01"))
-            expense_total += amount
-        transactions.append(
-            {
-                "is_preview": True,
-                "description": item["description"],
-                "type_label": "Dépense",
-                "category": item["category"],
-                "subcategory": item["subcategory"],
-                "transaction_date": date(
-                    year,
-                    month,
-                    min(expense_dates[expense_index] + (index % 3), last_day),
-                ),
-                "amount": amount,
-            }
-        )
-    return sorted(transactions, key=lambda item: item["transaction_date"], reverse=True)
 
 
 @login_required
@@ -901,114 +631,127 @@ def dashboard_hub_view(request):
 
 @login_required
 def dashboard_budget_view(request):
+    """Vision globale : tendances sur l'historique, réussite du budget et du
+    plan d'épargne. Le détail d'un mois est sur la page du mois."""
+
     today = date.today()
     _materialize_recurring_items(
-        request.user,
-        today.year,
-        today.month,
-        kinds=[RecurrenceKind.SUBSCRIPTION],
+        request.user, today.year, today.month, kinds=[RecurrenceKind.SUBSCRIPTION]
     )
+    subscription_detection.sync_subscriptions(request.user, today)
 
     history_start_year, history_start_month, history_start = _history_start(today)
-
-    current_transactions = Transaction.objects.filter(
-        user=request.user,
-        transaction_date__year=today.year,
-        transaction_date__month=today.month,
-    )
-    current_totals = current_transactions.aggregate(
-        income=Sum("amount", filter=Q(transaction_type=EntryType.INCOME)),
-        expense=Sum("amount", filter=Q(transaction_type=EntryType.EXPENSE)),
-    )
-    current_income = current_totals["income"] or Decimal("0")
-    current_expense = current_totals["expense"] or Decimal("0")
-
-    category_breakdown = list(
-        current_transactions.filter(transaction_type=EntryType.EXPENSE)
-        .values("category__name")
-        .annotate(total=Sum("amount"))
-        .order_by("-total")
+    history_transactions = Transaction.objects.filter(
+        user=request.user, transaction_date__gte=history_start
     )
 
     monthly_totals = (
-        Transaction.objects.filter(
-            user=request.user, transaction_date__gte=history_start
-        )
-        .annotate(month=TruncMonth("transaction_date"))
+        history_transactions.annotate(month=TruncMonth("transaction_date"))
         .values("month")
-        .annotate(
-            income=Sum("amount", filter=Q(transaction_type=EntryType.INCOME)),
-            expense=Sum("amount", filter=Q(transaction_type=EntryType.EXPENSE)),
-        )
+        .annotate(**budget_calc.totals_annotations())
         .order_by("month")
     )
-    totals_by_month = {row["month"]: row for row in monthly_totals}
-
     history = _rolling_history_rows(
-        history_start_year, history_start_month, totals_by_month
+        history_start_year, history_start_month, {row["month"]: row for row in monthly_totals}
     )
-    active_month_count = sum(
-        1 for row in history if row["income"] > 0 or row["expense"] > 0
-    )
-    is_preview_data = active_month_count < 3
-    if is_preview_data:
-        history = _demo_history(today)
-        category_breakdown = DEMO_CATEGORY_BREAKDOWN
-        current_income = history[-1]["income"]
-        current_expense = history[-1]["expense"]
+    for row in history:
+        row["savings_rate"] = budget_calc.percent(row["savings"], row["income"])
+        row["is_current"] = (row["year"], row["month"]) == (today.year, today.month)
 
-    subscription_calendar = _subscription_calendar(request.user, today)
+    # Indicateurs sur les mois terminés qui ont des opérations
+    closed = [
+        row for row in history
+        if not row["is_current"] and (row["income"] or row["expense"] or row["savings"])
+    ]
+    months = len(closed) or 1
+    total_income = sum((row["income"] for row in closed), Decimal("0"))
+    total_expense = sum((row["expense"] for row in closed), Decimal("0"))
+    total_savings = sum((row["savings"] for row in closed), Decimal("0"))
+    kpis = {
+        "months": len(closed),
+        "avg_income": budget_calc.money(total_income / months),
+        "avg_expense": budget_calc.money(total_expense / months),
+        "avg_savings": budget_calc.money(total_savings / months),
+        "total_savings": budget_calc.money(total_savings),
+        "savings_rate": budget_calc.percent(total_savings, total_income),
+        "positive_months": sum(1 for row in closed if row["balance"] >= 0),
+    }
+
+    # Catégories de charges mois par mois (6 principales + Autres)
+    by_category = (
+        history_transactions.filter(transaction_type=EntryType.EXPENSE)
+        .exclude(category__name=budget_calc.SAVINGS_CATEGORY_NAME)
+        .annotate(month=TruncMonth("transaction_date"))
+        .values("month", "category__name")
+        .annotate(total=Sum("amount"))
+    )
+    category_totals = {}
+    cells = {}
+    for row in by_category:
+        name = row["category__name"] or "À classer"
+        category_totals[name] = category_totals.get(name, Decimal("0")) + row["total"]
+        cells[(row["month"], name)] = cells.get((row["month"], name), Decimal("0")) + row["total"]
+    top = [name for name, _ in sorted(category_totals.items(), key=lambda item: -item[1])[:6]]
+    month_keys = [date(row["year"], row["month"], 1) for row in history]
+    category_series = [
+        {"name": name, "values": [str(budget_calc.money(cells.get((key, name)))) for key in month_keys]}
+        for name in top
+    ]
+    others = [
+        str(budget_calc.money(sum(
+            (total for (key2, name), total in cells.items() if key2 == key and name not in top),
+            Decimal("0"),
+        )))
+        for key in month_keys
+    ]
+    if any(value != "0.00" for value in others):
+        category_series.append({"name": "Autres", "values": others})
+
+    plan = budget_calc.plan_for_month(request.user, today.year, today.month)
+    trend = budget_calc.budget_trend(request.user, today, months=12) if plan else None
+    trend_history = trend["history"] if trend else []
+
     subscription_history = _subscription_history(request.user, today)
-    subscription_roster = _subscription_roster(request.user)
-    if is_preview_data and subscription_calendar["count"] == 0:
-        subscription_calendar = _demo_subscription_calendar(today)
-        subscription_history = _demo_subscription_history(today)
-        subscription_roster = _demo_subscription_roster(today)
-
-    current_balance = current_income - current_expense
-    average_expense = (
-        sum((row["expense"] for row in history), Decimal("0")) / len(history)
-        if history
-        else Decimal("0")
-    )
-    savings_rate = (
-        int((current_balance / current_income) * Decimal("100"))
-        if current_income > 0
-        else 0
-    )
 
     context = {
-        "month_label": today.strftime("%B %Y").capitalize(),
-        "current_income": current_income,
-        "current_expense": current_expense,
-        "current_balance": current_balance,
-        "average_expense": average_expense.quantize(Decimal("1")),
-        "savings_rate": savings_rate,
-        "is_preview_data": is_preview_data,
-        "category_breakdown": category_breakdown,
-        "subscription_calendar": subscription_calendar,
-        "subscription_history": subscription_history,
-        "subscription_roster": subscription_roster,
-        "subscription_history_labels_json": json.dumps(
-            [row["label"] for row in subscription_history]
-        ),
-        "subscription_history_totals_json": json.dumps(
-            [str(row["total"]) for row in subscription_history]
-        ),
-        "subscription_history_counts_json": json.dumps(
-            [row["count"] for row in subscription_history]
-        ),
+        "budget_tab": "analyse",
+        "kpis": kpis,
+        "plan": plan,
+        "trend": trend,
         "history": history,
-        "history_labels_json": json.dumps([row["label"] for row in history]),
-        "history_income_json": json.dumps([str(row["income"]) for row in history]),
-        "history_expense_json": json.dumps([str(row["expense"]) for row in history]),
-        "history_balance_json": json.dumps([str(row["balance"]) for row in history]),
-        "category_labels_json": json.dumps(
-            [row["category__name"] or "Sans catégorie" for row in category_breakdown]
-        ),
-        "category_values_json": json.dumps(
-            [str(row["total"]) for row in category_breakdown]
-        ),
+        "projects": budget_calc.projects_overview(request.user, today),
+        "subscription_summary": subscription_detection.subscriptions_summary(request.user, today),
+        "subscription_history": subscription_history,
+        "subscription_roster": _subscription_roster(request.user),
+        "today": today,
+        "charts_data": {
+            "history": {
+                "labels": [row["label"] for row in history],
+                "income": [str(row["income"]) for row in history],
+                "expense": [str(row["expense"]) for row in history],
+                "savings": [str(row["savings"]) for row in history],
+                "balance": [str(row["balance"]) for row in history],
+                "savingsRate": [row["savings_rate"] for row in history],
+                "months": [[row["year"], row["month"]] for row in history],
+            },
+            "categories": category_series,
+            "trend": {
+                "labels": [row["label"] for row in trend_history],
+                "budget": [str(row["budget"]) for row in trend_history],
+                "spent": [str(row["spent"]) for row in trend_history],
+                "savings": [str(row["savings_actual"]) for row in trend_history],
+                "savingsTarget": [str(row["savings_target"]) for row in trend_history],
+            },
+            "subscriptions": {
+                "labels": [row["label"] for row in subscription_history],
+                "totals": [str(row["total"]) for row in subscription_history],
+                "counts": [row["count"] for row in subscription_history],
+            },
+            "monthUrl": reverse("finance:month", args=[2000, 1]).replace("2000/1/", ""),
+            "savingsTargetRate": budget_calc.percent(
+                plan.savings_target_monthly, kpis["avg_income"]
+            ) if plan else None,
+        },
     }
     return render(request, "finance/dashboard_budget.html", context)
 
@@ -1311,3 +1054,364 @@ def bank_sync_status(request, pk):
             + (f", {sync.skipped_count} déjà présente(s)." if sync.skipped_count else "."),
         )
     return JsonResponse(_bank_sync_payload(sync))
+
+
+# ============================================================
+# BUDGET : MON BUDGET / OBJECTIFS
+# ============================================================
+
+def _suggested_budget_lines(user, today):
+    """Premier budget : on part des postes fixes / abonnements actifs et
+    de la moyenne des 3 derniers mois pour les autres dépenses."""
+
+    lines = []
+    covered_categories = set()
+    covered_subcategories = set()
+
+    for item in RecurringItem.objects.filter(
+        user=user, is_active=True, entry_type=EntryType.EXPENSE, category__isnull=False
+    ).exclude(category__name=budget_calc.SAVINGS_CATEGORY_NAME).select_related("category", "subcategory"):
+        monthly = item.default_amount
+        if item.frequency_unit == RecurrenceUnit.YEAR:
+            monthly = item.default_amount / (12 * (item.frequency_interval or 1))
+        elif item.frequency_unit == RecurrenceUnit.MONTH and item.frequency_interval > 1:
+            monthly = item.default_amount / item.frequency_interval
+        lines.append({
+            "section": BudgetSection.SUBSCRIPTION if item.kind == RecurrenceKind.SUBSCRIPTION else BudgetSection.FIXED,
+            "category": item.category_id,
+            "subcategory": item.subcategory_id,
+            "label": item.name,
+            "amount": budget_calc.money(monthly),
+        })
+        if item.subcategory_id:
+            covered_subcategories.add(item.subcategory_id)
+        else:
+            covered_categories.add(item.category_id)
+
+    start_year, start_month = budget_calc.add_months(today.year, today.month, -3)
+    averages = (
+        Transaction.objects.filter(
+            user=user,
+            transaction_type=EntryType.EXPENSE,
+            recurring_item__isnull=True,
+            category__isnull=False,
+            transaction_date__gte=date(start_year, start_month, 1),
+            transaction_date__lt=date(today.year, today.month, 1),
+        )
+        .exclude(category__name=budget_calc.SAVINGS_CATEGORY_NAME)
+        .exclude(category_id__in=covered_categories)
+        .exclude(subcategory_id__in=covered_subcategories)
+        .values("category_id", "category__name")
+        .annotate(total=Sum("amount"))
+        .order_by("-total")
+    )
+    for row in averages:
+        amount = (row["total"] / 3).quantize(Decimal("1"))
+        if amount >= 5:
+            lines.append({
+                "section": BudgetSection.VARIABLE,
+                "category": row["category_id"],
+                "subcategory": None,
+                "label": "",
+                "amount": amount,
+            })
+
+    return lines
+
+
+def _plan_lines_initial(plan):
+    return [
+        {
+            "section": line.section,
+            "category": line.category_id,
+            "subcategory": line.subcategory_id,
+            "label": line.label,
+            "amount": line.amount,
+        }
+        for line in plan.lines.all()
+    ]
+
+
+def _save_plan(user, plan_form, formset):
+    valid_from = plan_form.cleaned_data["valid_from"]
+    plan, _ = BudgetPlan.objects.get_or_create(user=user, valid_from=valid_from)
+    for field in plan_form.Meta.fields:
+        setattr(plan, field, plan_form.cleaned_data[field])
+    plan.save()
+
+    plan.lines.all().delete()
+    BudgetLine.objects.bulk_create([
+        BudgetLine(
+            plan=plan,
+            section=data["section"],
+            category=data["category"],
+            subcategory=data.get("subcategory"),
+            label=data.get("label") or "",
+            amount=data["amount"],
+            order=order,
+        )
+        for order, data in enumerate(
+            form.cleaned_data
+            for form in formset.forms
+            if form.cleaned_data and not form.cleaned_data.get("DELETE")
+        )
+    ])
+    return plan
+
+
+def _meal_voucher_form(user, data=None):
+    instance = MealVoucherSettings.objects.filter(user=user).first()
+    if instance is None:
+        instance = MealVoucherSettings(user=user, enabled=False)
+    return MealVoucherSettingsForm(data, instance=instance)
+
+
+@login_required
+def budget_plan_view(request):
+    today = date.today()
+    plan = budget_calc.plan_for_month(request.user, today.year, today.month)
+
+    if request.method == "POST":
+        plan_form = BudgetPlanForm(request.POST, instance=plan, today=today)
+        formset = BudgetLineFormSet(request.POST, prefix="lines", form_kwargs={"user": request.user})
+        if plan_form.is_valid() and formset.is_valid():
+            saved = _save_plan(request.user, plan_form, formset)
+            messages.success(
+                request,
+                f"Budget enregistré. Il s'applique à partir de {month_label(saved.valid_from)}.",
+            )
+            return redirect("finance:budget_plan")
+        messages.error(request, "Le budget n'a pas été enregistré : vérifie les champs en rouge.")
+    else:
+        current_month = date(today.year, today.month, 1)
+        initial_from = plan.valid_from if plan and plan.valid_from > current_month else current_month
+        plan_form = BudgetPlanForm(
+            instance=plan,
+            today=today,
+            initial={"valid_from": initial_from.isoformat()},
+        )
+        lines_initial = (
+            _plan_lines_initial(plan) if plan else _suggested_budget_lines(request.user, today)
+        )
+        formset = BudgetLineFormSet(
+            prefix="lines", initial=lines_initial, form_kwargs={"user": request.user}
+        )
+
+    salary_average, salary_months = budget_calc.average_salary(
+        request.user, today.year, today.month, plan.income_average_months if plan else 6
+    )
+
+    context = {
+        "budget_tab": "plan",
+        "plan": plan,
+        "is_new_plan": plan is None,
+        "plan_form": plan_form,
+        "formset": formset,
+        "sections": BudgetSection.choices,
+        "summary": budget_calc.plan_summary(plan, request.user, today.year, today.month) if plan else None,
+        "salary_average": salary_average,
+        "salary_months": salary_months,
+        "meal_voucher_form": _meal_voucher_form(request.user),
+        "meal_vouchers": budget_calc.meal_voucher_month(request.user, today.year, today.month),
+        "versions": BudgetPlan.objects.filter(user=request.user).order_by("-valid_from"),
+        "projects": budget_calc.projects_overview(request.user, today),
+    }
+    return render(request, "finance/budget_plan.html", context)
+
+
+@login_required
+@require_POST
+def update_meal_vouchers(request):
+    form = _meal_voucher_form(request.user, request.POST)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Tickets restaurant mis à jour.")
+    else:
+        messages.error(request, "Impossible d'enregistrer les tickets restaurant.")
+    return redirect(reverse("finance:budget_plan") + "#tickets")
+
+
+def _current_plan_or_new(user, today):
+    plan = budget_calc.plan_for_month(user, today.year, today.month)
+    if plan is None:
+        plan = BudgetPlan(user=user, valid_from=date(today.year, today.month, 1))
+    return plan
+
+
+@login_required
+def budget_goals_view(request):
+    today = date.today()
+    plan = budget_calc.plan_for_month(request.user, today.year, today.month)
+    overview = budget_calc.projects_overview(request.user, today)
+    for item in overview["projects"]:
+        item["edit_form"] = SavingsProjectForm(
+            instance=item["project"], prefix=f"p{item['project'].pk}"
+        )
+    savings_target = plan.savings_target_monthly if plan else Decimal("0")
+
+    context = {
+        "budget_tab": "objectifs",
+        "plan": plan,
+        "savings_goal_form": SavingsGoalForm(instance=_current_plan_or_new(request.user, today)),
+        "savings_target": savings_target,
+        "savings_month": budget_calc.savings_split(request.user, today.year, today.month),
+        "projects": overview,
+        "free_savings_target": max(Decimal("0"), savings_target - overview["monthly_needed"]),
+        "projects_exceed_target": overview["monthly_needed"] > savings_target,
+        "savings_percent": min(100, budget_calc.percent(
+            budget_calc.savings_split(request.user, today.year, today.month)["total"], savings_target
+        )),
+        "project_form": SavingsProjectForm(),
+        "month_label": month_label(today).capitalize(),
+    }
+    return render(request, "finance/budget_goals.html", context)
+
+
+@login_required
+@require_POST
+def update_savings_goal(request):
+    today = date.today()
+    plan = _current_plan_or_new(request.user, today)
+    form = SavingsGoalForm(request.POST, instance=plan)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Objectif d'épargne mis à jour.")
+    else:
+        messages.error(request, "Montant invalide.")
+    return redirect("finance:budget_goals")
+
+
+@login_required
+@require_POST
+def add_savings_project(request):
+    form = SavingsProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save(commit=False)
+        project.user = request.user
+        project.save()
+        messages.success(request, f"Projet « {project.name} » créé.")
+    else:
+        messages.error(request, "Impossible de créer le projet : vérifie le formulaire.")
+    return redirect("finance:budget_goals")
+
+
+@login_required
+@require_POST
+def edit_savings_project(request, pk):
+    project = get_object_or_404(SavingsProject, pk=pk, user=request.user)
+    form = SavingsProjectForm(request.POST, instance=project, prefix=f"p{pk}")
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Projet mis à jour.")
+    else:
+        messages.error(request, "Impossible de mettre à jour le projet.")
+    return redirect("finance:budget_goals")
+
+
+@login_required
+@require_POST
+def delete_savings_project(request, pk):
+    project = get_object_or_404(SavingsProject, pk=pk, user=request.user)
+    project.delete()
+    messages.success(request, "Projet supprimé.")
+    return redirect("finance:budget_goals")
+
+
+# ============================================================
+# BUDGET : ABONNEMENTS DÉTECTÉS
+# ============================================================
+
+@login_required
+def subscriptions_view(request):
+    today = date.today()
+    changes = subscription_detection.sync_subscriptions(request.user, today)
+    for change, item in changes:
+        if change == "stopped":
+            messages.info(request, f"« {item.name} » n'a pas été payé : abonnement marqué comme arrêté.")
+        else:
+            messages.info(request, f"« {item.name} » a de nouveau été payé : abonnement réactivé.")
+
+    tracked = subscription_detection.tracked_subscriptions(request.user, today)
+
+    # Calendrier des paiements : ?mois=2026-10 (mois en cours par défaut)
+    try:
+        cal_year, cal_month = (int(part) for part in request.GET.get("mois", "").split("-"))
+        date(cal_year, cal_month, 1)
+    except ValueError:
+        cal_year, cal_month = today.year, today.month
+    month_subs = subscription_detection.month_subscriptions(request.user, cal_year, cal_month, today)
+    by_day = {}
+    for row in month_subs["paid"] + month_subs["remaining"] + month_subs["problems"]:
+        by_day.setdefault(row["date"].day, []).append(row)
+    weeks = []
+    for week in calendar.Calendar(firstweekday=0).monthdayscalendar(cal_year, cal_month):
+        weeks.append([
+            {
+                "day": day,
+                "events": by_day.get(day, []),
+                "total": sum((row["amount"] for row in by_day.get(day, [])), Decimal("0")),
+                "is_today": (cal_year, cal_month, day) == (today.year, today.month, today.day),
+            } if day else None
+            for day in week
+        ])
+    prev_year, prev_month = budget_calc.add_months(cal_year, cal_month, -1)
+    next_year, next_month = budget_calc.add_months(cal_year, cal_month, 1)
+
+    context = {
+        "budget_tab": "abonnements",
+        "calendar": {
+            "label": month_label(date(cal_year, cal_month, 1)).capitalize(),
+            "weeks": weeks,
+            "subs": month_subs,
+            "prev": f"{prev_year}-{prev_month:02d}",
+            "next": f"{next_year}-{next_month:02d}",
+            "is_current": (cal_year, cal_month) == (today.year, today.month),
+            "current": f"{today.year}-{today.month:02d}",
+        },
+        "suggestions": subscription_detection.subscription_suggestions(request.user, today),
+        "tracked_active": [row for row in tracked if not row["status"] or row["status"]["status"] != "stopped"],
+        "tracked_stopped": [row for row in tracked if row["status"] and row["status"]["status"] == "stopped"],
+        "summary": subscription_detection.subscriptions_summary(request.user, today),
+        "manual_subscriptions": RecurringItem.objects.filter(
+            user=request.user, kind=RecurrenceKind.SUBSCRIPTION, match_key="", is_active=True
+        ),
+        "history_months": _active_history_month_count(request.user, today),
+        "bank_connection": BankConnection.objects.filter(user=request.user).first(),
+    }
+    return render(request, "finance/budget_subscriptions.html", context)
+
+
+@login_required
+@require_POST
+def follow_subscription(request):
+    candidate = subscription_detection.find_candidate(request.user, request.POST.get("key", ""))
+    if candidate is None:
+        messages.error(request, "Cet abonnement n'a pas été retrouvé dans tes opérations.")
+    else:
+        item = subscription_detection.follow_candidate(request.user, candidate)
+        messages.success(
+            request,
+            f"« {item.name} » est maintenant suivi ({candidate.count} paiements rattachés).",
+        )
+    return redirect("finance:budget_subscriptions")
+
+
+@login_required
+@require_POST
+def dismiss_subscription(request):
+    key = request.POST.get("key", "")
+    if key:
+        subscription_detection.dismiss_candidate(request.user, key)
+        messages.info(request, "Suggestion ignorée.")
+    return redirect("finance:budget_subscriptions")
+
+
+@login_required
+@require_POST
+def untrack_subscription(request, pk):
+    item = get_object_or_404(RecurringItem, pk=pk, user=request.user)
+    name = item.name
+    # Les paiements restent dans l'historique, simplement détachés
+    item.delete()
+    messages.success(request, f"« {name} » n'est plus suivi.")
+    return redirect("finance:budget_subscriptions")

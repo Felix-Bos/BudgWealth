@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Objectifs - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="budget-page">
+    {% include "finance/_budget_tabs.html" with subtitle="Ce que tu veux mettre de côté, chaque mois et pour tes projets" %}
+
+    {# ---------- Objectif mensuel ---------- #}
+    <div class="content-panel budget-panel mb-4">
+        <div class="budget-panel-head">
+            <div>
+                <h2 class="h5 mb-1">Épargne mensuelle</h2>
+                <p class="text-muted small mb-0">{{ month_label }} · versements vers « Épargne & placements »</p>
+            </div>
+        </div>
+
+        <div class="row g-4 align-items-end">
+            <div class="col-12 col-md-5">
+                <form method="post" action="{% url 'finance:update_savings_goal' %}" class="budget-inline-form">
+                    {% csrf_token %}
+                    <div class="flex-grow-1">
+                        <label class="form-label" for="{{ savings_goal_form.savings_target_monthly.id_for_label }}">{{ savings_goal_form.savings_target_monthly.label }}</label>
+                        {{ savings_goal_form.savings_target_monthly }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </form>
+            </div>
+            <div class="col-12 col-md-7">
+                <div class="budget-goal-meter">
+                    <div class="budget-goal-meter-head">
+                        <span>Épargné ce mois</span>
+                        <strong>{{ savings_month.total }} € <small>/ {{ savings_target }} €</small></strong>
+                    </div>
+                    <div class="budget-progress is-savings"><span style="width: {{ savings_percent }}%"></span></div>
+                    <div class="budget-goal-split">
+                        <span>Projets : {{ savings_month.projects }} €</span>
+                        <span>Épargne libre : {{ savings_month.free }} €</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if projects.active_count %}
+        <div class="budget-callout {% if projects_exceed_target %}is-warning{% endif %} mt-4 mb-0">
+            {% if projects_exceed_target %}
+            <strong>Tes projets demandent {{ projects.monthly_needed }} € par mois</strong>
+            <span>C'est plus que ton objectif d'épargne ({{ savings_target }} €). Augmente ton objectif ou repousse une échéance.</span>
+            {% else %}
+            <strong>{{ projects.monthly_needed }} € par mois pour tes projets</strong>
+            <span>Il te reste {{ free_savings_target }} € d'épargne libre dans ton objectif.</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {# ---------- Projets ---------- #}
+    <div class="budget-panel-head mb-3">
+        <div>
+            <h2 class="h5 mb-1">Projets</h2>
+            <p class="text-muted small mb-0">Affecte un versement d'épargne à un projet quand tu l'enregistres : la progression se met à jour toute seule.</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newProject" aria-expanded="false">+ Nouveau projet</button>
+    </div>
+
+    <div class="collapse {% if not projects.projects %}show{% endif %}" id="newProject">
+        <div class="content-panel budget-panel mb-4">
+            <h3 class="h6 mb-3">Nouveau projet</h3>
+            <form method="post" action="{% url 'finance:add_savings_project' %}" class="row g-3 js-project-form">
+                {% csrf_token %}
+                <div class="col-12 col-md-4">
+                    <label class="form-label" for="{{ project_form.name.id_for_label }}">{{ project_form.name.label }}</label>
+                    {{ project_form.name }}
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="{{ project_form.target_amount.id_for_label }}">{{ project_form.target_amount.label }}</label>
+                    {{ project_form.target_amount }}
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="{{ project_form.target_date.id_for_label }}">{{ project_form.target_date.label }}</label>
+                    {{ project_form.target_date }}
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="{{ project_form.initial_amount.id_for_label }}">{{ project_form.initial_amount.label }}</label>
+                    {{ project_form.initial_amount }}
+                </div>
+                <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+                    <button type="submit" class="btn btn-primary">Créer le projet</button>
+                    <span class="text-muted small js-project-preview"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if projects.projects %}
+    <div class="budget-projects">
+        {% for item in projects.projects %}
+        {% with project=item.project %}
+        <article class="content-panel budget-project {% if project.is_done %}is-done{% endif %}">
+            <header class="budget-project-head">
+                <div>
+                    <h3 class="h5 mb-1">{{ project.name }}</h3>
+                    <p class="text-muted small mb-0">Pour le {{ project.target_date|date:"j F Y" }}</p>
+                </div>
+                <span class="budget-badge is-{{ item.status }}">{{ item.status_label }}</span>
+            </header>
+
+            <div class="budget-project-amounts">
+                <strong>{{ item.saved }} €</strong>
+                <span>sur {{ project.target_amount }} €</span>
+            </div>
+            <div class="budget-progress is-savings"><span style="width: {{ item.percent }}%"></span></div>
+
+            <dl class="budget-project-stats">
+                <div><dt>Reste à épargner</dt><dd>{{ item.remaining }} €</dd></div>
+                <div><dt>Mois restants</dt><dd>{{ item.months_left }}</dd></div>
+                <div class="is-highlight"><dt>À mettre de côté</dt><dd>{{ item.monthly_needed }} € / mois</dd></div>
+                <div><dt>Versé ce mois</dt><dd>{{ item.contributed_this_month }} €</dd></div>
+            </dl>
+
+            <details class="budget-project-edit">
+                <summary>Modifier</summary>
+                {% with form=item.edit_form %}
+                <form method="post" action="{% url 'finance:edit_savings_project' project.pk %}" class="row g-2 mt-1">
+                    {% csrf_token %}
+                    <div class="col-12">{{ form.name }}</div>
+                    <div class="col-6">
+                        <label class="form-label small" for="{{ form.target_amount.id_for_label }}">{{ form.target_amount.label }}</label>
+                        {{ form.target_amount }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small" for="{{ form.target_date.id_for_label }}">{{ form.target_date.label }}</label>
+                        {{ form.target_date }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small" for="{{ form.initial_amount.id_for_label }}">{{ form.initial_amount.label }}</label>
+                        {{ form.initial_amount }}
+                    </div>
+                    <div class="col-6 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            {{ form.is_done }}
+                            <label class="form-check-label small" for="{{ form.is_done.id_for_label }}">{{ form.is_done.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                    </div>
+                </form>
+                <form method="post" action="{% url 'finance:delete_savings_project' project.pk %}" class="mt-2" onsubmit="return confirm('Supprimer ce projet ? Les versements restent dans ton historique.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer le projet</button>
+                </form>
+                {% endwith %}
+            </details>
+        </article>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Aperçu : combien mettre de côté par mois avant même de créer le projet
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.querySelector('.js-project-form');
+        if (!form) return;
+        var preview = form.querySelector('.js-project-preview');
+        var money = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+
+        function update() {
+            var target = parseFloat(form.querySelector('[name="target_amount"]').value) || 0;
+            var initial = parseFloat(form.querySelector('[name="initial_amount"]').value) || 0;
+            var dateValue = form.querySelector('[name="target_date"]').value;
+            if (!target || !dateValue) { preview.textContent = ''; return; }
+            var now = new Date();
+            var end = new Date(dateValue);
+            var months = (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth()) + 1;
+            if (months < 1) { preview.textContent = 'La date est déjà passée.'; return; }
+            var monthly = Math.max(0, target - initial) / months;
+            preview.textContent = '≈ ' + money.format(Math.ceil(monthly)) + ' € à mettre de côté par mois pendant ' + months + ' mois';
+        }
+
+        form.addEventListener('input', update);
+    });
+</script>
+{% endblock %}

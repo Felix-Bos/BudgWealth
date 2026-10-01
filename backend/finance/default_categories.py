@@ -99,6 +99,18 @@ DEFAULT_EXPENSE_CATEGORIES = [
         ],
     ),
     (
+        "Abonnements & services",
+        [
+            "Streaming vidéo",
+            "Musique",
+            "Outils IA & logiciels",
+            "Cloud & stockage",
+            "Jeux vidéo",
+            "Presse & magazines",
+            "Abonnements & services - Autres",
+        ],
+    ),
+    (
         "Logement & charges",
         [
             "Assurance logement",

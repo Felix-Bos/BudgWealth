@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ month_label }} - BudgWealth{% endblock %}
 
@@ -23,17 +24,22 @@
 
     <div class="content-panel mb-4">
         <div class="stat-row">
-            <div class="stat-card">
-                <div class="stat-value">{{ total_income }} €</div>
+            <div class="stat-card stat-card-income">
+                <div class="stat-value"><span class="js-stat" data-key="income">{{ total_income }}</span> €</div>
                 <div class="stat-label">Revenus</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ total_expense }} €</div>
+            <div class="stat-card stat-card-expense">
+                <div class="stat-value"><span class="js-stat" data-key="expense">{{ total_expense }}</span> €</div>
                 <div class="stat-label">Charges</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ balance }} €</div>
+            <div class="stat-card stat-card-savings">
+                <div class="stat-value"><span class="js-stat" data-key="savings">{{ total_savings }}</span> €</div>
+                <div class="stat-label">Épargne</div>
+            </div>
+            <div class="stat-card stat-card-balance">
+                <div class="stat-value"><span class="js-stat" data-key="balance">{{ balance }}</span> €</div>
                 <div class="stat-label">Solde</div>
+                <div class="stat-hint">revenus − charges</div>
             </div>
         </div>
 
@@ -83,6 +89,63 @@
         {% endif %}
     </div>
 
+    {% include "finance/_month_insights.html" %}
+
+    <div class="content-panel mb-4 js-tx-panel">
+        <div class="tx-panel-header">
+            <h2 class="h5 mb-0">Opérations du mois</h2>
+            <span class="tx-count js-tx-count">{{ transaction_count }} opération{{ transaction_count|pluralize }}</span>
+        </div>
+
+        <div class="tx-filters" role="tablist" aria-label="Filtrer les opérations">
+            <button type="button" class="tx-filter is-active" data-filter="all">Tout</button>
+            <button type="button" class="tx-filter is-income" data-filter="income">
+                Revenus <span class="js-filter-total" data-kind="income">+{{ kind_totals.income.total|floatformat:"2g" }} €</span>
+            </button>
+            <button type="button" class="tx-filter is-expense" data-filter="expense">
+                Charges <span class="js-filter-total" data-kind="expense">−{{ kind_totals.expense.total|floatformat:"2g" }} €</span>
+            </button>
+            <button type="button" class="tx-filter is-savings" data-filter="savings">
+                Épargne <span class="js-filter-total" data-kind="savings">{{ kind_totals.savings.total|floatformat:"2g" }} €</span>
+            </button>
+        </div>
+
+        {% if transaction_days %}
+        <div class="tx-days">
+            {% for day in transaction_days %}
+            <section class="tx-day js-tx-day">
+                <header class="tx-day-header">
+                    <span>{{ day.date|date:"l j F"|capfirst }}</span>
+                </header>
+                <ul class="tx-list">
+                    {% for row in day.rows %}
+                        {% include "finance/_transaction_row.html" %}
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endfor %}
+        </div>
+        <p class="text-muted mb-0 js-tx-empty" hidden>Aucune opération de ce type ce mois-ci.</p>
+        {% else %}
+        <p class="text-muted mb-0">Aucune dépense ou revenu enregistré pour ce mois pour l'instant.</p>
+        {% endif %}
+    </div>
+
+    {% if recurring_rows %}
+    <div class="content-panel mb-4">
+        <div class="tx-panel-header">
+            <h2 class="h5 mb-0">Postes fixes de ce mois</h2>
+            <span class="tx-count">{{ recurring_rows|length }} ligne{{ recurring_rows|length|pluralize }}</span>
+        </div>
+        <ul class="tx-list">
+            {% for row in recurring_rows %}
+                {% include "finance/_transaction_row.html" with show_date=True %}
+            {% endfor %}
+        </ul>
+        <p class="form-text mt-3 mb-0">Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant.</p>
+    </div>
+    {% endif %}
+
     <div class="content-panel mb-4">
         <h2 class="h5 mb-3">Ajouter une ligne</h2>
         <form method="post" action="{% url 'finance:add_transaction' year month %}" class="row g-3 js-transaction-form">
@@ -111,6 +174,7 @@
                 <label class="form-label" for="id_transaction_date">Date</label>
                 {{ transaction_form.transaction_date }}
             </div>
+            {% include "finance/_transaction_extras.html" with form=transaction_form %}
             <div class="col-12">
                 <div class="finance-recurring-options">
                     <div class="form-check">
@@ -149,49 +213,9 @@
             var form = document.querySelector('form[action="{% url "finance:add_transaction" year month %}"]');
             window.bwSetupEntryTypeForm(form);
             window.bwSetupRecurringFields(form);
+            window.bwSetupTransactionExtras(form);
         });
     </script>
-
-    {% if recurring_rows %}
-    <div class="content-panel mb-4">
-        <div class="tx-panel-header">
-            <h2 class="h5 mb-0">Postes fixes de ce mois</h2>
-            <span class="tx-count">{{ recurring_rows|length }} ligne{{ recurring_rows|length|pluralize }}</span>
-        </div>
-        <ul class="tx-list">
-            {% for row in recurring_rows %}
-                {% include "finance/_transaction_row.html" with show_date=True %}
-            {% endfor %}
-        </ul>
-        <p class="form-text mt-3 mb-0">Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant.</p>
-    </div>
-    {% endif %}
-
-    <div class="content-panel">
-        <div class="tx-panel-header">
-            <h2 class="h5 mb-0">Dépenses et revenus du mois</h2>
-            {% if transaction_count %}<span class="tx-count">{{ transaction_count }} opération{{ transaction_count|pluralize }}</span>{% endif %}
-        </div>
-        {% if transaction_days %}
-        <div class="tx-days">
-            {% for day in transaction_days %}
-            <section class="tx-day">
-                <header class="tx-day-header">
-                    <span>{{ day.date|date:"l j F"|capfirst }}</span>
-                    <span class="tx-day-total {% if day.total > 0 %}is-income{% endif %}">{% if day.total > 0 %}+{% elif day.total < 0 %}−{% endif %}{{ day.total_abs|floatformat:"2g" }} €</span>
-                </header>
-                <ul class="tx-list">
-                    {% for row in day.rows %}
-                        {% include "finance/_transaction_row.html" %}
-                    {% endfor %}
-                </ul>
-            </section>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-muted mb-0">Aucune dépense ou revenu enregistré pour ce mois pour l'instant.</p>
-        {% endif %}
-    </div>
 </section>
 
 {% if bank_ready %}
@@ -299,4 +323,9 @@
     });
 </script>
 {% endif %}
+{% include "finance/_charts_js.html" %}
+{{ category_tree_data|json_script:"category-tree-data" }}
+{{ daily_data|json_script:"daily-data" }}
+{{ editor_categories|json_script:"editor-categories-data" }}
+<script src="{% static 'js/bw-month.js' %}?v=2"></script>
 {% endblock %}

@@ -39,7 +39,11 @@ BANK_CATEGORY_RULES = {
     EntryType.EXPENSE: [
         (r"cotisation|frais|commission|agios", "Impôts, taxes & frais", "Frais bancaires"),
         (r"retrait", "Retraits", None),
-        (r"spotify|netflix|deezer|disney|canal\+|prime video|youtube|apple\.com|icloud", "Loisirs & vacances", "Abonnement multimédia"),
+        (r"anthropic|claude|openai|chatgpt|perplexity|mistral ?ai|copilot|github|notion|cursor|midjourney|adobe|microsoft|office ?365", "Abonnements & services", "Outils IA & logiciels"),
+        (r"netflix|disney|canal\+|prime video|youtube|paramount|crunchyroll|molotov|\bmax\b", "Abonnements & services", "Streaming vidéo"),
+        (r"spotify|deezer|apple music|tidal|qobuz", "Abonnements & services", "Musique"),
+        (r"icloud|apple\.com|google one|google storage|dropbox", "Abonnements & services", "Cloud & stockage"),
+        (r"playstation|xbox|nintendo|steam|game ?pass", "Abonnements & services", "Jeux vidéo"),
         (r"wellpass|egym|basic.?fit|fitness|aquazena|piscine|decathlon|sport", "Loisirs & vacances", "Sport"),
         (r"cinema|cinéma|ugc|pathe|pathé|fnac spectacles|musee|musée|theatre|théâtre", "Loisirs & vacances", "Sorties culturelles"),
         (r"coiffeur|barber|esthetique|esthétique", "Loisirs & vacances", "Coiffeur, esthétique"),

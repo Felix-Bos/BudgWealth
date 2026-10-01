@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{% static 'css/styles.css' %}?v=8" rel="stylesheet">
+    <link href="{% static 'css/styles.css' %}?v=18" rel="stylesheet">
 
     <script>
         (function () {
@@ -54,7 +54,7 @@
                             <span>Paramètres</span>
                         </a>
                         <span class="nav-link text-muted d-none d-lg-inline">{{ user.get_username }}</span>
-                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#quickAddModal">+ Ajouter une dépense</button>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#quickAddModal">+ Nouvelle opération</button>
                     {% else %}
                         <a class="nav-link" href="{% url 'accounts:login' %}">Connexion</a>
                         <a class="btn btn-dark btn-sm" href="{% url 'accounts:signup' %}">Créer un compte</a>
@@ -89,62 +89,82 @@
 
     {% if user.is_authenticated %}
     <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="post" action="{% url 'finance:add_transaction' quick_add_year quick_add_month %}" id="quickAddForm">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bw-modal">
+                <form method="post" action="{% url 'finance:add_transaction' quick_add_year quick_add_month %}" id="quickAddForm" class="quick-add" data-type="EXPENSE">
                     {% csrf_token %}
                     <div class="modal-header">
-                        <h2 class="modal-title h5" id="quickAddModalLabel">Ajouter une dépense</h2>
+                        <div>
+                            <span class="section-label">Nouvelle opération</span>
+                            <h2 class="modal-title h4 mt-1" id="quickAddModalLabel">Ajouter <span class="js-quick-add-noun">une dépense</span></h2>
+                        </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                     </div>
-                    <div class="modal-body row g-3">
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label">Type</label>
-                            {{ quick_add_transaction_form.transaction_type }}
+
+                    <div class="modal-body">
+                        {# Le select reste la source de vérité (JS catégories) : on l'affiche en sélecteur segmenté #}
+                        <div class="visually-hidden">{{ quick_add_transaction_form.transaction_type }}</div>
+                        <div class="quick-add-type" role="radiogroup" aria-label="Type d'opération">
+                            <button type="button" class="quick-add-type-option is-expense" data-type="EXPENSE" role="radio">
+                                <span aria-hidden="true">−</span> Dépense
+                            </button>
+                            <button type="button" class="quick-add-type-option is-income" data-type="INCOME" role="radio">
+                                <span aria-hidden="true">+</span> Revenu
+                            </button>
                         </div>
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label">Montant</label>
+
+                        <label class="quick-add-amount" for="{{ quick_add_transaction_form.amount.id_for_label }}">
+                            <span class="visually-hidden">Montant</span>
+                            <span class="quick-add-amount-sign js-quick-add-sign" aria-hidden="true">−</span>
                             {{ quick_add_transaction_form.amount }}
+                            <span class="quick-add-amount-currency" aria-hidden="true">€</span>
+                        </label>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label" for="{{ quick_add_transaction_form.category.id_for_label }}">Catégorie</label>
+                                {{ quick_add_transaction_form.category }}
+                            </div>
+                            <div class="col-12 col-sm-6 js-subcategory-field">
+                                <label class="form-label" for="{{ quick_add_transaction_form.subcategory.id_for_label }}">Sous-catégorie</label>
+                                {{ quick_add_transaction_form.subcategory }}
+                            </div>
+                            <div class="col-12 col-sm-7">
+                                <label class="form-label" for="{{ quick_add_transaction_form.description.id_for_label }}">Description <span class="quick-add-optional">facultatif</span></label>
+                                {{ quick_add_transaction_form.description }}
+                            </div>
+                            <div class="col-12 col-sm-5">
+                                <label class="form-label" for="{{ quick_add_transaction_form.transaction_date.id_for_label }}">Date</label>
+                                {{ quick_add_transaction_form.transaction_date }}
+                            </div>
+                            {% include "finance/_transaction_extras.html" with form=quick_add_transaction_form %}
                         </div>
-                        <div class="col-12 col-sm-6">
-                            <label class="form-label">Catégorie</label>
-                            {{ quick_add_transaction_form.category }}
-                        </div>
-                        <div class="col-12 col-sm-6 js-subcategory-field">
-                            <label class="form-label">Sous-catégorie</label>
-                            {{ quick_add_transaction_form.subcategory }}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-                            {{ quick_add_transaction_form.description }}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Date</label>
-                            {{ quick_add_transaction_form.transaction_date }}
-                        </div>
-                        <div class="col-12">
-                            <div class="finance-recurring-options">
-                                <div class="form-check">
-                                    {{ quick_add_transaction_form.create_recurring }}
-                                    <label class="form-check-label" for="{{ quick_add_transaction_form.create_recurring.id_for_label }}">Créer une récurrence ou un abonnement depuis cette ligne</label>
+
+                        <div class="quick-add-recurring">
+                            <div class="form-check form-switch">
+                                {{ quick_add_transaction_form.create_recurring }}
+                                <label class="form-check-label" for="{{ quick_add_transaction_form.create_recurring.id_for_label }}">
+                                    <strong>Opération récurrente</strong>
+                                    <span>Abonnement ou poste fixe qui revient régulièrement</span>
+                                </label>
+                            </div>
+                            <div class="row g-3 js-recurring-options-fields">
+                                <div class="col-12 col-sm-4">
+                                    <label class="form-label" for="{{ quick_add_transaction_form.recurring_kind.id_for_label }}">Type</label>
+                                    {{ quick_add_transaction_form.recurring_kind }}
                                 </div>
-                                <div class="row g-3 js-recurring-options-fields">
-                                    <div class="col-12 col-sm-4">
-                                        <label class="form-label">Type</label>
-                                        {{ quick_add_transaction_form.recurring_kind }}
-                                    </div>
-                                    <div class="col-6 col-sm-4">
-                                        <label class="form-label">Tous les</label>
-                                        {{ quick_add_transaction_form.frequency_interval }}
-                                    </div>
-                                    <div class="col-6 col-sm-4">
-                                        <label class="form-label">Période</label>
-                                        {{ quick_add_transaction_form.frequency_unit }}
-                                    </div>
+                                <div class="col-6 col-sm-4">
+                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_interval.id_for_label }}">Tous les</label>
+                                    {{ quick_add_transaction_form.frequency_interval }}
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_unit.id_for_label }}">Période</label>
+                                    {{ quick_add_transaction_form.frequency_unit }}
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                         <button type="submit" class="btn btn-primary">Ajouter</button>
@@ -255,11 +275,95 @@
             updateVisibility();
         };
 
+        // Sélecteur segmenté Dépense / Revenu branché sur le <select> caché,
+        // titre et signe du montant mis à jour, date du jour par défaut.
+        window.bwSetupQuickAdd = function (form) {
+            var typeSelect = form.querySelector('.js-transaction-type');
+            var options = form.querySelectorAll('.quick-add-type-option');
+            var noun = document.querySelector('.js-quick-add-noun');
+            var sign = form.querySelector('.js-quick-add-sign');
+            var dateInput = form.querySelector('input[type="date"]');
+            var amountInput = form.querySelector('.quick-add-amount input');
+            if (!typeSelect) return;
+
+            function render() {
+                var type = typeSelect.value;
+                form.setAttribute('data-type', type);
+                options.forEach(function (option) {
+                    var active = option.getAttribute('data-type') === type;
+                    option.classList.toggle('is-active', active);
+                    option.setAttribute('aria-checked', active ? 'true' : 'false');
+                });
+                if (noun) noun.textContent = type === 'INCOME' ? 'un revenu' : 'une dépense';
+                if (sign) sign.textContent = type === 'INCOME' ? '+' : '−';
+            }
+
+            function select(type) {
+                if (typeSelect.value === type) return;
+                typeSelect.value = type;
+                typeSelect.dispatchEvent(new Event('change'));
+                render();
+            }
+
+            options.forEach(function (option) {
+                option.addEventListener('click', function () {
+                    select(option.getAttribute('data-type'));
+                });
+            });
+
+            if (!typeSelect.value) select('EXPENSE');
+            render();
+
+            if (dateInput && !dateInput.value) {
+                var now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                dateInput.value = now.toISOString().slice(0, 10);
+            }
+
+            if (amountInput) amountInput.setAttribute('placeholder', '0,00');
+
+            var modal = document.getElementById('quickAddModal');
+            if (modal && amountInput) {
+                modal.addEventListener('shown.bs.modal', function () { amountInput.focus(); });
+            }
+        };
+
+        // "Payé en tickets restaurant" pour l'alimentation, "Projet" pour l'épargne
+        window.bwSetupTransactionExtras = function (form) {
+            if (!form) return;
+            var typeSelect = form.querySelector('.js-transaction-type');
+            var categorySelect = form.querySelector('.js-category-select');
+            var voucherField = form.querySelector('.js-meal-voucher-field');
+            var projectField = form.querySelector('.js-savings-project-field');
+            if (!categorySelect) return;
+
+            function update() {
+                var option = categorySelect.options[categorySelect.selectedIndex];
+                var isExpense = !typeSelect || typeSelect.value === 'EXPENSE';
+                var isFood = isExpense && option && option.getAttribute('data-food') === '1';
+                var isSavings = isExpense && option && option.getAttribute('data-savings') === '1';
+                if (voucherField) {
+                    voucherField.hidden = !isFood;
+                    if (!isFood) voucherField.querySelector('input').checked = false;
+                }
+                if (projectField) {
+                    projectField.hidden = !isSavings;
+                    if (!isSavings) projectField.querySelector('select').value = '';
+                }
+            }
+
+            categorySelect.addEventListener('change', update);
+            if (typeSelect) typeSelect.addEventListener('change', function () { setTimeout(update); });
+            update();
+        };
+
         document.addEventListener('DOMContentLoaded', function () {
             var quickAddForm = document.getElementById('quickAddForm');
             if (quickAddForm) {
                 window.bwSetupEntryTypeForm(quickAddForm);
                 window.bwSetupRecurringFields(quickAddForm);
+                window.bwSetupQuickAdd(quickAddForm);
+                window.bwSetupTransactionExtras(quickAddForm);
             }
         });
     </script>

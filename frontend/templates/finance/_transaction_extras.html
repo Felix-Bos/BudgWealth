@@ -1,0 +1,13 @@
+<div class="col-12 js-meal-voucher-field" hidden>
+    <label class="transaction-extra">
+        {{ form.paid_with_meal_voucher }}
+        <span>
+            <strong>Payé en tickets restaurant</strong>
+            <small>Déduit de ton solde de tickets, pas de ton compte bancaire</small>
+        </span>
+    </label>
+</div>
+<div class="col-12 js-savings-project-field" hidden>
+    <label class="form-label" for="{{ form.savings_project.id_for_label }}">Projet d'épargne</label>
+    {{ form.savings_project }}
+</div>

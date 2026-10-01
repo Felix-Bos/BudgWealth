@@ -1,0 +1,20 @@
+<div class="dashboard-title-row mb-3">
+    <div>
+        <h1 class="h3 mb-1">Budget</h1>
+        <p class="text-muted mb-0">{{ subtitle }}</p>
+    </div>
+</div>
+<ul class="nav nav-tabs settings-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if budget_tab == 'analyse' %}active{% endif %}" href="{% url 'finance:dashboard_budget' %}">Analyse</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if budget_tab == 'plan' %}active{% endif %}" href="{% url 'finance:budget_plan' %}">Mon budget</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if budget_tab == 'objectifs' %}active{% endif %}" href="{% url 'finance:budget_goals' %}">Objectifs</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if budget_tab == 'abonnements' %}active{% endif %}" href="{% url 'finance:budget_subscriptions' %}">Abonnements</a>
+    </li>
+</ul>
