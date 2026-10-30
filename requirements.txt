@@ -4,6 +4,8 @@ dj-database-url>=2.2,<3.0
 psycopg[binary]>=3.2,<4.0
 python-dotenv>=1.0,<2.0
 playwright>=1.40,<2.0
+# Cours de bourse du module Épargne (Yahoo Finance)
+yfinance>=0.2.54,<2.0
 
 # Service local (app empaquetée) : sert l'app sans le serveur de dev
 waitress>=3.0,<4.0

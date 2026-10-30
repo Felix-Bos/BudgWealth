@@ -22,7 +22,8 @@ from decimal import Decimal
 from pathlib import Path
 
 
-ACCOUNT_RE = re.compile(r"^(?P<type>.*?) carte n\S*\s+(?P<number>\d+)")
+# "Compte de Dépôt carte n° 111…", "Livret A carte n° 222…" ; « carte » peut manquer
+ACCOUNT_RE = re.compile(r"^(?P<type>.*?)\s+(?:carte\s+)?n°?\s*(?P<number>\d{6,})")
 BALANCE_RE = re.compile(r"^Solde au (?P<date>\d{2}/\d{2}/\d{4}) (?P<amount>-?[\d\s\xa0]+,\d{2})")
 DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 
@@ -53,9 +54,35 @@ class AccountBalance:
     balance: Decimal
 
 
+# Carte de compte du formulaire « Télécharger mes opérations » :
+#   M. BOS FELIX / Livret Jeune Mozaic / N°12345678901 / Dernier téléchargement le 30/10/2026
+CARD_NUMBER_RE = re.compile(r"^N°\s*(?P<number>[\d ]{6,})$", re.I)
+
+
+@dataclass
+class AccountCard:
+    account: str
+    account_number: str
+
+
+def parse_account_card(text):
+    """
+    Libellé et numéro d'un compte d'après sa carte (le libellé est la ligne
+    juste avant « N°… »). La carte n'affiche pas le solde.
+    Renvoie None si aucun numéro n'est lisible.
+    """
+
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    for index, line in enumerate(lines):
+        match = CARD_NUMBER_RE.match(line)
+        if match and index > 0:
+            return AccountCard(account=lines[index - 1], account_number=re.sub(r"\D", "", match["number"]))
+    return None
+
+
 def parse_amount(text):
 
-    text = text.replace(" ", "").replace("\xa0", "").replace(",", ".")
+    text = text.replace(" ", "").replace("\xa0", "").replace("\u202f", "").replace(",", ".")
 
     return Decimal(text) if text else None
 
@@ -179,6 +206,30 @@ def parse_ca_csv(path):
         ))
 
     return operations, balances
+
+
+def mask_digits(text):
+    """Chiffres remplacés par 9 : garde la forme d'un numéro ou d'un montant, pas sa valeur."""
+    return re.sub(r"\d", "9", text or "")
+
+
+def outline_ca_csv(path, limit=80):
+    """
+    Lignes du relevé hors opérations (titulaire, en-têtes de comptes,
+    soldes, titres), chiffres masqués : pour voir comment la banque
+    présente chaque compte sans exposer de numéro ni de montant.
+    """
+
+    raw = Path(path).read_text(encoding="cp1252")
+    lines = []
+    for row in csv.reader(io.StringIO(raw), delimiter=";"):
+        cells = [cell.strip() for cell in row if cell.strip()]
+        if not cells or DATE_RE.match(cells[0]) or cells[0] == "Date":
+            continue
+        lines.append(mask_digits(" | ".join(" ".join(cell.split()) for cell in cells)))
+        if len(lines) >= limit:
+            break
+    return lines
 
 
 def write_clean_csv(operations, path):

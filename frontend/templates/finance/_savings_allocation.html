@@ -1,0 +1,27 @@
+{# Anneau d'allocation + légende ; les couleurs suivent l'ordre des parts #}
+<div class="content-panel dash-card">
+    <div class="month-card-head">
+        <div>
+            <h2 class="h5 mb-1">{{ title }}</h2>
+            {% if subtitle %}<p class="text-muted small mb-0">{{ subtitle }}</p>{% endif %}
+        </div>
+    </div>
+    {% if items %}
+    <div class="savings-donut-layout">
+        <div class="savings-donut-wrap">
+            <canvas data-allocation="{{ key }}" data-center="{{ center }}" role="img" aria-label="{{ title }}"></canvas>
+        </div>
+        <ul class="month-legend savings-legend">
+            {% for item in items %}
+            <li class="savings-legend-item">
+                <span class="month-legend-dot" style="background: {% cycle 'var(--chart-cat-1)' 'var(--chart-cat-2)' 'var(--chart-cat-3)' 'var(--chart-cat-4)' 'var(--chart-cat-5)' 'var(--chart-cat-6)' 'var(--chart-cat-7)' 'var(--chart-cat-8)' %}"></span>
+                <span class="month-legend-name" title="{{ item.name }}">{{ item.name }}</span>
+                <span class="month-legend-value">{{ item.percent|floatformat:"1" }} %</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">{{ empty|default:"Rien à afficher pour l'instant." }}</p>
+    {% endif %}
+</div>

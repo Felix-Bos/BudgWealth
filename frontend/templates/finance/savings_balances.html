@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static savings_format %}
+
+{% block title %}Livrets - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard budget-page savings-page">
+    {% include "finance/_savings_tabs.html" with subtitle="Livrets, PEL, assurance vie : suivis par leur solde" %}
+
+    <div class="budget-panel-head mb-3">
+        <div>
+            <h2 class="h5 mb-1">Mes livrets</h2>
+            {% if rows %}
+            <p class="text-muted small mb-0">
+                {{ totals.balance|floatformat:"2g" }} € au total
+                {% if totals.interest_year %} · ≈ {{ totals.interest_year|floatformat:"0g" }} € d'intérêts par an{% if totals.average_rate %} (taux moyen {{ totals.average_rate|floatformat:"2" }} %){% endif %}{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newBalanceAccount" aria-expanded="{{ rows|yesno:'false,true' }}">+ Ajouter un livret</button>
+    </div>
+
+    {% if has_bank_connection %}
+    <div class="budget-callout mb-4">
+        <strong>Tes livrets Crédit Agricole se mettent à jour tout seuls</strong>
+        <span>À chaque synchronisation bancaire, leur solde est relevé ici. Les autres se mettent à jour à la main.</span>
+    </div>
+    {% endif %}
+
+    <div class="collapse {% if not rows %}show{% endif %}" id="newBalanceAccount">
+        <div class="content-panel budget-panel mb-4">
+            <h3 class="h6 mb-3">Nouveau livret</h3>
+            <form method="post" action="{% url 'finance:add_balance_account' %}" class="row g-3">
+                {% csrf_token %}
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.kind.id_for_label }}">{{ account_form.kind.label }}</label>
+                    {{ account_form.kind }}
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.name.id_for_label }}">{{ account_form.name.label }} <span class="quick-add-optional">facultatif</span></label>
+                    {{ account_form.name }}
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.institution.id_for_label }}">{{ account_form.institution.label }}</label>
+                    {{ account_form.institution }}
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.balance.id_for_label }}">{{ account_form.balance.label }}</label>
+                    {{ account_form.balance }}
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.interest_rate.id_for_label }}">{{ account_form.interest_rate.label }}</label>
+                    {{ account_form.interest_rate }}
+                </div>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label" for="{{ account_form.ceiling.id_for_label }}">{{ account_form.ceiling.label }}</label>
+                    {{ account_form.ceiling }}
+                    <div class="form-text">{{ account_form.ceiling.help_text }}</div>
+                </div>
+                <div class="col-12 col-lg-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Ajouter le livret</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if rows %}
+    <div class="savings-cards">
+        {% for row in rows %}
+        {% with account=row.account %}
+        <article class="content-panel savings-card" id="livret-{{ account.pk }}">
+            <header class="savings-card-head">
+                <div>
+                    <h3 class="h5 mb-1">{{ account.name }}</h3>
+                    <p class="text-muted small mb-0">{{ account.get_kind_display }}{% if account.institution %} · {{ account.institution }}{% endif %}</p>
+                </div>
+                {% if row.is_full %}<span class="budget-badge is-watch">Plafond atteint</span>{% endif %}
+            </header>
+
+            <div class="savings-card-amount">
+                <strong>{{ row.balance|floatformat:"2g" }} €</strong>
+                <small>
+                    {% if row.date %}au {{ row.date|date:"j F Y" }}{% if row.is_bank %} · <span class="savings-source">relevé bancaire</span>{% endif %}{% else %}aucun solde saisi{% endif %}
+                    {% if row.change_year is not None %} · <span class="{{ row.change_year|trend }}">{{ row.change_year|signed:0 }} € sur 12 mois</span>{% endif %}
+                </small>
+            </div>
+
+            {% if row.series|length > 1 %}
+            <div class="dash-chart is-mini"><canvas data-sparkline="{{ account.pk }}" role="img" aria-label="Évolution du solde de {{ account.name }}"></canvas></div>
+            {% endif %}
+
+            <dl class="budget-project-stats savings-card-stats">
+                <div><dt>Taux</dt><dd>{% if account.interest_rate is not None %}{{ account.interest_rate|floatformat:"2" }} %{% else %}—{% endif %}</dd></div>
+                <div class="is-highlight"><dt>Intérêts / an</dt><dd>{% if row.interest_year %}≈ {{ row.interest_year|floatformat:"0g" }} €{% else %}—{% endif %}</dd></div>
+                <div><dt>Plafond</dt><dd>{% if row.ceiling %}{{ row.ceiling|floatformat:"0g" }} €{% else %}Aucun{% endif %}</dd></div>
+            </dl>
+
+            {% if row.ceiling %}
+            <div class="savings-ceiling">
+                <div class="budget-progress {% if row.is_full %}is-warning{% else %}is-savings{% endif %}"><span style="width: {{ row.fill }}%"></span></div>
+                <small class="text-muted">{% if row.is_full %}Plafond atteint : seuls les intérêts peuvent encore le faire grossir.{% else %}Encore {{ row.room|floatformat:"0g" }} € de versements possibles.{% endif %}</small>
+            </div>
+            {% endif %}
+
+            {% with form=row.snapshot_form %}
+            <form method="post" action="{% url 'finance:add_balance_snapshot' account.pk %}" class="savings-snapshot-form">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label small" for="{{ form.balance.id_for_label }}">{{ form.balance.label }}</label>
+                    {{ form.balance }}
+                </div>
+                <div>
+                    <label class="form-label small" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+                    {{ form.date }}
+                </div>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Mettre à jour le solde</button>
+            </form>
+            {% endwith %}
+
+            <div class="savings-card-foot">
+                {% if row.snapshots %}
+                <details class="budget-project-edit">
+                    <summary>Historique ({{ row.snapshots|length }})</summary>
+                    <ul class="savings-snapshots">
+                        {% for snapshot in row.snapshots %}
+                        <li>
+                            <span>{{ snapshot.date|date:"d/m/Y" }}</span>
+                            <strong>{{ snapshot.balance|floatformat:"2g" }} €</strong>
+                            <small class="text-muted">{{ snapshot.get_source_display }}</small>
+                            <form method="post" action="{% url 'finance:delete_balance_snapshot' snapshot.pk %}" onsubmit="return confirm('Supprimer ce relevé ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0" aria-label="Supprimer le relevé du {{ snapshot.date|date:'d/m/Y' }}">×</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+                {% endif %}
+
+                <details class="budget-project-edit">
+                    <summary>Modifier</summary>
+                    {% with form=row.edit_form %}
+                    <form method="post" action="{% url 'finance:edit_savings_account' account.pk %}" class="row g-2 mt-1">
+                        {% csrf_token %}
+                        <div class="col-6">
+                            <label class="form-label small" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
+                            {{ form.kind }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small" for="{{ form.institution.id_for_label }}">{{ form.institution.label }}</label>
+                            {{ form.institution }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small" for="{{ form.interest_rate.id_for_label }}">{{ form.interest_rate.label }}</label>
+                            {{ form.interest_rate }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small" for="{{ form.ceiling.id_for_label }}">{{ form.ceiling.label }}</label>
+                            {{ form.ceiling }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                        </div>
+                    </form>
+                    {% endwith %}
+                    <form method="post" action="{% url 'finance:delete_savings_account' account.pk %}" class="mt-2" onsubmit="return confirm('Supprimer ce livret et son historique de soldes ?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer le livret</button>
+                    </form>
+                </details>
+            </div>
+        </article>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% include "finance/_charts_js.html" %}
+{{ savings_data|json_script:"savings-data" }}
+<script src="{% static 'js/bw-savings.js' %}?v=2"></script>
+{% endblock %}

@@ -6,20 +6,28 @@ from datetime import date
 
 from .budget import FOOD_CATEGORY_NAME, SAVINGS_CATEGORY_NAME, add_months
 from .models import (
+    PORTFOLIO_KINDS,
+    BalanceSnapshot,
     BankConnection,
     BudgetPlan,
     BudgetSection,
     Category,
     EntryType,
     IncomeMode,
+    Instrument,
     MealVoucherSettings,
+    OperationKind,
+    PortfolioOperation,
     RecurrenceKind,
     RecurrenceUnit,
     RecurringItem,
+    SavingsAccount,
+    SavingsKind,
     SavingsProject,
     Subcategory,
     Transaction,
 )
+from .wealth import BALANCE_KIND_CHOICES, DEFAULT_CEILINGS, PORTFOLIO_KIND_CHOICES
 
 MONTH_NAMES = [
     "janvier", "février", "mars", "avril", "mai", "juin",
@@ -510,3 +518,275 @@ class MealVoucherSettingsForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._style_fields()
+
+
+# ============================================================
+# ÉPARGNE
+# ============================================================
+
+class BalanceAccountForm(BootstrapFormMixin, forms.ModelForm):
+    """Livret, PEL, assurance vie... : un support suivi par son solde."""
+
+    balance = forms.DecimalField(
+        label="Solde actuel (€)",
+        min_value=0,
+        max_digits=12,
+        decimal_places=2,
+        required=False,
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "0,00"}),
+    )
+
+    class Meta:
+        model = SavingsAccount
+        fields = ["kind", "name", "institution", "interest_rate", "ceiling"]
+        labels = {
+            "kind": "Type",
+            "name": "Nom",
+            "institution": "Banque",
+            "interest_rate": "Taux annuel (%)",
+            "ceiling": "Plafond (€)",
+        }
+        help_texts = {
+            "ceiling": "Laisse vide pour le plafond réglementaire.",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Ex. Livret A"}),
+            "institution": forms.TextInput(attrs={"placeholder": "Ex. Crédit Agricole"}),
+            "interest_rate": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Ex. 1,70"}),
+            "ceiling": forms.NumberInput(attrs={"step": "1", "min": "0", "placeholder": "Auto"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("auto_id", "livret_%s")
+        super().__init__(*args, **kwargs)
+        self.fields["kind"].choices = BALANCE_KIND_CHOICES
+        self.fields["name"].required = False
+        if self.instance.pk:
+            del self.fields["balance"]
+            self.fields["ceiling"].help_text = "Laisse vide s'il n'y a pas de plafond."
+        self._style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        kind = cleaned_data.get("kind")
+        if kind and not cleaned_data.get("name"):
+            cleaned_data["name"] = SavingsKind(kind).label
+        if kind and not self.instance.pk and cleaned_data.get("ceiling") is None:
+            cleaned_data["ceiling"] = DEFAULT_CEILINGS.get(kind)
+        return cleaned_data
+
+
+class PortfolioAccountForm(BootstrapFormMixin, forms.ModelForm):
+    """PEA ou compte-titres, suivi ligne par ligne."""
+
+    class Meta:
+        model = SavingsAccount
+        fields = ["kind", "name", "institution", "opened_on", "cash_balance"]
+        labels = {
+            "kind": "Type",
+            "name": "Nom",
+            "institution": "Courtier / banque",
+            "opened_on": "Date d'ouverture",
+            "cash_balance": "Liquidités (€)",
+        }
+        help_texts = {
+            "opened_on": "Après 5 ans, le PEA garde son avantage fiscal.",
+            "cash_balance": "Espèces non investies sur le compte.",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Ex. PEA Boursorama"}),
+            "institution": forms.TextInput(attrs={"placeholder": "Ex. Boursorama, Fortuneo, Trade Republic"}),
+            "opened_on": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "cash_balance": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("auto_id", "account_%s")
+        super().__init__(*args, **kwargs)
+        self.fields["kind"].choices = PORTFOLIO_KIND_CHOICES
+        self.fields["name"].required = False
+        self._style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        kind = cleaned_data.get("kind")
+        if kind and not cleaned_data.get("name"):
+            cleaned_data["name"] = SavingsKind(kind).label
+        if cleaned_data.get("cash_balance") is None:
+            cleaned_data["cash_balance"] = 0
+        return cleaned_data
+
+    def save(self, commit=True):
+        account = super().save(commit=False)
+        if account.kind == SavingsKind.PEA and account.ceiling is None:
+            account.ceiling = DEFAULT_CEILINGS[SavingsKind.PEA]
+        if commit:
+            account.save()
+        return account
+
+
+class BalanceSnapshotForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = BalanceSnapshot
+        fields = ["date", "balance"]
+        labels = {"date": "Date du solde", "balance": "Nouveau solde (€)"}
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "balance": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style_fields()
+
+    def clean_date(self):
+        value = self.cleaned_data["date"]
+        if value > date.today():
+            raise forms.ValidationError("La date ne peut pas être dans le futur.")
+        return value
+
+
+class PortfolioOperationForm(BootstrapFormMixin, forms.ModelForm):
+    """Ajout d'une ligne : le titre est choisi par la recherche (ISIN, nom
+    ou ticker) et transmis par son ticker Yahoo Finance."""
+
+    symbol = forms.CharField(max_length=32, required=False, widget=forms.HiddenInput)
+    instrument_name = forms.CharField(max_length=200, required=False, widget=forms.HiddenInput)
+    isin = forms.CharField(max_length=12, required=False, widget=forms.HiddenInput)
+    exchange = forms.CharField(max_length=50, required=False, widget=forms.HiddenInput)
+    quote_type = forms.CharField(max_length=20, required=False, widget=forms.HiddenInput)
+
+    class Meta:
+        model = PortfolioOperation
+        fields = ["account", "kind", "date", "quantity", "unit_price", "fees", "amount", "note"]
+        labels = {
+            "account": "Compte",
+            "kind": "Opération",
+            "date": "Date",
+            "quantity": "Quantité",
+            "unit_price": "Prix unitaire (€)",
+            "fees": "Frais (€)",
+            "amount": "Montant (€)",
+            "note": "Libellé",
+        }
+        widgets = {
+            "kind": forms.RadioSelect,
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "quantity": forms.NumberInput(attrs={"step": "any", "min": "0", "placeholder": "Ex. 10"}),
+            "unit_price": forms.NumberInput(attrs={"step": "any", "min": "0", "placeholder": "0,00"}),
+            "fees": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "0,00"}),
+            "amount": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "0,00"}),
+            "note": forms.TextInput(attrs={"placeholder": "Ex. Droits de garde 2026"}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        # Identifiants distincts de ceux de « + Nouvelle opération » (présent sur toutes les pages)
+        kwargs.setdefault("auto_id", "op_%s")
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.fields["account"].queryset = SavingsAccount.objects.filter(
+            user=user, kind__in=PORTFOLIO_KINDS
+        )
+        self.fields["account"].empty_label = None
+        self.fields["kind"].choices = [
+            (OperationKind.BUY, "Achat"),
+            (OperationKind.SELL, "Vente"),
+            (OperationKind.DIVIDEND, "Dividende"),
+            (OperationKind.FEE, "Frais"),
+        ]
+        self.fields["fees"].required = False
+        for name, field in self.fields.items():
+            if not isinstance(field.widget, (forms.RadioSelect, forms.HiddenInput)):
+                field.widget.attrs["class"] = (field.widget.attrs.get("class", "") + " form-control").strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        kind = cleaned_data.get("kind")
+        day = cleaned_data.get("date")
+        if day and day > date.today():
+            self.add_error("date", "La date ne peut pas être dans le futur.")
+        if cleaned_data.get("fees") is None:
+            cleaned_data["fees"] = 0
+
+        if kind in {OperationKind.BUY, OperationKind.SELL, OperationKind.DIVIDEND} and not cleaned_data.get("symbol"):
+            raise forms.ValidationError("Choisis un titre dans la recherche (ISIN, nom ou ticker).")
+
+        if kind in {OperationKind.BUY, OperationKind.SELL}:
+            for name in ("quantity", "unit_price"):
+                value = cleaned_data.get(name)
+                if value is None or value <= 0:
+                    self.add_error(name, "Indique un nombre positif.")
+            cleaned_data["amount"] = None
+        elif kind in {OperationKind.DIVIDEND, OperationKind.FEE}:
+            amount = cleaned_data.get("amount")
+            if amount is None or amount <= 0:
+                self.add_error("amount", "Indique un montant positif.")
+            cleaned_data["quantity"] = None
+            cleaned_data["unit_price"] = None
+            cleaned_data["fees"] = 0
+        if kind == OperationKind.FEE:
+            cleaned_data["symbol"] = ""
+        return cleaned_data
+
+
+class PortfolioOperationEditForm(BootstrapFormMixin, forms.ModelForm):
+    """Correction d'une ligne existante (le titre et le type ne changent pas)."""
+
+    class Meta:
+        model = PortfolioOperation
+        fields = ["date", "quantity", "unit_price", "fees", "amount", "note"]
+        labels = PortfolioOperationForm.Meta.labels
+        widgets = {
+            name: widget
+            for name, widget in PortfolioOperationForm.Meta.widgets.items()
+            if name in {"date", "quantity", "unit_price", "fees", "amount", "note"}
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.kind in {OperationKind.BUY, OperationKind.SELL}:
+            del self.fields["amount"]
+        else:
+            for name in ("quantity", "unit_price", "fees"):
+                del self.fields[name]
+        self._style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        day = cleaned_data.get("date")
+        if day and day > date.today():
+            self.add_error("date", "La date ne peut pas être dans le futur.")
+        for name in ("quantity", "unit_price", "amount"):
+            if name in self.fields:
+                value = cleaned_data.get(name)
+                if value is None or value <= 0:
+                    self.add_error(name, "Indique un nombre positif.")
+        if "fees" in self.fields and cleaned_data.get("fees") is None:
+            cleaned_data["fees"] = 0
+        return cleaned_data
+
+
+class InstrumentForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Instrument
+        fields = ["name", "isin", "asset_class", "zone", "ter"]
+        labels = {
+            "name": "Nom",
+            "isin": "ISIN",
+            "asset_class": "Classe d'actifs",
+            "zone": "Zone géographique",
+            "ter": "Frais courants (% par an)",
+        }
+        help_texts = {
+            "ter": "Le TER de l'ETF, indiqué sur sa fiche (ex. 0,38).",
+        }
+        widgets = {
+            "ter": forms.NumberInput(attrs={"step": "0.001", "min": "0", "max": "10", "placeholder": "Ex. 0,38"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style_fields()
+
+    def clean_isin(self):
+        return (self.cleaned_data.get("isin") or "").strip().upper()

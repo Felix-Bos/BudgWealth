@@ -6,14 +6,16 @@ from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 
 from .bank_import import import_operations
 from .bank_sync import initial_period, is_month_syncable, run_bank_sync, sync_period
-from .ca_csv import parse_ca_csv
+from .ca_scraper import Download
+from .ca_csv import parse_account_card, parse_ca_csv
 from .default_categories import create_default_categories
 from .models import BankConnection, BankSync, BankSyncKind, BankSyncStatus, EntryType, Transaction, TransactionSource
+from .models import SavingsAccount, SavingsKind
 
 
 # Relevé fictif au format de l'export Crédit Agricole (Windows-1252, libellés multi-lignes)
@@ -96,6 +98,30 @@ DE M.       DUPONT JEAN
 """
 
 
+# Relevé sur 12 mois du seul Livret Jeune (intérêts annuels)
+LIVRET_JEUNE_EXPORT = """Téléchargement du 30/10/2026;
+
+
+M.       DUPONT JEAN
+
+
+Livret Jeune Mozaic carte n° 33333333333
+
+Solde au 30/10/2026 1 600,00 €
+
+
+Liste des opérations du compte entre le 01/11/2025 et le 30/10/2026;
+
+Date;Libellé;Débit euros;Crédit euros;
+31/12/2025;"Intérêts
+INTERETS 2025
+
+
+
+";;24,00;
+"""
+
+
 def write_sample_export(directory):
     path = Path(directory) / "export.csv"
     path.write_text(SAMPLE_EXPORT, encoding="cp1252")
@@ -129,6 +155,24 @@ class CreditAgricoleCsvTests(TestCase):
         self.assertEqual(caf.merchant, "CAF DES HAUTS DE SEINE")
         self.assertEqual(caf.amount, Decimal("149.43"))
 
+    def test_account_header_without_card_word(self):
+        export = SAMPLE_EXPORT.replace("Livret A carte n° 22222222222", "Livret Jeune Mozaïc n° 33333333333")
+        path = Path(self.tmp) / "export.csv"
+        path.write_text(export, encoding="cp1252")
+        _, balances = parse_ca_csv(path)
+        self.assertEqual(
+            [(b.account, b.account_number) for b in balances],
+            [("Compte de Dépôt", "11111111111"), ("Livret Jeune Mozaïc", "33333333333")],
+        )
+
+    def test_parse_account_card(self):
+        # Format réel : titulaire, libellé, numéro, date du dernier téléchargement (pas de solde)
+        card = parse_account_card(
+            "M. BOS FELIX\nLivret Jeune Mozaic\nN°33333333333\nDernier téléchargement le 30/10/2026"
+        )
+        self.assertEqual((card.account, card.account_number), ("Livret Jeune Mozaic", "33333333333"))
+        self.assertIsNone(parse_account_card("M. BOS FELIX\nLivret A\nDernier téléchargement le 30/10/2026"))
+
     def test_card_purchase_from_previous_month_keeps_its_date(self):
         operations, _ = parse_ca_csv(write_sample_export(self.tmp))
 
@@ -139,6 +183,8 @@ class BankImportTests(TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
+        # Le diagnostic de synchronisation s'écrit dans le dossier temporaire
+        self.enterContext(override_settings(DATA_DIR=self.tmp))
         self.user = get_user_model().objects.create_user("jean", password="x")
         create_default_categories(self.user)
         self.operations, _ = parse_ca_csv(write_sample_export(self.tmp))
@@ -196,6 +242,8 @@ class BankSyncTests(TransactionTestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
+        # Le diagnostic de synchronisation s'écrit dans le dossier temporaire
+        self.enterContext(override_settings(DATA_DIR=self.tmp))
         self.user = get_user_model().objects.create_user("jean", password="x")
         create_default_categories(self.user)
 
@@ -224,7 +272,7 @@ class BankSyncTests(TransactionTestCase):
         def fake_download(**kwargs):
             kwargs["on_status"]("WAITING_PASSWORD", "code")
             export_dirs.append(Path(kwargs["target_dir"]))
-            return write_sample_export(kwargs["target_dir"])
+            return Download(path=write_sample_export(kwargs["target_dir"]))
 
         with mock.patch("finance.bank_sync.download_ca_operations", side_effect=fake_download):
             run_bank_sync(sync.pk)
@@ -232,9 +280,56 @@ class BankSyncTests(TransactionTestCase):
         sync.refresh_from_db()
         self.assertEqual(sync.status, BankSyncStatus.DONE)
         self.assertEqual(sync.created_count, 6)
+        self.assertEqual(sync.message, "Soldes mis à jour : Livret A.")
         # Le relevé bancaire ne reste pas sur le disque
         self.assertFalse(export_dirs[0].exists())
         self.assertIsNotNone(BankConnection.objects.get(user=self.user).last_sync_at)
+        # Le solde du livret alimente le module Épargne
+        livret = SavingsAccount.objects.get(user=self.user, bank_account_number="22222222222")
+        self.assertEqual(livret.kind, SavingsKind.LIVRET_A)
+        self.assertEqual(livret.snapshots.get().balance, Decimal("5000.00"))
+
+    def test_livret_missing_from_export_gets_a_balance_download(self):
+        BankConnection.objects.create(user=self.user, postal_code="75001", login_id="12345678901")
+        sync = BankSync.objects.create(user=self.user, year=2026, month=9)
+        cards = [
+            "M. DUPONT JEAN\nLivret Jeune Mozaic\nN°33333333333\nDernier téléchargement le 30/10/2026",
+            "M. DUPONT JEAN\nLivret A\nN°22222222222\nDernier téléchargement le 30/10/2026",
+            "M. DUPONT JEAN\nCompte de Dépôt\nN°11111111111\nDernier téléchargement le 30/10/2026",
+        ]
+        asked = []
+
+        def fake_download(**kwargs):
+            path = write_sample_export(kwargs["target_dir"])
+            # Le scraper demande quels comptes télécharger à nouveau, et depuis quand
+            missing = kwargs["balance_accounts"](path, cards)
+            asked.append((missing, kwargs["balance_start"]))
+            balance_path = Path(kwargs["target_dir"]) / "soldes.csv"
+            balance_path.write_text(LIVRET_JEUNE_EXPORT, encoding="cp1252")
+            return Download(path=path, balance_paths=[balance_path], account_cards=cards)
+
+        with mock.patch("finance.bank_sync.download_ca_operations", side_effect=fake_download):
+            run_bank_sync(sync.pk)
+
+        sync.refresh_from_db()
+        self.assertEqual(sync.status, BankSyncStatus.DONE, sync.message)
+        # Seul le Livret Jeune manque au relevé (le compte courant n'est pas un livret)
+        self.assertEqual(asked, [(["33333333333"], initial_period()[0])])
+        jeune = SavingsAccount.objects.get(user=self.user, bank_account_number="33333333333")
+        self.assertEqual(jeune.kind, SavingsKind.LIVRET_JEUNE)
+        self.assertEqual(jeune.ceiling, Decimal("1600"))
+        self.assertEqual(jeune.snapshots.get().balance, Decimal("1600.00"))
+        # Les opérations du relevé complémentaire ne sont pas importées
+        self.assertEqual(sync.created_count, 6)
+        self.assertEqual(sync.message, "Soldes mis à jour : Livret A, Livret Jeune Mozaic.")
+
+        # Diagnostic anonymisé : structure lisible, ni numéro complet ni montant
+        diagnostic = (Path(self.tmp) / "diagnostic_banque.txt").read_text(encoding="utf-8")
+        self.assertIn("Livret Jeune Mozaic · n° …333 → importé", diagnostic)
+        self.assertIn("Livret Jeune Mozaic carte n° 99999999999", diagnostic)
+        self.assertNotIn("33333333333", diagnostic)
+        self.assertNotIn("1 600,00", diagnostic)
+        self.assertNotIn("Spotify", diagnostic)
 
     def test_status_updates_work_inside_playwright_event_loop(self):
         # Playwright (API sync) fait tourner une boucle asyncio dans le thread :
@@ -252,7 +347,7 @@ class BankSyncTests(TransactionTestCase):
                 kwargs["on_status"]("WAITING_PASSWORD", "Code…")
             asyncio.run(inside_loop())
             seen.append(BankSync.objects.get(pk=sync.pk).status)
-            return export
+            return Download(path=export)
 
         with mock.patch("finance.bank_sync.download_ca_operations", side_effect=fake_download):
             run_bank_sync(sync.pk)
@@ -339,6 +434,8 @@ class InitialImportTests(TransactionTestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
+        # Le diagnostic de synchronisation s'écrit dans le dossier temporaire
+        self.enterContext(override_settings(DATA_DIR=self.tmp))
         self.user = get_user_model().objects.create_user("jean", password="x")
         create_default_categories(self.user)
 
@@ -355,7 +452,7 @@ class InitialImportTests(TransactionTestCase):
             # L'import initial demande bien une large période
             self.assertLess((kwargs["end"] - kwargs["start"]).days, 400)
             self.assertGreater((kwargs["end"] - kwargs["start"]).days, 300)
-            return write_sample_export(kwargs["target_dir"])
+            return Download(path=write_sample_export(kwargs["target_dir"]))
 
         with mock.patch("finance.bank_sync.download_ca_operations", side_effect=fake_download):
             run_bank_sync(sync.pk)
@@ -896,3 +993,478 @@ class SubscriptionLabelVariantsTests(BudgetTestMixin, TestCase):
         category, subcategory = guess_category(self.user, EntryType.EXPENSE, "Paiement par carte ANTHROPIC* CLAUDE SU", {})
         self.assertEqual(category, self.ai)
         self.assertEqual(subcategory.name, "Outils IA & logiciels")
+
+
+# ============================================================
+# ÉPARGNE
+# ============================================================
+
+from datetime import timedelta  # noqa: E402
+
+from . import market_data, wealth  # noqa: E402
+from .ca_csv import AccountBalance  # noqa: E402
+from .models import (  # noqa: E402
+    AssetClass,
+    BalanceSnapshot,
+    ExchangeRate,
+    Instrument,
+    OperationKind,
+    PortfolioOperation,
+    PricePoint,
+    Zone,
+)
+
+
+def fake_history(prices, currency="EUR", name=""):
+    """Remplace market_data.fetch_history : cours fixes, sans réseau."""
+
+    def fetch(symbol, start, end=None):
+        closes = [(day, Decimal(str(value))) for day, value in prices if day >= start and (end is None or day <= end)]
+        if not closes:
+            raise market_data.MarketDataError(f"Aucun cours trouvé pour {symbol}.")
+        return {"currency": currency, "name": name, "closes": closes}
+
+    return fetch
+
+
+class SavingsTestMixin:
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("epargnant", password="x")
+        self.pea = SavingsAccount.objects.create(
+            user=self.user, kind=SavingsKind.PEA, name="PEA", ceiling=Decimal("150000"),
+            opened_on=date(2020, 1, 15),
+        )
+        self.etf = Instrument.objects.create(
+            user=self.user, symbol="CW8.PA", name="Amundi MSCI World", quote_type="ETF",
+        )
+
+    def buy(self, day, quantity, price, fees="0", instrument=None, account=None):
+        return PortfolioOperation.objects.create(
+            account=account or self.pea, instrument=instrument or self.etf, kind=OperationKind.BUY,
+            date=day, quantity=Decimal(quantity), unit_price=Decimal(price), fees=Decimal(fees),
+        )
+
+    def sell(self, day, quantity, price, fees="0"):
+        return PortfolioOperation.objects.create(
+            account=self.pea, instrument=self.etf, kind=OperationKind.SELL,
+            date=day, quantity=Decimal(quantity), unit_price=Decimal(price), fees=Decimal(fees),
+        )
+
+    def price(self, day, close, instrument=None):
+        PricePoint.objects.create(instrument=instrument or self.etf, date=day, close=Decimal(close))
+
+
+class WealthCalculationTests(SavingsTestMixin, TestCase):
+    def test_pru_includes_fees_and_sale_realizes_gain(self):
+        self.buy(date(2026, 1, 5), "10", "100", fees="2")
+        self.buy(date(2026, 2, 5), "10", "110", fees="2")
+        self.sell(date(2026, 3, 5), "5", "120", fees="1")
+        self.price(date(2026, 1, 5), "100")
+        self.price(date(2026, 3, 10), "130")
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 3, 10))
+        row = analysis["positions"][0]
+
+        self.assertEqual(row["quantity"], Decimal("15"))
+        # (1002 + 1102) / 20 = 105,20 € de PRU ; 5 parts vendues à 599 € nets
+        self.assertEqual(row["pru"], Decimal("105.2"))
+        self.assertEqual(row["cost"], Decimal("1578.00"))
+        self.assertEqual(row["value"], Decimal("1950.00"))
+        self.assertEqual(analysis["totals"]["realized"], Decimal("73.00"))
+        self.assertEqual(analysis["totals"]["latent"], Decimal("372.00"))
+        self.assertEqual(analysis["totals"]["gain"], Decimal("445.00"))
+        self.assertEqual(analysis["fees"]["brokerage"], Decimal("5.00"))
+        self.assertEqual(analysis["fees"]["orders"], 3)
+
+    def test_foreign_listing_is_converted_to_euros(self):
+        apple = Instrument.objects.create(user=self.user, symbol="AAPL", name="Apple", currency="USD", quote_type="EQUITY")
+        self.buy(date(2026, 1, 5), "2", "180", instrument=apple)
+        self.price(date(2026, 1, 5), "200", instrument=apple)
+        ExchangeRate.objects.create(currency="USD", date=date(2026, 1, 5), rate=Decimal("0.9"))
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 1, 6))
+
+        self.assertEqual(analysis["positions"][0]["value"], Decimal("360.00"))
+
+    def test_history_and_ter_accrual(self):
+        self.etf.ter = Decimal("0.5")
+        self.etf.save()
+        self.buy(date(2025, 1, 1), "10", "100")
+        self.price(date(2025, 1, 1), "100")
+        self.price(date(2026, 1, 1), "100")
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 1, 1))
+        history = analysis["history"]
+
+        self.assertEqual(history["dates"][0], "2025-01-01")
+        self.assertEqual(history["value"][-1], "1000.00")
+        self.assertEqual(history["invested"][-1], "1000.00")
+        # 0,5 % par an sur 1 000 € pendant un an
+        self.assertEqual(analysis["fees"]["ter_to_date"], Decimal("5.00"))
+        self.assertEqual(analysis["fees"]["ter_year"], Decimal("5.00"))
+
+    def test_annualized_return_after_one_year(self):
+        self.assertEqual(
+            wealth.xirr([(date(2025, 1, 1), Decimal("-1000")), (date(2026, 1, 1), Decimal("1100"))]),
+            Decimal("10.0"),
+        )
+        self.buy(date(2025, 1, 1), "10", "100")
+        self.price(date(2025, 1, 1), "100")
+        self.price(date(2026, 1, 1), "110")
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 1, 1))
+        self.assertEqual(analysis["totals"]["annualized"], Decimal("10.0"))
+
+    def test_account_fees_dividends_and_pea_status(self):
+        self.pea.cash_balance = Decimal("50")
+        self.pea.save()
+        self.buy(date(2026, 1, 5), "10", "100", fees="5")
+        PortfolioOperation.objects.create(account=self.pea, kind=OperationKind.FEE, date=date(2026, 2, 1), amount=Decimal("12"))
+        PortfolioOperation.objects.create(
+            account=self.pea, instrument=self.etf, kind=OperationKind.DIVIDEND, date=date(2026, 3, 1), amount=Decimal("8"),
+        )
+        self.price(date(2026, 1, 5), "100")
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 3, 2))
+
+        self.assertEqual(analysis["fees"]["paid"], Decimal("17.00"))
+        self.assertEqual(analysis["totals"]["dividends"], Decimal("8.00"))
+        self.assertEqual(analysis["totals"]["value"], Decimal("1050.00"))
+        pea = analysis["accounts"][0]["pea"]
+        # 50 € de liquidités + 1 005 € d'achat - 8 € de dividendes + 12 € de frais
+        self.assertEqual(pea["deposits"], Decimal("1059.00"))
+        self.assertTrue(pea["is_mature"])
+
+    def test_held_quantity_for_sales(self):
+        self.buy(date(2026, 1, 5), "10", "100")
+        self.sell(date(2026, 2, 5), "4", "100")
+        self.assertEqual(wealth.held_quantity(self.pea, self.etf, date(2026, 1, 31)), Decimal("10"))
+        self.assertEqual(wealth.held_quantity(self.pea, self.etf, date(2026, 2, 5)), Decimal("6"))
+
+    def test_guess_classification(self):
+        self.assertEqual(
+            wealth.guess_classification("Amundi MSCI World Swap UCITS ETF", "ETF"),
+            (AssetClass.EQUITY, Zone.WORLD),
+        )
+        self.assertEqual(
+            wealth.guess_classification("iShares Core Euro Government Bond", "ETF"),
+            (AssetClass.BOND, Zone.EUROPE),
+        )
+        self.assertEqual(
+            wealth.guess_classification("Amundi PEA S&P 500 ESG", "ETF"),
+            (AssetClass.EQUITY, Zone.US),
+        )
+        self.assertEqual(wealth.guess_classification("TotalEnergies SE", "EQUITY", "Paris"), (AssetClass.EQUITY, Zone.FRANCE))
+
+    def test_balance_accounts_interest_and_ceiling(self):
+        livret = SavingsAccount.objects.create(
+            user=self.user, kind=SavingsKind.LIVRET_A, name="Livret A",
+            interest_rate=Decimal("2"), ceiling=Decimal("22950"),
+        )
+        BalanceSnapshot.objects.create(account=livret, date=date(2025, 6, 1), balance=Decimal("8000"))
+        BalanceSnapshot.objects.create(account=livret, date=date(2026, 6, 1), balance=Decimal("10000"))
+
+        row = wealth.balance_account_rows([livret], today=date(2026, 6, 2))[0]
+
+        self.assertEqual(row["balance"], Decimal("10000"))
+        self.assertEqual(row["interest_year"], Decimal("200.00"))
+        self.assertEqual(row["room"], Decimal("12950"))
+        self.assertEqual(row["change_year"], Decimal("2000"))
+
+    def test_overview_combines_livrets_and_portfolio(self):
+        livret = SavingsAccount.objects.create(user=self.user, kind=SavingsKind.LDDS, name="LDDS")
+        BalanceSnapshot.objects.create(account=livret, date=date(2026, 1, 1), balance=Decimal("3000"))
+        self.buy(date(2026, 1, 5), "10", "100")
+        self.price(date(2026, 1, 5), "120")
+
+        overview = wealth.savings_overview(self.user, today=date(2026, 1, 6))
+
+        self.assertEqual(overview["total"], Decimal("4200.00"))
+        self.assertEqual(overview["history"]["balances"][-1], "3000.00")
+        self.assertEqual(overview["history"]["securities"][-1], "1200.00")
+        classes = {item["name"]: item["value"] for item in overview["allocation"]["classes"]}
+        self.assertEqual(classes[wealth.LIVRETS_LABEL], Decimal("3000.00"))
+        self.assertEqual(classes["Actions"], Decimal("1200.00"))
+
+
+class BankBalanceImportTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("jean", password="x")
+
+    def balance(self, account, number, amount, day=date(2026, 10, 1)):
+        return AccountBalance(account=account, account_number=number, balance_date=day, balance=Decimal(amount))
+
+    def test_livrets_are_created_then_updated(self):
+        balances = [
+            self.balance("Compte de Dépôt", "111", "1234.56"),
+            self.balance("Livret A", "222", "5000"),
+            self.balance("LDD SOLIDAIRE", "333", "1200"),
+            self.balance("PEA", "444", "50"),
+        ]
+        self.assertEqual(len(wealth.import_bank_balances(self.user, balances)), 2)
+
+        livret = SavingsAccount.objects.get(bank_account_number="222")
+        self.assertEqual(livret.kind, SavingsKind.LIVRET_A)
+        self.assertEqual(livret.ceiling, Decimal("22950"))
+        self.assertEqual(SavingsAccount.objects.get(bank_account_number="333").kind, SavingsKind.LDDS)
+        self.assertFalse(SavingsAccount.objects.filter(bank_account_number__in=["111", "444"]).exists())
+
+        # Nouvelle synchronisation : même compte, nouveau relevé
+        livret.name = "Mon livret A"
+        livret.save()
+        wealth.import_bank_balances(self.user, [self.balance("Livret A", "222", "5100", day=date(2026, 11, 1))])
+        livret.refresh_from_db()
+        self.assertEqual(livret.name, "Mon livret A")
+        self.assertEqual(livret.snapshots.count(), 2)
+        self.assertEqual(livret.snapshots.first().balance, Decimal("5100"))
+
+    def test_livret_entered_by_hand_is_linked_to_the_bank_account(self):
+        manual = SavingsAccount.objects.create(user=self.user, kind=SavingsKind.LIVRET_JEUNE, name="Mon livret jeune")
+        updated = wealth.import_bank_balances(self.user, [self.balance("LIVRET JEUNE MOZAIC", "333", "1600")])
+
+        self.assertEqual(updated, [manual])
+        manual.refresh_from_db()
+        self.assertEqual(manual.bank_account_number, "333")
+        self.assertEqual(manual.name, "Mon livret jeune")
+        self.assertEqual(SavingsAccount.objects.filter(user=self.user).count(), 1)
+
+        # Un « autre livret » saisi à la main n'est jamais rattaché d'office
+        other = SavingsAccount.objects.create(user=self.user, kind=SavingsKind.LIVRET, name="Livret perso")
+        wealth.import_bank_balances(self.user, [self.balance("Livret Sociétaire", "555", "300")])
+        other.refresh_from_db()
+        self.assertEqual(other.bank_account_number, "")
+
+    def test_guess_savings_kind(self):
+        self.assertEqual(wealth.guess_savings_kind("Livret d'Epargne Populaire"), SavingsKind.LEP)
+        self.assertEqual(wealth.guess_savings_kind("Plan d'Epargne Logement"), SavingsKind.PEL)
+        self.assertEqual(wealth.guess_savings_kind("Livret Jeune"), SavingsKind.LIVRET_JEUNE)
+        self.assertEqual(wealth.guess_savings_kind("Livret Sociétaire"), SavingsKind.LIVRET)
+
+
+class MarketDataTests(SavingsTestMixin, TestCase):
+    def test_search_keeps_tradable_titles_and_isin(self):
+        class FakeSearch:
+            def __init__(self, query, **kwargs):
+                self.quotes = [
+                    {"symbol": "CW8.PA", "shortname": "Amundi MSCI World", "quoteType": "ETF", "exchDisp": "Paris", "typeDisp": "ETF"},
+                    {"symbol": "CW8=F", "shortname": "Future", "quoteType": "FUTURE"},
+                ]
+
+        fake_yf = mock.Mock(Search=FakeSearch)
+        with mock.patch("finance.market_data._yfinance", return_value=fake_yf):
+            results = market_data.search_instruments("lu1681043599")
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["symbol"], "CW8.PA")
+        self.assertEqual(results[0]["isin"], "LU1681043599")
+
+    def test_refresh_stores_prices_and_exchange_rates(self):
+        apple = Instrument.objects.create(user=self.user, symbol="AAPL", name="Apple")
+        self.buy(date(2026, 1, 5), "1", "180", instrument=apple)
+        prices = [(date(2026, 1, 2), 200), (date(2026, 1, 5), 210)]
+
+        def fetch(symbol, start, end=None):
+            if symbol == "USDEUR=X":
+                return fake_history([(date(2026, 1, 2), 0.9)], currency="EUR")(symbol, start, end)
+            return fake_history(prices, currency="USD")(symbol, start, end)
+
+        with mock.patch("finance.market_data.fetch_history", side_effect=fetch):
+            updated, errors = market_data.refresh_prices(self.user)
+
+        apple.refresh_from_db()
+        self.assertEqual((updated, errors), (1, []))
+        self.assertEqual(apple.currency, "USD")
+        self.assertEqual(apple.last_price, Decimal("210"))
+        self.assertEqual(apple.prices.count(), 2)
+        self.assertTrue(ExchangeRate.objects.filter(currency="USD").exists())
+        self.assertFalse(market_data.prices_are_stale(self.user))
+
+    def test_failed_refresh_keeps_app_usable(self):
+        self.buy(date(2026, 1, 5), "1", "100")
+        with mock.patch("finance.market_data.fetch_history", side_effect=market_data.MarketDataError("Hors ligne")):
+            updated, errors = market_data.refresh_prices(self.user)
+        self.assertEqual((updated, errors), (0, ["Hors ligne"]))
+        # Pas de nouvelle tentative immédiate (pas de boucle de rechargement)
+        self.assertFalse(market_data.prices_are_stale(self.user))
+        analysis = wealth.analyse_portfolio([self.pea])
+        self.assertEqual(analysis["positions"][0]["value"], Decimal("100.00"))
+
+
+class SavingsViewsTests(SavingsTestMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+
+    def test_pages_render_empty_and_with_data(self):
+        other = get_user_model().objects.create_user("vide", password="x")
+        self.client.force_login(other)
+        for name in ("savings", "savings_balances", "savings_portfolio", "savings_fees"):
+            self.assertEqual(self.client.get(reverse(f"finance:{name}")).status_code, 200, name)
+
+        self.client.force_login(self.user)
+        livret = SavingsAccount.objects.create(user=self.user, kind=SavingsKind.LIVRET_A, name="Livret A", interest_rate=Decimal("1.7"))
+        BalanceSnapshot.objects.create(account=livret, date=date.today() - timedelta(days=40), balance=Decimal("900"))
+        BalanceSnapshot.objects.create(account=livret, date=date.today(), balance=Decimal("1000"))
+        self.buy(date.today() - timedelta(days=30), "10", "100", fees="1")
+        self.price(date.today() - timedelta(days=30), "100")
+        self.price(date.today(), "105")
+        for name in ("savings", "savings_balances", "savings_portfolio", "savings_fees"):
+            response = self.client.get(reverse(f"finance:{name}"))
+            self.assertEqual(response.status_code, 200, name)
+        self.assertContains(self.client.get(reverse("finance:savings_portfolio")), "Amundi MSCI World")
+
+    def test_add_livret_with_balance_and_default_ceiling(self):
+        response = self.client.post(reverse("finance:add_balance_account"), {
+            "kind": SavingsKind.LDDS, "name": "", "institution": "CA", "interest_rate": "1.7", "balance": "2500",
+        })
+        self.assertRedirects(response, reverse("finance:savings_balances"))
+        account = SavingsAccount.objects.get(user=self.user, kind=SavingsKind.LDDS)
+        self.assertEqual(account.name, "LDDS")
+        self.assertEqual(account.ceiling, Decimal("12000"))
+        self.assertEqual(account.snapshots.get().balance, Decimal("2500"))
+
+    def test_add_buy_creates_instrument_and_downloads_prices(self):
+        day = date.today() - timedelta(days=3)
+        with mock.patch(
+            "finance.market_data.fetch_history",
+            side_effect=fake_history([(day - timedelta(days=2), 98), (day, 100)]),
+        ):
+            response = self.client.post(reverse("finance:add_portfolio_operation"), {
+                "account": self.pea.pk, "kind": OperationKind.BUY, "date": day.isoformat(),
+                "quantity": "3", "unit_price": "100.5", "fees": "0.99",
+                "symbol": "WPEA.PA", "instrument_name": "iShares MSCI World Swap PEA UCITS ETF",
+                "isin": "IE0002XZSHO1", "exchange": "Paris", "quote_type": "ETF",
+            })
+        self.assertRedirects(response, f"{reverse('finance:savings_portfolio')}?compte={self.pea.pk}")
+        instrument = Instrument.objects.get(user=self.user, symbol="WPEA.PA")
+        self.assertEqual((instrument.asset_class, instrument.zone), (AssetClass.EQUITY, Zone.WORLD))
+        self.assertEqual(instrument.isin, "IE0002XZSHO1")
+        self.assertEqual(instrument.prices.count(), 2)
+        operation = instrument.operations.get()
+        self.assertEqual(operation.total, Decimal("302.49"))
+
+    def test_sale_cannot_exceed_holdings(self):
+        self.buy(date(2026, 1, 5), "2", "100")
+        response = self.client.post(reverse("finance:add_portfolio_operation"), {
+            "account": self.pea.pk, "kind": OperationKind.SELL, "date": "2026-02-01",
+            "quantity": "5", "unit_price": "110", "fees": "0", "symbol": "CW8.PA",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(PortfolioOperation.objects.filter(kind=OperationKind.SELL).exists())
+
+    def test_account_fee_without_title(self):
+        self.client.post(reverse("finance:add_portfolio_operation"), {
+            "account": self.pea.pk, "kind": OperationKind.FEE, "date": "2026-01-31",
+            "amount": "15", "note": "Droits de garde", "next": reverse("finance:savings_fees"),
+        })
+        fee = PortfolioOperation.objects.get(kind=OperationKind.FEE)
+        self.assertIsNone(fee.instrument)
+        self.assertEqual(fee.total, Decimal("15"))
+
+    def test_delete_position_removes_its_history(self):
+        self.buy(date(2026, 1, 5), "2", "100")
+        self.buy(date(2026, 2, 5), "1", "100")
+        self.client.post(reverse("finance:delete_portfolio_position", args=[self.pea.pk, self.etf.pk]))
+        self.assertFalse(PortfolioOperation.objects.filter(instrument=self.etf).exists())
+
+    def test_edit_instrument_sets_ter_and_class(self):
+        prefix = f"i{self.etf.pk}"
+        self.client.post(reverse("finance:edit_instrument", args=[self.etf.pk]), {
+            f"{prefix}-name": "Amundi MSCI World", f"{prefix}-isin": "lu1681043599",
+            f"{prefix}-asset_class": AssetClass.EQUITY, f"{prefix}-zone": Zone.WORLD, f"{prefix}-ter": "0.38",
+        })
+        self.etf.refresh_from_db()
+        self.assertEqual(self.etf.ter, Decimal("0.380"))
+        self.assertEqual(self.etf.isin, "LU1681043599")
+
+    def test_other_users_data_is_protected(self):
+        other = get_user_model().objects.create_user("autre", password="x")
+        self.client.force_login(other)
+        response = self.client.post(reverse("finance:delete_savings_account", args=[self.pea.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(SavingsAccount.objects.filter(pk=self.pea.pk).exists())
+
+    def test_search_and_price_endpoints(self):
+        with mock.patch("finance.market_data.search_instruments", return_value=[{"symbol": "CW8.PA"}]):
+            response = self.client.get(reverse("finance:search_instruments"), {"q": "CW8"})
+        self.assertEqual(response.json()["results"][0]["symbol"], "CW8.PA")
+
+        with mock.patch(
+            "finance.market_data.fetch_history",
+            side_effect=fake_history([(date(2026, 3, 13), "52.3")]),
+        ):
+            response = self.client.get(reverse("finance:instrument_price"), {"symbol": "CW8.PA", "date": "2026-03-15"})
+        self.assertEqual(response.json()["eur"], "52.30")
+        self.assertEqual(response.json()["date"], "2026-03-13")
+
+    def test_refresh_endpoint(self):
+        self.buy(date(2026, 1, 5), "1", "100")
+        with mock.patch("finance.market_data.fetch_history", side_effect=fake_history([(date(2026, 1, 5), 101)])):
+            response = self.client.post(reverse("finance:refresh_prices"), {"force": "1"})
+        self.assertEqual(response.json(), {"ok": True, "updated": 1, "errors": []})
+
+
+# ============================================================
+# ACCUEIL : PATRIMOINE, MOIS EN COURS, CONSEILS
+# ============================================================
+
+from . import home  # noqa: E402
+from .views import _monthly_history  # noqa: E402
+
+
+class HomeTests(BudgetTestMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.login(username="budget", password="pass-12345")
+        self.today = date.today()
+
+    def month_day(self, offset, day=10):
+        year, month = budget_calc.add_months(self.today.year, self.today.month, offset)
+        return date(year, month, min(day, self.today.day) if offset == 0 else day)
+
+    def summary(self):
+        return home.home_summary(self.user, self.today, _monthly_history(self.user, self.today))
+
+    def titles(self):
+        return [item["title"] for item in self.summary()["insights"]]
+
+    def test_home_renders_without_data(self):
+        response = self.client.get(reverse("finance:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Bonjour budget")
+        self.assertContains(response, "Crée ton budget")
+        self.assertContains(response, "Connecte ta banque")
+        self.assertContains(response, "Ajoute ton épargne")
+
+    def test_category_spike_against_recent_average(self):
+        for offset in (-3, -2, -1):
+            self.income("2000", self.month_day(offset))
+            self.expense("100", self.food, day=self.month_day(offset))
+        self.expense("250", self.food, day=self.month_day(0))
+        self.assertIn(f"{budget_calc.FOOD_CATEGORY_NAME} : +150 %", self.titles())
+
+    def test_small_categories_do_not_spike(self):
+        for offset in (-3, -2, -1):
+            self.income("2000", self.month_day(offset))
+            self.expense("5", self.food, day=self.month_day(offset))
+        self.expense("80", self.food, day=self.month_day(0))
+        self.assertFalse(any(title.startswith(budget_calc.FOOD_CATEGORY_NAME) for title in self.titles()))
+
+    def test_safety_cushion_in_months_of_expenses(self):
+        for offset in (-2, -1):
+            self.income("2000", self.month_day(offset))
+            self.expense("1000", self.housing, day=self.month_day(offset))
+        livret = SavingsAccount.objects.create(user=self.user, kind=SavingsKind.LIVRET_A, name="Livret A")
+        BalanceSnapshot.objects.create(account=livret, date=self.today, balance=Decimal("2000"))
+        summary = self.summary()
+        self.assertEqual(summary["wealth"]["safety_months"], Decimal("2.0"))
+        self.assertIn("Matelas de sécurité à renforcer", [item["title"] for item in summary["insights"]])
+
+    def test_daily_allowance_from_variable_budget(self):
+        plan = self.plan(valid_from=date(self.today.year, self.today.month, 1))
+        BudgetLine.objects.create(plan=plan, section=BudgetSection.VARIABLE, category=self.food, amount=Decimal("300"))
+        self.expense("100", self.food, day=self.month_day(0))
+        current = self.summary()["current"]
+        self.assertEqual(current["variable_left"], Decimal("200.00"))
+        self.assertEqual(current["daily_allowance"], budget_calc.money(Decimal("200") / current["days_left"]))
+        response = self.client.get(reverse("finance:dashboard"))
+        self.assertContains(response, "Par jour, d'ici la fin du mois")

@@ -1,0 +1,20 @@
+<div class="dashboard-title-row mb-3">
+    <div>
+        <h1 class="h3 mb-1">Épargne</h1>
+        <p class="text-muted mb-0">{{ subtitle }}</p>
+    </div>
+</div>
+<ul class="nav nav-tabs settings-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if savings_tab == 'overview' %}active{% endif %}" href="{% url 'finance:savings' %}">Vue d'ensemble</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if savings_tab == 'livrets' %}active{% endif %}" href="{% url 'finance:savings_balances' %}">Livrets</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if savings_tab == 'portefeuille' %}active{% endif %}" href="{% url 'finance:savings_portfolio' %}">Portefeuille</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if savings_tab == 'frais' %}active{% endif %}" href="{% url 'finance:savings_fees' %}">Frais</a>
+    </li>
+</ul>

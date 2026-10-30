@@ -7,7 +7,10 @@ Déroulé :
   3. la fenêtre s'affiche UNIQUEMENT pour que l'utilisateur tape son code personnel
      sur le clavier virtuel du site (et valide Secur'Pass si demandé) ;
   4. dès la connexion détectée, la fenêtre est à nouveau réduite ;
-  5. téléchargement du CSV de la période demandée, puis fermeture de Chrome.
+  5. téléchargement du CSV de la période demandée ;
+  6. si des livrets sont absents de ce relevé (aucune opération sur la période),
+     second relevé sur 12 mois pour ces seuls comptes, afin d'avoir leur solde ;
+  7. fermeture de Chrome.
 
 Chaque synchronisation part d'un navigateur neuf (aucun profil ni cookie conservé) :
 l'utilisateur retape son code à chaque fois et aucune session bancaire ne reste
@@ -18,10 +21,12 @@ Test en ligne de commande (depuis backend/) :
 """
 
 import argparse
+import logging
 import re
 import shutil
 import tempfile
 import time
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -33,6 +38,8 @@ from playwright.sync_api import (
 )
 
 
+logger = logging.getLogger(__name__)
+
 REGION_URL = (
     "https://www.credit-agricole.fr/particulier/acces-cr.html"
     "?origin=/content/ca/national/npc/fr/particulier/acceder-a-mes-comptes.html"
@@ -40,6 +47,21 @@ REGION_URL = (
 
 # Iframe qui contient le formulaire de téléchargement
 FORM_IFRAME = "#TELECHARGER-OPERATIONS"
+
+# Liste les éléments du formulaire (hors cartes de comptes) : "balise[name][role] libellé"
+FORM_OUTLINE_JS = """
+body => [...body.querySelectorAll('*')]
+    .filter(el => !el.closest('app-account-card'))
+    .filter(el => el.tagName.startsWith('MDS-') || el.hasAttribute('role')
+        || ['INPUT', 'BUTTON', 'LABEL'].includes(el.tagName))
+    .slice(0, 150)
+    .map(el => {
+        const name = el.getAttribute('name') ? `[name=${el.getAttribute('name')}]` : '';
+        const role = el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : '';
+        const text = (el.innerText || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
+        return `${el.tagName.toLowerCase()}${name}${role} ${text}`;
+    })
+"""
 
 # Temps laissé à l'utilisateur pour taper son code (+ Secur'Pass éventuel)
 LOGIN_TIMEOUT_MS = 3 * 60 * 1000
@@ -93,13 +115,21 @@ def is_logged_in(url):
     return parsed.hostname == "espace-client.credit-agricole.fr" and len(segments) >= 3
 
 
-def check_box(checkbox):
+def check_box(checkbox, checked=True):
     """
-    Coche un <mds-checkbox> (case personnalisée du site) s'il ne l'est pas déjà.
+    Coche (ou décoche) un <mds-checkbox>, case personnalisée du site,
+    s'il n'est pas déjà dans l'état voulu.
     """
 
-    if checkbox.get_attribute("aria-checked") != "true":
+    if (checkbox.get_attribute("aria-checked") == "true") != checked:
         checkbox.click()
+
+
+@dataclass
+class Download:
+    path: Path                                          # relevé de la période demandée
+    balance_paths: list = field(default_factory=list)   # relevés pris pour le solde des livrets absents
+    account_cards: list = field(default_factory=list)   # texte des cartes de comptes du formulaire
 
 
 # ============================================================
@@ -119,6 +149,7 @@ class CreditAgricoleScraper:
         self.login = login
         self.postal_code = postal_code
         self.on_status = on_status or (lambda status, message="": None)
+        self.account_cards = []
 
     # --------------------------------------------------------
     # Fenêtre
@@ -261,9 +292,23 @@ class CreditAgricoleScraper:
             check_box(accounts.nth(i))
 
     def select_csv_format(self, form):
+        """
+        Choisit le format CSV. Le libellé de l'option a déjà changé côté site
+        ("CSV" seul auparavant) : on accepte tout libellé contenant le mot CSV.
+        """
 
-        form.locator('mds-select[name="exportFormat"]').click()
-        form.locator("mds-option", has_text=re.compile(r"^\s*csv\s*$", re.I)).click()
+        select = form.locator('mds-select[name="exportFormat"]')
+        csv = re.compile(r"\bcsv\b", re.I)
+
+        select.click()
+
+        if click_first([
+            form.locator("mds-option", has_text=csv),
+            form.get_by_role("option", name=csv),
+        ], timeout=5000):
+            return
+
+        raise BankSyncError("Le site ne propose plus le format CSV : synchronisation impossible.")
 
     def fill_date(self, form, name, value):
         """
@@ -296,7 +341,19 @@ class CreditAgricoleScraper:
 
     def fill_period(self, form, start, end):
 
-        form.locator("mds-radio", has_text=re.compile(r"p[ée]riode personnalis[ée]e", re.I)).click()
+        # Le libellé était "Période personnalisée" (bouton radio) jusqu'en octobre 2026 :
+        # on accepte une autre balise ou tout libellé contenant "personnalisé"
+        custom = re.compile(r"personnalis", re.I)
+
+        clicked = click_first([
+            form.locator("mds-radio", has_text=custom),
+            form.get_by_role("radio", name=custom),
+            form.get_by_text(custom),
+        ])
+
+        # Sans choix à faire, les dates peuvent être affichées d'office
+        if not clicked and not form.locator('mds-date-picker[name="startDate"]').is_visible():
+            raise BankSyncError("Choix de la période introuvable sur le site.")
 
         self.fill_date(form, "startDate", start)
         self.fill_date(form, "endDate", end)
@@ -323,7 +380,11 @@ class CreditAgricoleScraper:
 
         raise BankSyncError("La banque n'a pas envoyé le fichier des opérations.")
 
-    def download_csv(self, start, end):
+    def download_csv(self, start, end, account_numbers=None):
+        """
+        Télécharge le relevé de `start` à `end` : tous les comptes, ou
+        seulement ceux de `account_numbers`.
+        """
 
         page = self.page
 
@@ -334,25 +395,76 @@ class CreditAgricoleScraper:
         # Attend que le formulaire soit chargé dans l'iframe
         form.locator("app-account-card").first.wait_for(state="visible", timeout=20000)
 
-        self.select_all_accounts(form)
-        self.select_csv_format(form)
-        self.fill_period(form, start, end)
+        try:
 
-        # Le site affiche une fenêtre "Téléchargement en cours" puis envoie le fichier
-        form.locator(
-            "mds-button", has_text=re.compile(r"t[ée]l[ée]charger mes op[ée]rations", re.I)
-        ).click()
+            if account_numbers is None:
+                self.select_all_accounts(form)
+                self.account_cards = self.read_account_cards(form)
+            else:
+                self.select_accounts(form, account_numbers)
+            self.select_csv_format(form)
+            self.fill_period(form, start, end)
+
+            # Le site affiche une fenêtre "Téléchargement en cours" puis envoie le fichier
+            form.locator(
+                "mds-button", has_text=re.compile(r"t[ée]l[ée]charger mes op[ée]rations", re.I)
+            ).click()
+
+        except (PlaywrightTimeoutError, BankSyncError):
+            self.log_form_outline(form)
+            raise
 
         return self.wait_for_downloaded_file()
+
+    def select_accounts(self, form, numbers):
+        """
+        Ne coche que les comptes dont le numéro est dans `numbers`.
+        """
+
+        cards = form.locator("app-account-card")
+
+        for i in range(cards.count()):
+            card = cards.nth(i)
+            digits = re.sub(r"\D", "", card.inner_text())
+            check_box(card.locator("mds-checkbox"), any(number in digits for number in numbers))
+
+    def read_account_cards(self, form):
+        """
+        Texte de chaque carte de compte du formulaire (libellé, numéro, solde).
+        Le relevé CSV ne contient pas toujours tous les comptes : ces cartes
+        permettent de relever quand même le solde de chaque livret.
+        """
+
+        try:
+            return form.locator("app-account-card").all_inner_texts()
+        except PlaywrightError:
+            return []
+
+    def log_form_outline(self, form):
+        """
+        Écrit dans les logs le plan du formulaire (balises, noms, libellés),
+        pour adapter les sélecteurs quand le site change. Le contenu des
+        cartes de comptes (numéros, soldes) est exclu.
+        """
+
+        try:
+            lines = form.locator("body").evaluate(FORM_OUTLINE_JS)
+        except PlaywrightError:
+            return
+
+        logger.warning("Plan du formulaire de téléchargement :\n%s", "\n".join(lines))
 
     # --------------------------------------------------------
     # Point d'entrée
     # --------------------------------------------------------
 
-    def run(self, start, end, target_dir):
+    def run(self, start, end, target_dir, balance_accounts=None, balance_start=None):
         """
         Télécharge les opérations de `start` à `end` dans `target_dir`.
-        Renvoie le chemin du CSV brut.
+
+        `balance_accounts(chemin_du_relevé, cartes)` renvoie les numéros des
+        comptes dont il manque le solde : ils sont alors téléchargés une
+        seconde fois, de `balance_start` à `end`.
         """
 
         target_dir = Path(target_dir)
@@ -405,11 +517,26 @@ class CreditAgricoleScraper:
                     self.on_status("DOWNLOADING", "Téléchargement des opérations…")
                     downloaded = self.download_csv(start, end)
 
+                    stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
                     target_dir.mkdir(parents=True, exist_ok=True)
-                    target = target_dir / f"ca_operations_{datetime.now():%Y%m%d_%H%M%S}.csv"
+                    target = target_dir / f"ca_operations_{stamp}.csv"
                     shutil.move(downloaded, target)
+                    download = Download(path=target, account_cards=self.account_cards)
 
-                    return target
+                    missing = balance_accounts(target, self.account_cards) if balance_accounts and balance_start else []
+                    if missing:
+                        self.on_status("DOWNLOADING", "Relevé du solde des livrets…")
+                        try:
+                            downloaded = self.download_csv(balance_start, end, account_numbers=missing)
+                        except (PlaywrightError, BankSyncError):
+                            # Les opérations sont déjà là : seul le solde de ces livrets manquera
+                            logger.warning("Second relevé (solde des livrets) impossible", exc_info=True)
+                        else:
+                            balance_target = target_dir / f"ca_soldes_{stamp}.csv"
+                            shutil.move(downloaded, balance_target)
+                            download.balance_paths.append(balance_target)
+
+                    return download
 
                 except PlaywrightError as error:
 
@@ -417,6 +544,13 @@ class CreditAgricoleScraper:
                         raise BankSyncError(
                             "La fenêtre Crédit Agricole s'est fermée avant la fin. Relancez la synchronisation."
                         )
+
+                    # Le message affiché reste générique : le détail (élément introuvable,
+                    # page en cours) ne sert qu'à diagnostiquer un changement du site
+                    logger.exception(
+                        "Erreur Playwright pendant la synchronisation (page : %s)",
+                        urlparse(self.page.url).path if hasattr(self, "page") else "-",
+                    )
 
                     raise BankSyncError(
                         "Le site du Crédit Agricole ne répond pas comme prévu. Réessayez dans un instant."
@@ -435,11 +569,17 @@ class CreditAgricoleScraper:
             shutil.rmtree(self.download_dir, ignore_errors=True)
 
 
-def download_ca_operations(login, postal_code, start, end, target_dir, on_status=None):
+def download_ca_operations(
+    login, postal_code, start, end, target_dir, on_status=None, balance_accounts=None, balance_start=None
+):
+    """
+    Renvoie un Download : relevé de la période, relevés complémentaires pour
+    le solde des livrets absents (voir CreditAgricoleScraper.run), cartes de comptes.
+    """
 
     scraper = CreditAgricoleScraper(login, postal_code, on_status)
 
-    return scraper.run(start, end, target_dir)
+    return scraper.run(start, end, target_dir, balance_accounts, balance_start)
 
 
 # ============================================================
@@ -457,7 +597,7 @@ def main():
     parser.add_argument("--au", type=parse, default=date.today())
     args = parser.parse_args()
 
-    path = download_ca_operations(
+    download = download_ca_operations(
         args.login,
         args.cp,
         args.du,
@@ -466,7 +606,7 @@ def main():
         on_status=lambda status, message="": print(f"[{status}] {message}"),
     )
 
-    print("Fichier téléchargé :", path)
+    print("Fichier téléchargé :", download.path)
 
 
 if __name__ == "__main__":

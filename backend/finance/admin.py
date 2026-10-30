@@ -1,11 +1,15 @@
 from django.contrib import admin
 
 from .models import (
+    BalanceSnapshot,
     BankConnection,
     BankSync,
     Category,
+    Instrument,
     MonthlyBudget,
+    PortfolioOperation,
     RecurringItem,
+    SavingsAccount,
     Subcategory,
     Transaction,
 )
@@ -77,3 +81,31 @@ class BankSyncAdmin(admin.ModelAdmin):
     list_display = ("user", "year", "month", "status", "created_count", "skipped_count", "started_at")
     list_filter = ("status",)
     search_fields = ("user__username", "user__email")
+
+
+@admin.register(SavingsAccount)
+class SavingsAccountAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "institution", "user", "interest_rate", "ceiling")
+    list_filter = ("kind",)
+    search_fields = ("name", "institution", "user__username", "user__email")
+
+
+@admin.register(BalanceSnapshot)
+class BalanceSnapshotAdmin(admin.ModelAdmin):
+    list_display = ("account", "date", "balance", "source")
+    list_filter = ("source",)
+    date_hierarchy = "date"
+
+
+@admin.register(Instrument)
+class InstrumentAdmin(admin.ModelAdmin):
+    list_display = ("name", "symbol", "isin", "currency", "asset_class", "zone", "ter", "last_price", "last_price_date", "user")
+    list_filter = ("asset_class", "zone", "quote_type")
+    search_fields = ("name", "symbol", "isin")
+
+
+@admin.register(PortfolioOperation)
+class PortfolioOperationAdmin(admin.ModelAdmin):
+    list_display = ("account", "kind", "instrument", "date", "quantity", "unit_price", "fees", "amount")
+    list_filter = ("kind", "account")
+    date_hierarchy = "date"

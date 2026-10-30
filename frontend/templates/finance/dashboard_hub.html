@@ -1,27 +1,381 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Dashboard - BudgWealth{% endblock %}
+{% block title %}Accueil - BudgWealth{% endblock %}
 
 {% block content %}
-<section class="finance-dashboard-hub">
-    <h1 class="h3 mb-4">Dashboard</h1>
-
-    <div class="dashboard-hub-grid">
-        <a href="{% url 'finance:dashboard_budget' %}" class="dashboard-hub-card">
-            <span class="dashboard-hub-card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
-            </span>
-            <h3>Budget</h3>
-            <p>Revenus, charges et tendances mois par mois.</p>
+<section class="home">
+    <header class="page-head">
+        <div>
+            <span class="page-eyebrow">{{ today|date:"l j F"|capfirst }}</span>
+            <h1>Bonjour {{ user.get_username }}</h1>
+            <p>Voici où en sont ton budget et ton patrimoine.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'finance:index' %}">
+            Voir {{ month_label|lower }}
+            {% include "_icon.html" with name="arrow-right" %}
         </a>
+    </header>
 
-        <span class="dashboard-hub-card is-disabled" title="Bientôt disponible">
-            <span class="dashboard-hub-card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
-            </span>
-            <h3>Épargne</h3>
-            <p>Bientôt disponible.</p>
-        </span>
+    <div class="home-grid">
+        {# ---------- Patrimoine ---------- #}
+        <article class="home-card home-wealth">
+            <div class="home-wealth-top">
+                <div>
+                    <span class="home-wealth-label">Patrimoine financier</span>
+                    <strong class="home-wealth-total">{{ wealth.total|floatformat:"0g" }} €</strong>
+                    {% if wealth.change %}
+                    <span class="home-wealth-change">
+                        {% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.amount|floatformat:"0g" }} €{% if wealth.change.percent is not None %} ({% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.percent }} %){% endif %} sur un an
+                    </span>
+                    {% elif wealth.has_accounts %}
+                    <span class="home-wealth-change">Livrets et placements réunis</span>
+                    {% else %}
+                    <span class="home-wealth-change">Ajoute tes livrets et ton PEA pour le suivre ici</span>
+                    {% endif %}
+                </div>
+                <a class="home-wealth-link" href="{% url 'finance:savings' %}" aria-label="Voir le détail de mon épargne">
+                    {% include "_icon.html" with name="arrow-right" %}
+                </a>
+            </div>
+
+            {% if wealth.history.dates|length > 1 %}
+            <div class="home-wealth-chart"><canvas id="wealthChart" role="img" aria-label="Évolution du patrimoine"></canvas></div>
+            {% elif wealth.has_accounts %}
+            <div class="home-wealth-chart">
+                <span class="home-wealth-chart-label">Versé vers l'épargne, 6 derniers mois</span>
+                <canvas id="wealthFlowChart" role="img" aria-label="Versements vers l'épargne des 6 derniers mois"></canvas>
+            </div>
+            {% endif %}
+
+            {% if wealth.has_accounts %}
+            <div class="home-wealth-split" role="img" aria-label="Livrets : {{ wealth.livrets_percent }} % du patrimoine">
+                <span class="is-livrets" style="width: {{ wealth.livrets_percent }}%"></span>
+                <span class="is-investments"></span>
+            </div>
+            <dl class="home-wealth-stats">
+                <div>
+                    <dt><i class="is-livrets"></i>Livrets</dt>
+                    <dd>{{ wealth.livrets|floatformat:"0g" }} €</dd>
+                </div>
+                <div>
+                    <dt><i class="is-investments"></i>Placements</dt>
+                    <dd>{{ wealth.investments|floatformat:"0g" }} €</dd>
+                </div>
+                <div>
+                    <dt>Versé sur 12 mois</dt>
+                    <dd>{{ wealth.contributions|floatformat:"0g" }} €</dd>
+                </div>
+                {% if wealth.interest_year %}
+                <div>
+                    <dt>Intérêts / an</dt>
+                    <dd>≈ {{ wealth.interest_year|floatformat:"0g" }} €</dd>
+                </div>
+                {% endif %}
+            </dl>
+            {% else %}
+            <div class="home-wealth-empty">
+                <a class="btn btn-light" href="{% url 'finance:savings_balances' %}">Ajouter un livret</a>
+                <a class="btn btn-ghost-light" href="{% url 'finance:savings_portfolio' %}">Ajouter un PEA / CTO</a>
+            </div>
+            {% endif %}
+        </article>
+
+        {# ---------- Mois en cours ---------- #}
+        <article class="home-card home-month">
+            <div class="home-card-head">
+                <div>
+                    <h2>{{ month_label }}</h2>
+                    <p>{% if current.days_left > 1 %}Encore {{ current.days_left }} jours{% else %}Dernier jour du mois{% endif %}</p>
+                </div>
+                {% if current.tracking %}
+                <span class="budget-badge is-{{ current.tracking.verdict }}">{{ current.tracking.verdict_label }}</span>
+                {% endif %}
+            </div>
+
+            {% if current.tracking %}
+            <div class="home-month-body">
+                <div class="home-gauge {% if current.tracking.spent_percent > 100 %}is-over{% elif current.tracking.verdict == 'watch' %}is-watch{% endif %}"
+                     style="--p: {{ current.spent_bar }}; --pace: {{ current.elapsed_percent }};"
+                     role="img" aria-label="{{ current.tracking.spent_percent }} % du budget dépensé">
+                    <div class="home-gauge-inner">
+                        <span>Reste</span>
+                        <strong>{{ current.remaining|floatformat:"0g" }} €</strong>
+                        <small>sur {{ current.tracking.budget_total|floatformat:"0g" }} €</small>
+                    </div>
+                    <i class="home-gauge-pace" aria-hidden="true"></i>
+                </div>
+                <ul class="home-month-facts">
+                    <li>
+                        <span>Dépensé</span>
+                        <strong>{{ current.tracking.spent_total|floatformat:"0g" }} €</strong>
+                        <small>{{ current.tracking.spent_percent }} % du budget · {{ current.elapsed_percent }} % du mois écoulé</small>
+                    </li>
+                    <li>
+                        <span>Par jour, d'ici la fin du mois</span>
+                        <strong class="text-accent">{{ current.daily_allowance|floatformat:"0g" }} €</strong>
+                        <small>pour tes dépenses variables</small>
+                    </li>
+                    <li>
+                        <span>Épargne</span>
+                        <strong class="text-savings">{{ current.tracking.savings_actual|floatformat:"0g" }} €</strong>
+                        <small>objectif {{ current.tracking.savings_target|floatformat:"0g" }} €</small>
+                    </li>
+                </ul>
+            </div>
+            {% else %}
+            <ul class="home-flow">
+                <li class="is-income">
+                    <span>Revenus</span>
+                    <strong>+{{ current.row.income|floatformat:"0g" }} €</strong>
+                </li>
+                <li class="is-expense">
+                    <span>Charges</span>
+                    <strong>−{{ current.row.expense|floatformat:"0g" }} €</strong>
+                </li>
+                <li class="is-savings">
+                    <span>Épargne</span>
+                    <strong>{{ current.row.savings|floatformat:"0g" }} €</strong>
+                </li>
+            </ul>
+            {% if current.expense_vs_avg is not None %}
+            <div class="home-compare">
+                <div class="home-compare-label">
+                    <span>Charges vs ta moyenne</span>
+                    <strong class="{% if current.expense_vs_avg > 100 %}text-negative{% else %}text-positive{% endif %}">{{ current.expense_vs_avg }} %</strong>
+                </div>
+                <div class="budget-progress {% if current.expense_vs_avg > 100 %}is-over{% endif %}">
+                    <span style="width: {% if current.expense_vs_avg > 100 %}100{% else %}{{ current.expense_vs_avg }}{% endif %}%"></span>
+                    <i style="left: {{ current.elapsed_percent }}%" title="Avancement du mois"></i>
+                </div>
+                <small class="text-muted">{{ current.row.expense|floatformat:"0g" }} € dépensés pour {{ current.avg_expense|floatformat:"0g" }} € par mois en moyenne</small>
+            </div>
+            {% endif %}
+            <a class="home-cta" href="{% url 'finance:budget_plan' %}">
+                <span class="home-cta-icon">{% include "_icon.html" with name="target" %}</span>
+                <span><strong>Crée ton budget</strong><small>Prérempli d'après tes dépenses, prêt en 2 minutes</small></span>
+                {% include "_icon.html" with name="chevron-right" %}
+            </a>
+            {% endif %}
+
+            <a class="home-card-link" href="{% url 'finance:index' %}">Voir toutes les opérations du mois {% include "_icon.html" with name="arrow-right" %}</a>
+        </article>
+
+        {# ---------- À retenir ---------- #}
+        <article class="home-card home-insights">
+            <div class="home-card-head">
+                <div>
+                    <h2><span class="home-title-icon">{% include "_icon.html" with name="sparkles" %}</span>À retenir</h2>
+                    <p>Ce que disent tes chiffres, en un coup d'œil</p>
+                </div>
+            </div>
+            {% if insights %}
+            <ul class="insight-list">
+                {% for item in insights %}
+                <li class="insight is-{{ item.tone }}">
+                    <span class="insight-icon">{% include "_icon.html" with name=item.icon %}</span>
+                    <div class="insight-body">
+                        <strong>{{ item.title }}</strong>
+                        <p>{{ item.text }}</p>
+                    </div>
+                    {% if item.url %}
+                    <a class="insight-cta" href="{{ item.url }}">{{ item.cta }}</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">Rien à signaler : tout est sous contrôle.</p>
+            {% endif %}
+        </article>
+
+        {# ---------- Indicateurs ---------- #}
+        <article class="home-card home-indicators">
+            <div class="home-card-head">
+                <div>
+                    <h2>Tes repères</h2>
+                    <p>{% if kpis.months %}Sur les {{ kpis.months }} derniers mois{% else %}Dès que tu auras un mois complet{% endif %}</p>
+                </div>
+            </div>
+            <div class="home-meters">
+                <div class="home-meter">
+                    <div class="home-meter-head">
+                        <span>Taux d'épargne</span>
+                        <strong class="text-savings">{{ kpis.savings_rate }} %</strong>
+                    </div>
+                    <div class="budget-progress is-savings">
+                        <span style="width: {% if kpis.savings_rate > 100 %}100{% else %}{{ kpis.savings_rate }}{% endif %}%"></span>
+                        <i style="left: {% if kpis.target_rate %}{% if kpis.target_rate > 100 %}100{% else %}{{ kpis.target_rate }}{% endif %}{% else %}20{% endif %}%" title="Repère"></i>
+                    </div>
+                    <small>{% if kpis.target_rate %}Ton objectif : {{ kpis.target_rate }} % de tes revenus{% else %}Repère conseillé : 20 % de tes revenus{% endif %}</small>
+                </div>
+
+                {% if wealth.safety_months is not None %}
+                <div class="home-meter">
+                    <div class="home-meter-head">
+                        <span>Matelas de sécurité</span>
+                        <strong>{{ wealth.safety_months|floatformat:"1" }} mois</strong>
+                    </div>
+                    <div class="budget-progress {% if wealth.safety_months < 3 %}is-warning{% endif %}">
+                        <span style="width: {{ wealth.safety_percent }}%"></span>
+                        <i style="left: 50%" title="3 mois"></i>
+                    </div>
+                    <small>de dépenses couvertes par tes livrets · conseillé : 3 à 6 mois</small>
+                </div>
+                {% endif %}
+
+                <dl class="home-averages">
+                    <div>
+                        <dt>Revenus moyens</dt>
+                        <dd class="text-income">{{ kpis.avg_income|floatformat:"0g" }} €</dd>
+                    </div>
+                    <div>
+                        <dt>Charges moyennes</dt>
+                        <dd class="text-expense">{{ kpis.avg_expense|floatformat:"0g" }} €</dd>
+                    </div>
+                    <div>
+                        <dt>Abonnements</dt>
+                        <dd>{{ subscriptions.monthly_total|floatformat:"0g" }} €<small> / mois · {{ subscriptions.active_count }} actif{{ subscriptions.active_count|pluralize }}</small></dd>
+                    </div>
+                </dl>
+            </div>
+            <a class="home-card-link" href="{% url 'finance:dashboard_budget' %}">Analyse complète {% include "_icon.html" with name="arrow-right" %}</a>
+        </article>
+
+        {# ---------- 6 derniers mois ---------- #}
+        <article class="home-card home-history">
+            <div class="home-card-head">
+                <div>
+                    <h2>Tes 6 derniers mois</h2>
+                    <p>Revenus, charges et épargne · clique sur un mois pour l'ouvrir</p>
+                </div>
+            </div>
+            <div class="home-chart"><canvas id="homeHistoryChart" role="img" aria-label="Revenus, charges et épargne des 6 derniers mois"></canvas></div>
+        </article>
+
+        {# ---------- Dépenses du mois ---------- #}
+        <article class="home-card home-categories">
+            <div class="home-card-head">
+                <div>
+                    <h2>Où part ton argent</h2>
+                    <p>{{ categories.total|floatformat:"0g" }} € de charges en {{ month_label|lower }}</p>
+                </div>
+            </div>
+            {% if categories.rows %}
+            <ul class="home-cat-list">
+                {% for row in categories.rows %}
+                <li class="cat-color-{{ forloop.counter }}">
+                    <div class="home-cat-label">
+                        <span>{{ row.name }}</span>
+                        <strong>{{ row.total|floatformat:"0g" }} €</strong>
+                    </div>
+                    <div class="home-cat-bar"><span style="width: {{ row.percent }}%"></span></div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">Aucune charge ce mois-ci pour l'instant.</p>
+            {% endif %}
+        </article>
+
+        {# ---------- Dernières opérations ---------- #}
+        <article class="home-card home-recent">
+            <div class="home-card-head">
+                <div>
+                    <h2>Dernières opérations</h2>
+                    <p>Les plus récentes, tous comptes confondus</p>
+                </div>
+            </div>
+            {% if recent_rows %}
+            <ul class="home-tx-list">
+                {% for row in recent_rows %}
+                <li>
+                    <a href="{% url 'finance:month' row.transaction_date.year row.transaction_date.month %}">
+                        <span class="tx-avatar tx-tone-{{ row.tone }}" aria-hidden="true">{{ row.initial }}</span>
+                        <span class="home-tx-main">
+                            <span class="home-tx-title">{{ row.description }}</span>
+                            <span class="home-tx-meta">{% if row.category %}{{ row.category }}{% else %}<span class="tx-unclassified">À classer</span>{% endif %} · {{ row.transaction_date|date:"j M" }}</span>
+                        </span>
+                        <span class="tx-amount is-{{ row.kind }}">{% if row.is_income %}+{% else %}−{% endif %}{{ row.amount|floatformat:"2g" }} €</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="home-empty">
+                <p class="text-muted">Aucune opération pour l'instant.</p>
+                <a class="btn btn-primary" href="{% url 'finance:bank_connect' %}">Connecter ma banque</a>
+            </div>
+            {% endif %}
+        </article>
+
+        <div class="home-stack">
+        {# ---------- Projets ---------- #}
+        <article class="home-card home-projects">
+            <div class="home-card-head">
+                <div>
+                    <h2>Projets d'épargne</h2>
+                    <p>{% if projects.active_count %}{{ projects.monthly_needed|floatformat:"0g" }} € par mois pour tout tenir{% else %}Un voyage, une voiture, un apport…{% endif %}</p>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_goals' %}">{% if projects.active_count %}Gérer{% else %}Ajouter{% endif %}</a>
+            </div>
+            {% if projects.active_count %}
+            <ul class="home-projects-list">
+                {% for item in projects.projects %}{% if not item.project.is_done %}
+                <li>
+                    <div class="home-project-head">
+                        <strong>{{ item.project.name }}</strong>
+                        <span class="budget-badge is-{{ item.status }}">{{ item.status_label }}</span>
+                    </div>
+                    <div class="budget-progress is-savings"><span style="width: {{ item.percent }}%"></span></div>
+                    <small>{{ item.saved|floatformat:"0g" }} € sur {{ item.project.target_amount|floatformat:"0g" }} € · {{ item.project.target_date|date:"F Y" }}</small>
+                </li>
+                {% endif %}{% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">Donne un nom et une date à tes envies : on calcule ce qu'il faut mettre de côté chaque mois.</p>
+            {% endif %}
+        </article>
+
+        {# ---------- Prochains prélèvements ---------- #}
+        <article class="home-card home-upcoming">
+            <div class="home-card-head">
+                <div>
+                    <h2>Prochains prélèvements</h2>
+                    <p>{% if month_subscriptions.remaining %}{{ month_subscriptions.remaining_total|floatformat:"2g" }} € d'abonnements d'ici la fin du mois{% else %}Abonnements de {{ month_label|lower }}{% endif %}</p>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">Gérer</a>
+            </div>
+            {% if month_subscriptions.remaining or month_subscriptions.problems %}
+            <ul class="home-upcoming-list">
+                {% for row in month_subscriptions.remaining %}
+                <li class="is-{{ row.state }}">
+                    <span class="home-upcoming-date"><strong>{{ row.date|date:"j" }}</strong>{{ row.date|date:"M" }}</span>
+                    <span class="home-upcoming-name">{{ row.item.name }}<small>{{ row.label }}</small></span>
+                    <strong>{{ row.amount|floatformat:"2g" }} €</strong>
+                </li>
+                {% endfor %}
+                {% for row in month_subscriptions.problems %}
+                <li class="is-{{ row.state }}">
+                    <span class="home-upcoming-date"><strong>{{ row.date|date:"j" }}</strong>{{ row.date|date:"M" }}</span>
+                    <span class="home-upcoming-name">{{ row.item.name }}<small>{{ row.label }}</small></span>
+                    <strong>{{ row.amount|floatformat:"2g" }} €</strong>
+                </li>
+                {% endfor %}
+            </ul>
+            {% elif month_subscriptions.count %}
+            <p class="text-muted mb-0">Tous les abonnements du mois sont payés ({{ month_subscriptions.paid_total|floatformat:"2g" }} €).</p>
+            {% else %}
+            <p class="text-muted mb-0">Aucun abonnement suivi pour l'instant : ils sont détectés automatiquement après l'import bancaire.</p>
+            {% endif %}
+        </article>
+        </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% include "finance/_charts_js.html" %}
+{{ home_data|json_script:"home-data" }}
+<script src="{% static 'js/bw-home.js' %}?v=2"></script>
 {% endblock %}

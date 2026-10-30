@@ -5,39 +5,46 @@
 
 {% block content %}
 <section class="finance-month">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <header class="page-head">
         <div>
-            <p class="section-label mb-2">Mon mois</p>
-            <div class="finance-month-title">
-                <h1 class="h3 mb-0">{{ month_label }}</h1>
-            </div>
+            <span class="page-eyebrow">Mon mois{% if is_current_month %} · en cours{% endif %}</span>
+            <h1>{{ month_label }}</h1>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:month' prev_year prev_month %}">&larr; Précédent</a>
-            {% if is_current_month %}
-            <button class="btn btn-outline-secondary btn-sm" disabled title="Vous êtes sur le mois en cours">Suivant &rarr;</button>
-            {% else %}
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:month' next_year next_month %}">Suivant &rarr;</a>
+        <nav class="month-nav" aria-label="Changer de mois">
+            <a class="month-nav-btn" href="{% url 'finance:month' prev_year prev_month %}" aria-label="Mois précédent" title="Mois précédent">
+                {% include "_icon.html" with name="chevron-left" %}
+            </a>
+            {% if not is_current_month %}
+            <a class="month-nav-today" href="{% url 'finance:index' %}">Ce mois-ci</a>
             {% endif %}
-        </div>
-    </div>
+            {% if is_current_month %}
+            <button class="month-nav-btn" disabled title="Vous êtes sur le mois en cours" aria-label="Mois suivant">
+                {% include "_icon.html" with name="chevron-right" %}
+            </button>
+            {% else %}
+            <a class="month-nav-btn" href="{% url 'finance:month' next_year next_month %}" aria-label="Mois suivant" title="Mois suivant">
+                {% include "_icon.html" with name="chevron-right" %}
+            </a>
+            {% endif %}
+        </nav>
+    </header>
 
     <div class="content-panel mb-4">
         <div class="stat-row">
             <div class="stat-card stat-card-income">
-                <div class="stat-value"><span class="js-stat" data-key="income">{{ total_income }}</span> €</div>
+                <div class="stat-value"><span class="js-stat" data-key="income">{{ total_income|floatformat:"2g" }}</span> €</div>
                 <div class="stat-label">Revenus</div>
             </div>
             <div class="stat-card stat-card-expense">
-                <div class="stat-value"><span class="js-stat" data-key="expense">{{ total_expense }}</span> €</div>
+                <div class="stat-value"><span class="js-stat" data-key="expense">{{ total_expense|floatformat:"2g" }}</span> €</div>
                 <div class="stat-label">Charges</div>
             </div>
             <div class="stat-card stat-card-savings">
-                <div class="stat-value"><span class="js-stat" data-key="savings">{{ total_savings }}</span> €</div>
+                <div class="stat-value"><span class="js-stat" data-key="savings">{{ total_savings|floatformat:"2g" }}</span> €</div>
                 <div class="stat-label">Épargne</div>
             </div>
             <div class="stat-card stat-card-balance">
-                <div class="stat-value"><span class="js-stat" data-key="balance">{{ balance }}</span> €</div>
+                <div class="stat-value"><span class="js-stat" data-key="balance">{{ balance|floatformat:"2g" }}</span> €</div>
                 <div class="stat-label">Solde</div>
                 <div class="stat-hint">revenus − charges</div>
             </div>
@@ -327,5 +334,5 @@
 {{ category_tree_data|json_script:"category-tree-data" }}
 {{ daily_data|json_script:"daily-data" }}
 {{ editor_categories|json_script:"editor-categories-data" }}
-<script src="{% static 'js/bw-month.js' %}?v=2"></script>
+<script src="{% static 'js/bw-month.js' %}?v=3"></script>
 {% endblock %}

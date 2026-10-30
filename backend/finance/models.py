@@ -480,3 +480,237 @@ class DismissedSubscription(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["user", "key"], name="unique_dismissed_subscription"),
         ]
+
+
+# ============================================================
+# ÉPARGNE : SUPPORTS, LIVRETS ET PORTEFEUILLES (PEA, CTO)
+# ============================================================
+
+class SavingsKind(models.TextChoices):
+    LIVRET_A = "LIVRET_A", "Livret A"
+    LDDS = "LDDS", "LDDS"
+    LEP = "LEP", "LEP"
+    LIVRET_JEUNE = "LIVRET_JEUNE", "Livret Jeune"
+    CEL = "CEL", "CEL"
+    PEL = "PEL", "PEL"
+    LIVRET = "LIVRET", "Autre livret"
+    ASSURANCE_VIE = "ASSURANCE_VIE", "Assurance vie"
+    PER = "PER", "PER"
+    PEA = "PEA", "PEA"
+    CTO = "CTO", "Compte-titres"
+
+
+# Supports suivis ligne par ligne (cours de bourse) ; les autres sont
+# suivis par leur solde.
+PORTFOLIO_KINDS = {SavingsKind.PEA, SavingsKind.CTO}
+
+
+class SavingsAccount(models.Model):
+    """Un support d'épargne : livret (suivi par son solde) ou portefeuille
+    de titres (PEA, compte-titres), suivi ligne par ligne."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="savings_accounts",
+    )
+    kind = models.CharField(max_length=20, choices=SavingsKind.choices)
+    name = models.CharField(max_length=100)
+    institution = models.CharField(max_length=100, blank=True)
+    # Livrets : taux annuel en %
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    # Plafond des versements (vide = pas de plafond)
+    ceiling = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    # PEA : l'ancienneté compte pour la fiscalité (5 ans)
+    opened_on = models.DateField(null=True, blank=True)
+    # PEA / CTO : espèces non investies
+    cash_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    # Numéro du compte à la banque : rattache les soldes de l'import bancaire
+    bank_account_number = models.CharField(max_length=30, blank=True, default="")
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "kind", "name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_portfolio(self):
+        return self.kind in PORTFOLIO_KINDS
+
+
+class BalanceSource(models.TextChoices):
+    MANUAL = "MANUAL", "Saisie manuelle"
+    BANK = "BANK", "Import bancaire"
+
+
+class BalanceSnapshot(models.Model):
+    """Solde d'un livret à une date : le dernier relevé est le solde actuel,
+    l'ensemble trace son évolution."""
+
+    account = models.ForeignKey(
+        SavingsAccount,
+        on_delete=models.CASCADE,
+        related_name="snapshots",
+    )
+    date = models.DateField()
+    balance = models.DecimalField(max_digits=12, decimal_places=2)
+    source = models.CharField(
+        max_length=10, choices=BalanceSource.choices, default=BalanceSource.MANUAL
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+        constraints = [
+            models.UniqueConstraint(fields=["account", "date"], name="unique_balance_per_day"),
+        ]
+
+    def __str__(self):
+        return f"{self.account} - {self.date} : {self.balance}"
+
+
+class AssetClass(models.TextChoices):
+    EQUITY = "EQUITY", "Actions"
+    BOND = "BOND", "Obligations"
+    MONEY = "MONEY", "Monétaire"
+    REAL_ESTATE = "REAL_ESTATE", "Immobilier"
+    COMMODITY = "COMMODITY", "Or & matières premières"
+    CRYPTO = "CRYPTO", "Crypto"
+    OTHER = "OTHER", "Autre"
+
+
+class Zone(models.TextChoices):
+    WORLD = "WORLD", "Monde"
+    US = "US", "États-Unis"
+    EUROPE = "EUROPE", "Europe"
+    FRANCE = "FRANCE", "France"
+    EMERGING = "EMERGING", "Pays émergents"
+    ASIA = "ASIA", "Japon & Asie"
+    OTHER = "OTHER", "Autre"
+
+
+class Instrument(models.Model):
+    """Titre coté (ETF, action...) identifié par son ticker Yahoo Finance."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="instruments",
+    )
+    symbol = models.CharField(max_length=32)
+    isin = models.CharField(max_length=12, blank=True)
+    name = models.CharField(max_length=200)
+    exchange = models.CharField(max_length=50, blank=True)
+    currency = models.CharField(max_length=8, default="EUR")
+    quote_type = models.CharField(max_length=20, blank=True)
+    asset_class = models.CharField(
+        max_length=20, choices=AssetClass.choices, default=AssetClass.EQUITY
+    )
+    zone = models.CharField(max_length=20, choices=Zone.choices, default=Zone.WORLD)
+    # Frais courants annuels de l'ETF / du fonds, en % (TER)
+    ter = models.DecimalField(max_digits=5, decimal_places=3, null=True, blank=True)
+    last_price = models.DecimalField(max_digits=16, decimal_places=4, null=True, blank=True)
+    last_price_date = models.DateField(null=True, blank=True)
+    prices_updated_at = models.DateTimeField(null=True, blank=True)
+    price_error = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "symbol"], name="unique_instrument_per_user"),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.symbol})"
+
+
+class PricePoint(models.Model):
+    """Cours de clôture quotidien, dans la devise de cotation."""
+
+    instrument = models.ForeignKey(
+        Instrument,
+        on_delete=models.CASCADE,
+        related_name="prices",
+    )
+    date = models.DateField()
+    close = models.DecimalField(max_digits=16, decimal_places=4)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [
+            models.UniqueConstraint(fields=["instrument", "date"], name="unique_price_per_day"),
+        ]
+
+
+class ExchangeRate(models.Model):
+    """Valeur en euros d'une unité de devise (ex. 1 USD = 0,89 €)."""
+
+    currency = models.CharField(max_length=8)
+    date = models.DateField()
+    rate = models.DecimalField(max_digits=16, decimal_places=8)
+
+    class Meta:
+        ordering = ["date"]
+        constraints = [
+            models.UniqueConstraint(fields=["currency", "date"], name="unique_rate_per_day"),
+        ]
+
+
+class OperationKind(models.TextChoices):
+    BUY = "BUY", "Achat"
+    SELL = "SELL", "Vente"
+    DIVIDEND = "DIVIDEND", "Dividende"
+    FEE = "FEE", "Frais de compte"
+
+
+class PortfolioOperation(models.Model):
+    """Une ligne de l'historique d'un PEA / compte-titres. Achats et ventes
+    portent sur un titre (quantité, prix unitaire en euros, frais de
+    courtage) ; dividendes et frais de compte (droits de garde...) n'ont
+    qu'un montant."""
+
+    account = models.ForeignKey(
+        SavingsAccount,
+        on_delete=models.CASCADE,
+        related_name="operations",
+    )
+    instrument = models.ForeignKey(
+        Instrument,
+        on_delete=models.CASCADE,
+        related_name="operations",
+        null=True,
+        blank=True,
+    )
+    kind = models.CharField(max_length=10, choices=OperationKind.choices)
+    date = models.DateField()
+    quantity = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    unit_price = models.DecimalField(max_digits=16, decimal_places=4, null=True, blank=True)
+    fees = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    note = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.instrument or ''} {self.date}"
+
+    @property
+    def gross(self):
+        if self.quantity is None or self.unit_price is None:
+            return self.amount or Decimal("0")
+        return self.quantity * self.unit_price
+
+    @property
+    def total(self):
+        """Montant débité (achat, frais) ou crédité (vente, dividende)."""
+        if self.kind == OperationKind.BUY:
+            return self.gross + self.fees
+        if self.kind == OperationKind.SELL:
+            return self.gross - self.fees
+        return self.amount or Decimal("0")

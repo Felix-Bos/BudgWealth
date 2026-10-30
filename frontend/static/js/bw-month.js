@@ -10,7 +10,7 @@
 
     var charts = window.BW && window.BW.charts;
     var money2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    var plain = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+    var plain = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // ============================================================
     // ANNEAU : CATÉGORIES -> SOUS-CATÉGORIES
@@ -65,7 +65,7 @@
                 ctx.font = '600 12px Inter, sans-serif';
                 ctx.fillText(centerLabel, x, y - 14);
                 ctx.fillStyle = p.text;
-                ctx.font = '600 22px Fraunces, Georgia, serif';
+                ctx.font = '800 22px "Plus Jakarta Sans", Inter, sans-serif';
                 ctx.fillText(charts.money.format(total) + ' €', x, y + 10);
                 ctx.restore();
             }

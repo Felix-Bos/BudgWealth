@@ -1,0 +1,29 @@
+{# Création (sans `action`) ou modification (action = id du compte) d'un PEA / compte-titres #}
+<form method="post" action="{% if action %}{% url 'finance:edit_savings_account' action %}{% else %}{% url 'finance:add_portfolio_account' %}{% endif %}" class="row g-3">
+    {% csrf_token %}
+    {% if action %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% endif %}
+    <div class="col-6 col-lg-2">
+        <label class="form-label" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
+        {{ form.kind }}
+    </div>
+    <div class="col-6 col-lg-3">
+        <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }} <span class="quick-add-optional">facultatif</span></label>
+        {{ form.name }}
+    </div>
+    <div class="col-12 col-lg-3">
+        <label class="form-label" for="{{ form.institution.id_for_label }}">{{ form.institution.label }}</label>
+        {{ form.institution }}
+    </div>
+    <div class="col-6 col-lg-2">
+        <label class="form-label" for="{{ form.opened_on.id_for_label }}">{{ form.opened_on.label }}</label>
+        {{ form.opened_on }}
+    </div>
+    <div class="col-6 col-lg-2">
+        <label class="form-label" for="{{ form.cash_balance.id_for_label }}">{{ form.cash_balance.label }}</label>
+        {{ form.cash_balance }}
+    </div>
+    <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+        <button type="submit" class="btn btn-primary">{{ action_label }}</button>
+        <small class="text-muted">{{ form.opened_on.help_text }} {{ form.cash_balance.help_text }}</small>
+    </div>
+</form>

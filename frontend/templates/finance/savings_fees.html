@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static savings_format %}
+
+{% block title %}Frais - BudgWealth{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard budget-page savings-page">
+    {% include "finance/_savings_tabs.html" with subtitle="Ce que te coûtent tes placements : courtage, droits de garde et frais des ETF" %}
+
+    {% if not accounts %}
+    <div class="content-panel savings-empty">
+        <h2 class="h5 mb-2">Pas encore de PEA ni de compte-titres</h2>
+        <p class="text-muted mb-3">Les frais se calculent à partir des lignes de ton portefeuille.</p>
+        <a class="btn btn-primary" href="{% url 'finance:savings_portfolio' %}">Créer mon portefeuille</a>
+    </div>
+    {% else %}
+
+    {% include "finance/_savings_scope.html" %}
+
+    {% with fees=analysis.fees %}
+    <div class="dash-kpis mb-4">
+        <div class="dash-kpi is-expense">
+            <span>Frais payés</span>
+            <strong>{{ fees.paid|floatformat:"2g" }} €</strong>
+            <small>courtage et frais de compte, depuis le début</small>
+        </div>
+        <div class="dash-kpi">
+            <span>Courtage</span>
+            <strong>{{ fees.brokerage|floatformat:"2g" }} €</strong>
+            <small>{{ fees.orders }} ordre{{ fees.orders|pluralize }}{% if fees.average_order_pct is not None %} · {{ fees.average_order_pct|floatformat:"2" }} % par ordre en moyenne{% endif %}</small>
+        </div>
+        <div class="dash-kpi">
+            <span>Frais de compte</span>
+            <strong>{{ fees.account_fees|floatformat:"2g" }} €</strong>
+            <small>droits de garde, tenue de compte…</small>
+        </div>
+        <div class="dash-kpi">
+            <span>Frais des ETF</span>
+            <strong>{{ fees.ter_to_date|floatformat:"2g" }} €</strong>
+            <small>estimés depuis le début, prélevés dans le cours</small>
+        </div>
+        <div class="dash-kpi {% if fees.annual_cost_pct is not None and fees.annual_cost_pct > 0.5 %}is-bad{% else %}is-good{% endif %}">
+            <span>Coût annuel estimé</span>
+            <strong>{{ fees.annual_cost|floatformat:"0g" }} € / an</strong>
+            <small>{% if fees.annual_cost_pct is not None %}{{ fees.annual_cost_pct|floatformat:"2" }} % du portefeuille{% else %}—{% endif %}{% if fees.weighted_ter is not None %} · TER moyen {{ fees.weighted_ter|floatformat:"2" }} %{% endif %}</small>
+        </div>
+    </div>
+
+    {% if fees.missing_ter %}
+    <div class="budget-callout is-warning mb-4">
+        <strong>Frais courants inconnus pour {{ fees.missing_ter|length }} ligne{{ fees.missing_ter|length|pluralize }}</strong>
+        <span>{% for row in fees.missing_ter %}{{ row.instrument.name }}{% if not forloop.last %}, {% endif %}{% endfor %}. Indique leur TER (fiche de l'ETF) dans le <a href="{% url 'finance:savings_portfolio' %}{% if selected %}?compte={{ selected.pk }}{% endif %}">portefeuille</a> (« Modifier ») pour une estimation complète.</span>
+    </div>
+    {% endif %}
+
+    {% if analysis.has_operations %}
+    <div class="content-panel dash-card mb-4">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">Frais cumulés</h2>
+                <p class="text-muted small mb-0">Courtage, frais de compte et frais courants des ETF depuis le premier achat</p>
+            </div>
+            {% include "finance/_savings_range.html" with chart="feesHistoryChart" %}
+        </div>
+        <div class="dash-chart"><canvas id="feesHistoryChart" role="img" aria-label="Frais cumulés dans le temps"></canvas></div>
+    </div>
+    {% endif %}
+
+    <div class="dash-grid mb-4">
+        <div class="content-panel dash-card">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">Frais par ligne</h2>
+                    <p class="text-muted small mb-0">Courtage payé et coût annuel des frais courants</p>
+                </div>
+            </div>
+            {% if analysis.positions %}
+            <div class="table-responsive">
+                <table class="table finance-table align-middle savings-table">
+                    <thead>
+                        <tr>
+                            <th>Ligne</th>
+                            <th class="text-end">Courtage</th>
+                            <th class="text-end">Frais courants</th>
+                            <th class="text-end">Coût / an</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in analysis.positions %}
+                        <tr>
+                            <td>
+                                <div class="savings-cell-name">
+                                    <strong>{{ row.instrument.name }}</strong>
+                                    <small>{{ row.orders }} ordre{{ row.orders|pluralize }}{% if row.fees_pct is not None %} · {{ row.fees_pct|floatformat:"2" }} % du montant{% endif %}</small>
+                                </div>
+                            </td>
+                            <td class="text-end savings-num">{{ row.fees|floatformat:"2g" }} €</td>
+                            <td class="text-end savings-num">{% if row.ter is not None %}{{ row.ter|floatformat:"-3" }} %{% elif row.is_fund %}<span class="text-muted">à renseigner</span>{% else %}—{% endif %}</td>
+                            <td class="text-end savings-num">{% if row.ter_year %}{{ row.ter_year|floatformat:"2g" }} €{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Aucune ligne en portefeuille.</p>
+            {% endif %}
+        </div>
+
+        <div class="content-panel dash-card">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">Ajouter des frais de compte</h2>
+                    <p class="text-muted small mb-0">Droits de garde, frais de tenue, frais de transfert…</p>
+                </div>
+            </div>
+            {% with form=fee_form %}
+            <form method="post" action="{% url 'finance:add_portfolio_operation' %}" class="row g-2 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="kind" value="FEE">
+                {% if accounts|length > 1 %}
+                <div class="col-12">
+                    <label class="form-label small" for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
+                    {{ form.account }}
+                </div>
+                {% else %}
+                <input type="hidden" name="account" value="{{ accounts.0.pk }}">
+                {% endif %}
+                <div class="col-6">
+                    <label class="form-label small" for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+                    {{ form.amount }}
+                </div>
+                <div class="col-6">
+                    <label class="form-label small" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+                    {{ form.date }}
+                </div>
+                <div class="col-12">
+                    <label class="form-label small" for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+                    {{ form.note }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+                </div>
+            </form>
+            {% endwith %}
+
+            {% if fee_operations %}
+            <h3 class="h6 mt-4 mb-2">Frais enregistrés</h3>
+            <ul class="savings-snapshots">
+                {% for op in fee_operations %}
+                <li>
+                    <span>{{ op.date|date:"d/m/Y" }}</span>
+                    <strong>{% if op.kind == "FEE" %}{{ op.amount|floatformat:"2g" }}{% else %}{{ op.fees|floatformat:"2g" }}{% endif %} €</strong>
+                    <small class="text-muted">{% if op.kind == "FEE" %}{{ op.note|default:"Frais de compte" }}{% else %}Courtage · {{ op.get_kind_display|lower }} {{ op.instrument.symbol }}{% endif %}</small>
+                    {% if op.kind == "FEE" %}
+                    <form method="post" action="{% url 'finance:delete_portfolio_operation' op.pk %}" onsubmit="return confirm('Supprimer ces frais ?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-link btn-sm text-danger p-0" aria-label="Supprimer">×</button>
+                    </form>
+                    {% else %}<span></span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if analysis.has_operations %}
+    <div class="budget-callout mb-4">
+        <strong>Sur 10 ans, à ce rythme : environ {{ fees.ten_years|floatformat:"0g" }} € de frais</strong>
+        <span>Estimation à valeur constante (frais courants des ETF + frais de compte des 12 derniers mois). Ton gain total serait de {{ fees.gain_before_fees|signed:0 }} € sans le courtage ni les frais de compte, contre {{ analysis.totals.gain|signed:0 }} € aujourd'hui.</span>
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% include "finance/_charts_js.html" %}
+{{ savings_data|json_script:"savings-data" }}
+<script src="{% static 'js/bw-savings.js' %}?v=2"></script>
+{% endblock %}

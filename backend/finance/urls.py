@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import savings_views, views
 
 app_name = "finance"
 
@@ -55,6 +55,28 @@ urlpatterns = [
     path("dashboard/budget/objectifs/projets/add/", views.add_savings_project, name="add_savings_project"),
     path("dashboard/budget/objectifs/projets/<int:pk>/edit/", views.edit_savings_project, name="edit_savings_project"),
     path("dashboard/budget/objectifs/projets/<int:pk>/delete/", views.delete_savings_project, name="delete_savings_project"),
+    path("epargne/", savings_views.savings_overview_view, name="savings"),
+    path("epargne/livrets/", savings_views.savings_balances_view, name="savings_balances"),
+    path("epargne/livrets/ajouter/", savings_views.add_balance_account, name="add_balance_account"),
+    path("epargne/livrets/<int:pk>/solde/", savings_views.add_balance_snapshot, name="add_balance_snapshot"),
+    path("epargne/livrets/soldes/<int:pk>/supprimer/", savings_views.delete_balance_snapshot, name="delete_balance_snapshot"),
+    path("epargne/supports/<int:pk>/modifier/", savings_views.edit_savings_account, name="edit_savings_account"),
+    path("epargne/supports/<int:pk>/supprimer/", savings_views.delete_savings_account, name="delete_savings_account"),
+    path("epargne/portefeuille/", savings_views.savings_portfolio_view, name="savings_portfolio"),
+    path("epargne/portefeuille/comptes/ajouter/", savings_views.add_portfolio_account, name="add_portfolio_account"),
+    path("epargne/portefeuille/lignes/ajouter/", savings_views.add_portfolio_operation, name="add_portfolio_operation"),
+    path("epargne/portefeuille/lignes/<int:pk>/modifier/", savings_views.edit_portfolio_operation, name="edit_portfolio_operation"),
+    path("epargne/portefeuille/lignes/<int:pk>/supprimer/", savings_views.delete_portfolio_operation, name="delete_portfolio_operation"),
+    path(
+        "epargne/portefeuille/<int:account_pk>/titres/<int:instrument_pk>/supprimer/",
+        savings_views.delete_portfolio_position,
+        name="delete_portfolio_position",
+    ),
+    path("epargne/frais/", savings_views.savings_fees_view, name="savings_fees"),
+    path("epargne/titres/<int:pk>/modifier/", savings_views.edit_instrument, name="edit_instrument"),
+    path("epargne/titres/recherche/", savings_views.search_instruments, name="search_instruments"),
+    path("epargne/titres/cours/", savings_views.instrument_price, name="instrument_price"),
+    path("epargne/cours/actualiser/", savings_views.refresh_prices, name="refresh_prices"),
     path("parametres/", views.settings_view, name="settings"),
     path("parametres/compte/", views.update_account, name="update_account"),
     path("parametres/mot-de-passe/", views.update_password, name="update_password"),

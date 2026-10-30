@@ -1,0 +1,8 @@
+{# Date des derniers cours ; le script les actualise s'ils datent de plus de 6 h #}
+{% if analysis.has_operations or portfolio.has_operations %}
+<div class="savings-prices js-prices" data-stale="{{ prices_stale|yesno:'1,0' }}">
+    <span class="savings-prices-dot" aria-hidden="true"></span>
+    <span class="js-prices-label">{% if price_date %}Cours au {{ price_date|date:"d/m/Y" }}{% else %}Cours indisponibles{% endif %}</span>
+    <button type="button" class="btn btn-link btn-sm p-0 js-prices-refresh">Actualiser</button>
+</div>
+{% endif %}

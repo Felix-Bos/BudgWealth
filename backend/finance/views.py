@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 from accounts.forms import AccountForm, AccountPasswordChangeForm
 
 from . import budget as budget_calc
+from . import home
 from . import subscriptions as subscription_detection
 from .bank_sync import is_month_syncable, start_bank_sync
 from .models import BankSyncKind
@@ -624,9 +625,63 @@ def _active_history_month_count(user, today):
     return sum(1 for row in history if row["income"] > 0 or row["expense"] > 0)
 
 
+def _monthly_history(user, today):
+    """Revenus, charges, épargne et taux d'épargne des 12 derniers mois,
+    le mois en cours en dernier."""
+
+    history_start_year, history_start_month, history_start = _history_start(today)
+    monthly_totals = (
+        Transaction.objects.filter(user=user, transaction_date__gte=history_start)
+        .annotate(month=TruncMonth("transaction_date"))
+        .values("month")
+        .annotate(**budget_calc.totals_annotations())
+        .order_by("month")
+    )
+    history = _rolling_history_rows(
+        history_start_year, history_start_month, {row["month"]: row for row in monthly_totals}
+    )
+    for row in history:
+        row["savings_rate"] = budget_calc.percent(row["savings"], row["income"])
+        row["is_current"] = (row["year"], row["month"]) == (today.year, today.month)
+    return history
+
+
 @login_required
 def dashboard_hub_view(request):
-    return render(request, "finance/dashboard_hub.html")
+    """Accueil : patrimoine, mois en cours et conseils personnalisés."""
+
+    today = date.today()
+    _materialize_recurring_items(
+        request.user, today.year, today.month, kinds=[RecurrenceKind.SUBSCRIPTION]
+    )
+    subscription_detection.sync_subscriptions(request.user, today)
+
+    history = _monthly_history(request.user, today)
+    summary = home.home_summary(request.user, today, history)
+    recent = (
+        Transaction.objects.filter(user=request.user, transaction_date__lte=today)
+        .select_related("category", "subcategory", "recurring_item", "savings_project")[:6]
+    )
+    last_months = history[-6:]
+
+    context = {
+        **summary,
+        **_month_context(today.year, today.month),
+        "today": today,
+        "recent_rows": [_transaction_row(transaction) for transaction in recent],
+        "home_data": {
+            "history": {
+                "labels": [row["label"] for row in last_months],
+                "income": [str(row["income"]) for row in last_months],
+                "expense": [str(row["expense"]) for row in last_months],
+                "savings": [str(row["savings"]) for row in last_months],
+                "months": [[row["year"], row["month"]] for row in last_months],
+            },
+            "wealth": summary["wealth"]["history"],
+            "monthUrl": reverse("finance:month", args=[2000, 1]).replace("2000/1/", ""),
+        },
+    }
+    return render(request, "finance/dashboard_hub.html", context)
 
 
 @login_required
@@ -640,23 +695,11 @@ def dashboard_budget_view(request):
     )
     subscription_detection.sync_subscriptions(request.user, today)
 
-    history_start_year, history_start_month, history_start = _history_start(today)
+    _, _, history_start = _history_start(today)
     history_transactions = Transaction.objects.filter(
         user=request.user, transaction_date__gte=history_start
     )
-
-    monthly_totals = (
-        history_transactions.annotate(month=TruncMonth("transaction_date"))
-        .values("month")
-        .annotate(**budget_calc.totals_annotations())
-        .order_by("month")
-    )
-    history = _rolling_history_rows(
-        history_start_year, history_start_month, {row["month"]: row for row in monthly_totals}
-    )
-    for row in history:
-        row["savings_rate"] = budget_calc.percent(row["savings"], row["income"])
-        row["is_current"] = (row["year"], row["month"]) == (today.year, today.month)
+    history = _monthly_history(request.user, today)
 
     # Indicateurs sur les mois terminés qui ont des opérations
     closed = [
@@ -1051,7 +1094,8 @@ def bank_sync_status(request, pk):
         messages.success(
             request,
             f"Synchronisation terminée : {sync.created_count} opération(s) importée(s)"
-            + (f", {sync.skipped_count} déjà présente(s)." if sync.skipped_count else "."),
+            + (f", {sync.skipped_count} déjà présente(s)." if sync.skipped_count else ".")
+            + (f" {sync.message}" if sync.message else ""),
         )
     return JsonResponse(_bank_sync_payload(sync))
 

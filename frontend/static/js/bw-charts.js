@@ -38,7 +38,7 @@
     }
 
     function applyDefaults(p) {
-        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        Chart.defaults.font.family = "'BW Thin Space', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
         Chart.defaults.color = p.muted;
         Chart.defaults.borderColor = p.grid;
         Chart.defaults.maintainAspectRatio = false;

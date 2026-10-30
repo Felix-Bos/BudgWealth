@@ -221,6 +221,7 @@ __marimo__/
 .ca_session/
 backend/.ca_session/
 backend/data/
+diagnostic_banque.txt
 
 # Sauvegardes locales de la base
 *.sqlite3.*.bak
