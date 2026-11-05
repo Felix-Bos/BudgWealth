@@ -1,67 +1,92 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Paramètres - BudgWealth{% endblock %}
+{% block title %}{% translate "Paramètres - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-settings">
-    <p class="section-label mb-2">Votre espace</p>
-    <h1 class="h3 mb-4">Paramètres</h1>
+    <p class="section-label mb-2">{% translate "Votre espace" %}</p>
+    <h1 class="h3 mb-4">{% translate "Paramètres" %}</h1>
 
     <ul class="nav nav-tabs settings-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if active_tab == 'compte' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=compte">Compte</a>
+            <a class="nav-link {% if active_tab == 'compte' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=compte">{% translate "Compte" %}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active_tab == 'banque' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=banque">Banque</a>
+            <a class="nav-link {% if active_tab == 'banque' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=banque">{% translate "Banque" %}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active_tab == 'postes-fixes' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=postes-fixes">Postes fixes & abonnements</a>
+            <a class="nav-link {% if active_tab == 'postes-fixes' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=postes-fixes">{% translate "Postes fixes & abonnements" %}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active_tab == 'categories' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=categories">Catégories</a>
+            <a class="nav-link {% if active_tab == 'categories' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=categories">{% translate "Catégories" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'sauvegarde' %}active{% endif %}" href="{% url 'finance:settings' %}?tab=sauvegarde">{% translate "Sauvegarde & export" %}</a>
         </li>
     </ul>
 
     {% if active_tab == 'compte' %}
+    {# ---------- Langue de l'interface ---------- #}
+    {% get_current_language as current_language %}
+    {% get_available_languages as available_languages %}
+    <div class="content-panel settings-language mb-4">
+        <div>
+            <h2 class="h5 mb-1">{% translate "Langue" %}</h2>
+            <p class="text-muted small mb-0">{% translate "Langue de tout le site. Tes catégories et libellés bancaires restent tels quels." %}</p>
+        </div>
+        <form method="post" action="{% url 'set_language' %}" class="settings-language-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="btn-group" role="group" aria-label="{% translate "Langue" %}">
+                {% for code, name in available_languages %}
+                <button type="submit" name="language" value="{{ code }}"
+                        class="btn {% if code == current_language %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                        lang="{{ code }}" {% if code == current_language %}aria-pressed="true"{% endif %}>{{ name }}</button>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-3">Vos informations</h2>
+                <h2 class="h5 mb-3">{% translate "Vos informations" %}</h2>
                 <form method="post" action="{% url 'finance:update_account' %}" class="row g-3">
                     {% csrf_token %}
                     <div class="col-12">
-                        <label class="form-label">Nom d'utilisateur</label>
+                        <label class="form-label">{% translate "Nom d'utilisateur" %}</label>
                         {{ account_form.username }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Email</label>
+                        <label class="form-label">{% translate "Email" %}</label>
                         {{ account_form.email }}
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
                     </div>
                 </form>
             </div>
         </div>
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-3">Changer de mot de passe</h2>
+                <h2 class="h5 mb-3">{% translate "Changer de mot de passe" %}</h2>
                 <form method="post" action="{% url 'finance:update_password' %}" class="row g-3">
                     {% csrf_token %}
                     <div class="col-12">
-                        <label class="form-label">Mot de passe actuel</label>
+                        <label class="form-label">{% translate "Mot de passe actuel" %}</label>
                         {{ password_form.old_password }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Nouveau mot de passe</label>
+                        <label class="form-label">{% translate "Nouveau mot de passe" %}</label>
                         {{ password_form.new_password1 }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                        <label class="form-label">{% translate "Confirmer le nouveau mot de passe" %}</label>
                         {{ password_form.new_password2 }}
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Mettre à jour le mot de passe</button>
+                        <button type="submit" class="btn btn-primary">{% translate "Mettre à jour le mot de passe" %}</button>
                     </div>
                 </form>
             </div>
@@ -69,12 +94,12 @@
         <div class="col-12">
             <div class="content-panel d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                    <h2 class="h5 mb-1">Se déconnecter</h2>
-                    <p class="text-muted mb-0">Vous serez déconnecté de cet appareil.</p>
+                    <h2 class="h5 mb-1">{% translate "Se déconnecter" %}</h2>
+                    <p class="text-muted mb-0">{% translate "Vous serez déconnecté de cet appareil." %}</p>
                 </div>
                 <form method="post" action="{% url 'accounts:logout' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-secondary">Se déconnecter</button>
+                    <button type="submit" class="btn btn-outline-secondary">{% translate "Se déconnecter" %}</button>
                 </form>
             </div>
         </div>
@@ -85,10 +110,9 @@
     <div class="row g-4">
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-1">Crédit Agricole</h2>
+                <h2 class="h5 mb-1">{% translate "Crédit Agricole" %}</h2>
                 <p class="text-muted small mb-3">
-                    Ces informations servent à ouvrir votre espace client pour importer vos opérations.
-                    Votre code personnel n'est jamais enregistré : vous le tapez vous-même sur le site de la banque à chaque synchronisation.
+                    {% translate "Ces informations servent à ouvrir votre espace client pour importer vos opérations. Votre code personnel n'est jamais enregistré : vous le tapez vous-même sur le site de la banque à chaque synchronisation." %}
                 </p>
                 <form method="post" action="{% url 'finance:update_bank_connection' %}" class="row g-3">
                     {% csrf_token %}
@@ -101,45 +125,44 @@
                         {{ bank_form.login_id }}
                     </div>
                     <div class="col-12 d-flex flex-wrap gap-2">
-                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
                     </div>
                 </form>
                 {% if bank_connection and not bank_connection.initial_import_done %}
                 <div class="bank-connect-note mt-3">
-                    Votre historique n'a pas encore été importé.
-                    <a href="{% url 'finance:bank_initial_sync' %}">Importer mes 12 derniers mois</a>.
+                    {% translate "Votre historique n'a pas encore été importé." %}
+                    <a href="{% url 'finance:bank_initial_sync' %}">{% translate "Importer mes 12 derniers mois" %}</a>.
                 </div>
                 {% endif %}
                 {% if bank_connection %}
                 <form method="post" action="{% url 'finance:delete_bank_connection' %}" class="mt-3">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer la connexion bancaire</button>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">{% translate "Supprimer la connexion bancaire" %}</button>
                 </form>
                 {% endif %}
             </div>
         </div>
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-3">Comment ça marche</h2>
+                <h2 class="h5 mb-3">{% translate "Comment ça marche" %}</h2>
                 <ol class="text-muted small ps-3 mb-3">
-                    <li>Sur la page d'un mois, cliquez sur <strong>Synchroniser avec la banque</strong>.</li>
-                    <li>Une fenêtre Crédit Agricole s'affiche uniquement pour que vous tapiez votre code personnel.</li>
-                    <li>Elle disparaît aussitôt : les opérations du mois sont téléchargées et importées en arrière-plan.</li>
+                    <li>{% translate "Sur la page d'un mois, cliquez sur" %} <strong>{% translate "Synchroniser avec la banque" %}</strong>.</li>
+                    <li>{% translate "Une fenêtre Crédit Agricole s'affiche uniquement pour que vous tapiez votre code personnel." %}</li>
+                    <li>{% translate "Elle disparaît aussitôt : les opérations du mois sont téléchargées et importées en arrière-plan." %}</li>
                 </ol>
                 <p class="text-muted small mb-0">
-                    Les virements vers vos livrets sont classés en « Épargne », les opérations déjà importées ne sont jamais dupliquées.
-                    La banque donne accès aux 12 derniers mois.
+                    {% translate "Les virements vers vos livrets sont classés en « Épargne », les opérations déjà importées ne sont jamais dupliquées. La banque donne accès aux 12 derniers mois." %}
                 </p>
                 {% if bank_syncs %}
-                <h3 class="h6 mt-4 mb-2">Dernières synchronisations</h3>
+                <h3 class="h6 mt-4 mb-2">{% translate "Dernières synchronisations" %}</h3>
                 <ul class="list-unstyled small mb-0 bank-sync-history">
                     {% for sync in bank_syncs %}
                     <li>
                         <span>{{ sync.month|stringformat:"02d" }}/{{ sync.year }} · {{ sync.started_at|date:"d/m/Y H:i" }}</span>
                         {% if sync.status == "DONE" %}
-                        <span class="badge text-bg-success">{{ sync.created_count }} importée(s)</span>
+                        <span class="badge text-bg-success">{{ sync.created_count }} {% translate "importée(s)" %}</span>
                         {% elif sync.status == "ERROR" %}
-                        <span class="badge text-bg-danger" title="{{ sync.message }}">Échec</span>
+                        <span class="badge text-bg-danger" title="{% translate sync.message %}">{% translate "Échec" %}</span>
                         {% else %}
                         <span class="badge text-bg-secondary">{{ sync.get_status_display }}</span>
                         {% endif %}
@@ -154,56 +177,56 @@
 
     {% if active_tab == 'postes-fixes' %}
     <div class="content-panel mb-4">
-        <h2 class="h5 mb-3">Ajouter un poste fixe ou un abonnement</h2>
-        <p class="text-muted small mb-3">Un poste fixe se génère au démarrage du mois. Un abonnement se génère automatiquement selon sa fréquence.</p>
+        <h2 class="h5 mb-3">{% translate "Ajouter un poste fixe ou un abonnement" %}</h2>
+        <p class="text-muted small mb-3">{% translate "Un poste fixe se génère au démarrage du mois. Un abonnement se génère automatiquement selon sa fréquence." %}</p>
         <form method="post" action="{% url 'finance:add_recurring_item' %}" class="row g-3" id="add-recurring-item-form">
             {% csrf_token %}
             <div class="col-12 col-md-3">
-                <label class="form-label">Nom</label>
+                <label class="form-label">{% translate "Nom" %}</label>
                 {{ recurring_item_form.name }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Nature</label>
+                <label class="form-label">{% translate "Nature" %}</label>
                 {{ recurring_item_form.kind }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Type</label>
+                <label class="form-label">{% translate "Type" %}</label>
                 {{ recurring_item_form.entry_type }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Montant par défaut</label>
+                <label class="form-label">{% translate "Montant par défaut" %}</label>
                 {{ recurring_item_form.default_amount }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Catégorie</label>
+                <label class="form-label">{% translate "Catégorie" %}</label>
                 {{ recurring_item_form.category }}
             </div>
             <div class="col-12 col-md-2 js-subcategory-field">
-                <label class="form-label">Sous-catégorie</label>
+                <label class="form-label">{% translate "Sous-catégorie" %}</label>
                 {{ recurring_item_form.subcategory }}
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label">Tous les</label>
+                <label class="form-label">{% translate "Tous les" %}</label>
                 {{ recurring_item_form.frequency_interval }}
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label">Période</label>
+                <label class="form-label">{% translate "Période" %}</label>
                 {{ recurring_item_form.frequency_unit }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Date de départ</label>
+                <label class="form-label">{% translate "Date de départ" %}</label>
                 {{ recurring_item_form.start_date }}
             </div>
             <div class="col-12 col-md-2">
-                <label class="form-label">Date de fin</label>
+                <label class="form-label">{% translate "Date de fin" %}</label>
                 {{ recurring_item_form.end_date }}
             </div>
             <div class="col-12 d-flex align-items-center gap-2">
                 {{ recurring_item_form.is_active }}
-                <label class="form-label mb-0" for="{{ recurring_item_form.is_active.id_for_label }}">Actif</label>
+                <label class="form-label mb-0" for="{{ recurring_item_form.is_active.id_for_label }}">{% translate "Actif" %}</label>
             </div>
             <div class="col-12">
-                <button type="submit" class="btn btn-primary">Ajouter</button>
+                <button type="submit" class="btn btn-primary">{% translate "Ajouter" %}</button>
             </div>
         </form>
     </div>
@@ -215,7 +238,7 @@
     </script>
 
     <div class="content-panel">
-        <h2 class="h5 mb-3">Vos postes fixes et abonnements</h2>
+        <h2 class="h5 mb-3">{% translate "Vos postes fixes et abonnements" %}</h2>
         {% if items %}
         <div class="d-flex flex-column gap-3">
             {% for item in items %}
@@ -224,112 +247,112 @@
                     <div class="finance-recurring-main">
                         <strong>{{ item.name }}</strong>
                         <span class="text-muted">
-                            {{ item.get_kind_display }} · {{ item.get_entry_type_display }} · {{ item.category|default:"Sans catégorie" }} · {{ item.frequency_label }}
-                            {% if item.end_date %} · Fin le {{ item.end_date|date:"d/m/Y" }}{% endif %}
+                            {{ item.get_kind_display }} · {{ item.get_entry_type_display }} · {{ item.category|default:_("Sans catégorie") }} · {{ item.frequency_label }}
+                            {% if item.end_date %} {% translate "· Fin le" %} {{ item.end_date|date:"d/m/Y" }}{% endif %}
                         </span>
                     </div>
                     <div class="finance-recurring-amount">
                         <span class="fw-semibold">{{ item.default_amount }} €</span>
-                        {% if item.kind == "SUBSCRIPTION" %}<span class="badge text-bg-primary">Abonnement</span>{% endif %}
-                        {% if item.is_cancelled %}<span class="badge text-bg-warning">Annulé</span>{% endif %}
-                        {% if not item.is_active %}<span class="badge text-bg-secondary">Inactif</span>{% endif %}
-                        <span class="finance-edit-hint">Modifier ▾</span>
+                        {% if item.kind == "SUBSCRIPTION" %}<span class="badge text-bg-primary">{% translate "Abonnement" %}</span>{% endif %}
+                        {% if item.is_cancelled %}<span class="badge text-bg-warning">{% translate "Annulé" %}</span>{% endif %}
+                        {% if not item.is_active %}<span class="badge text-bg-secondary">{% translate "Inactif" %}</span>{% endif %}
+                        <span class="finance-edit-hint">{% translate "Modifier ▾" %}</span>
                     </div>
                 </div>
                 <div class="collapse" id="edit-item-{{ item.pk }}">
                     <form method="post" action="{% url 'finance:edit_recurring_item' item.pk %}" class="row g-3 finance-recurring-edit-form">
                         {% csrf_token %}
                         <div class="col-12 col-md-3">
-                            <label class="form-label">Nom</label>
+                            <label class="form-label">{% translate "Nom" %}</label>
                             <input type="text" name="name" class="form-control" value="{{ item.name }}">
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Nature</label>
+                            <label class="form-label">{% translate "Nature" %}</label>
                             <select name="kind" class="form-control">
-                                <option value="FIXED" {% if item.kind == "FIXED" %}selected{% endif %}>Poste fixe</option>
-                                <option value="SUBSCRIPTION" {% if item.kind == "SUBSCRIPTION" %}selected{% endif %}>Abonnement</option>
+                                <option value="FIXED" {% if item.kind == "FIXED" %}selected{% endif %}>{% translate "Poste fixe" %}</option>
+                                <option value="SUBSCRIPTION" {% if item.kind == "SUBSCRIPTION" %}selected{% endif %}>{% translate "Abonnement" %}</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Type</label>
+                            <label class="form-label">{% translate "Type" %}</label>
                             <select name="entry_type" class="form-control">
-                                <option value="EXPENSE" {% if item.entry_type == "EXPENSE" %}selected{% endif %}>Dépense</option>
-                                <option value="INCOME" {% if item.entry_type == "INCOME" %}selected{% endif %}>Revenu</option>
+                                <option value="EXPENSE" {% if item.entry_type == "EXPENSE" %}selected{% endif %}>{% translate "Dépense" %}</option>
+                                <option value="INCOME" {% if item.entry_type == "INCOME" %}selected{% endif %}>{% translate "Revenu" %}</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Montant par défaut</label>
+                            <label class="form-label">{% translate "Montant par défaut" %}</label>
                             <input type="number" step="0.01" min="0" name="default_amount" class="form-control" value="{{ item.default_amount }}">
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Catégorie</label>
+                            <label class="form-label">{% translate "Catégorie" %}</label>
                             <select name="category" class="form-control">
                                 <option value="">—</option>
                                 {% for cat in categories %}
-                                <option value="{{ cat.pk }}" {% if item.category_id == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+                                <option value="{{ cat.pk }}" {% if item.category_id == cat.pk %}selected{% endif %}>{{ cat }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Sous-catégorie</label>
+                            <label class="form-label">{% translate "Sous-catégorie" %}</label>
                             <select name="subcategory" class="form-control">
                                 <option value="">—</option>
                                 {% for cat in categories %}
                                     {% for sub in cat.subcategories.all %}
-                                    <option value="{{ sub.pk }}" {% if item.subcategory_id == sub.pk %}selected{% endif %}>{{ sub.name }}</option>
+                                    <option value="{{ sub.pk }}" {% if item.subcategory_id == sub.pk %}selected{% endif %}>{{ sub }}</option>
                                     {% endfor %}
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-6 col-md-2">
-                            <label class="form-label">Tous les</label>
+                            <label class="form-label">{% translate "Tous les" %}</label>
                             <input type="number" min="1" name="frequency_interval" class="form-control" value="{{ item.frequency_interval }}">
                         </div>
                         <div class="col-6 col-md-2">
-                            <label class="form-label">Période</label>
+                            <label class="form-label">{% translate "Période" %}</label>
                             <select name="frequency_unit" class="form-control">
-                                <option value="DAY" {% if item.frequency_unit == "DAY" %}selected{% endif %}>jour</option>
-                                <option value="WEEK" {% if item.frequency_unit == "WEEK" %}selected{% endif %}>semaine</option>
-                                <option value="MONTH" {% if item.frequency_unit == "MONTH" %}selected{% endif %}>mois</option>
-                                <option value="YEAR" {% if item.frequency_unit == "YEAR" %}selected{% endif %}>an</option>
+                                <option value="DAY" {% if item.frequency_unit == "DAY" %}selected{% endif %}>{% translate "jour" %}</option>
+                                <option value="WEEK" {% if item.frequency_unit == "WEEK" %}selected{% endif %}>{% translate "semaine" %}</option>
+                                <option value="MONTH" {% if item.frequency_unit == "MONTH" %}selected{% endif %}>{% translate "mois" %}</option>
+                                <option value="YEAR" {% if item.frequency_unit == "YEAR" %}selected{% endif %}>{% translate "an" %}</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Date de départ</label>
+                            <label class="form-label">{% translate "Date de départ" %}</label>
                             <input type="date" name="start_date" class="form-control" value="{{ item.start_date|date:'Y-m-d' }}">
                         </div>
                         <div class="col-12 col-md-2">
-                            <label class="form-label">Date de fin</label>
+                            <label class="form-label">{% translate "Date de fin" %}</label>
                             <input type="date" name="end_date" class="form-control" value="{{ item.end_date|date:'Y-m-d' }}">
                         </div>
                         <div class="col-12 d-flex align-items-center gap-2">
                             <input type="checkbox" name="is_active" id="is_active_{{ item.pk }}" class="form-check-input" {% if item.is_active %}checked{% endif %}>
-                            <label class="form-label mb-0" for="is_active_{{ item.pk }}">Actif</label>
+                            <label class="form-label mb-0" for="is_active_{{ item.pk }}">{% translate "Actif" %}</label>
                         </div>
                         <div class="col-12 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                            <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
                         </div>
                     </form>
                     {% if item.kind == "SUBSCRIPTION" and item.is_active %}
                     <form method="post" action="{% url 'finance:cancel_recurring_item' item.pk %}" class="mt-2 finance-cancel-form">
                         {% csrf_token %}
-                        <label class="form-label" for="cancel_date_{{ item.pk }}">Date d'annulation</label>
+                        <label class="form-label" for="cancel_date_{{ item.pk }}">{% translate "Date d'annulation" %}</label>
                         <div class="finance-cancel-row">
                             <input type="date" name="end_date" id="cancel_date_{{ item.pk }}" class="form-control" value="{% now 'Y-m-d' %}">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Annuler l'abonnement</button>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">{% translate "Annuler l'abonnement" %}</button>
                         </div>
                     </form>
                     {% endif %}
                     <form method="post" action="{% url 'finance:delete_recurring_item' item.pk %}" class="mt-2">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer définitivement</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{% translate "Supprimer définitivement" %}</button>
                     </form>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-muted mb-0">Aucun poste fixe ou abonnement pour l'instant.</p>
+        <p class="text-muted mb-0">{% translate "Aucun poste fixe ou abonnement pour l'instant." %}</p>
         {% endif %}
     </div>
     {% endif %}
@@ -338,83 +361,197 @@
     <div class="row g-4 mb-4">
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-3">Ajouter une catégorie</h2>
+                <h2 class="h5 mb-3">{% translate "Ajouter une catégorie" %}</h2>
                 <form method="post" action="{% url 'finance:add_category' %}" class="row g-3">
                     {% csrf_token %}
                     <div class="col-12">
-                        <label class="form-label">Nom</label>
+                        <label class="form-label">{% translate "Nom" %}</label>
                         {{ category_form.name }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Type</label>
+                        <label class="form-label">{% translate "Type" %}</label>
                         {{ category_form.entry_type }}
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                        <label class="form-label">{{ category_form.budget_section.label }}</label>
+                        {{ category_form.budget_section }}
+                        <small class="form-text text-muted">{{ category_form.budget_section.help_text }}</small>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">{% translate "Ajouter" %}</button>
                     </div>
                 </form>
             </div>
         </div>
         <div class="col-12 col-lg-6">
             <div class="content-panel h-100">
-                <h2 class="h5 mb-3">Ajouter une sous-catégorie</h2>
+                <h2 class="h5 mb-3">{% translate "Ajouter une sous-catégorie" %}</h2>
                 <form method="post" action="{% url 'finance:add_subcategory' %}" class="row g-3">
                     {% csrf_token %}
                     <div class="col-12">
-                        <label class="form-label">Catégorie parente</label>
+                        <label class="form-label">{% translate "Catégorie parente" %}</label>
                         {{ subcategory_form.category }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Nom</label>
+                        <label class="form-label">{% translate "Nom" %}</label>
                         {{ subcategory_form.name }}
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                        <label class="form-label">{{ subcategory_form.budget_section.label }}</label>
+                        {{ subcategory_form.budget_section }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">{% translate "Ajouter" %}</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="content-panel">
-        <h2 class="h5 mb-3">Vos catégories</h2>
-        {% if categories %}
-        <div class="row g-3">
-            {% for category in categories %}
-            <div class="col-12 col-md-6">
-                <div class="finance-category-card">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <strong>{{ category.name }}</strong>
-                            <span class="text-muted"> · {{ category.get_entry_type_display }}</span>
-                        </div>
-                        <form method="post" action="{% url 'finance:delete_category' category.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
-                        </form>
-                    </div>
-                    {% if category.subcategories.all %}
-                    <ul class="finance-subcategory-list">
-                        {% for sub in category.subcategories.all %}
-                        <li>
-                            <span>{{ sub.name }}</span>
+    <div class="category-groups mb-4">
+        {% for group in category_groups %}
+        <div class="content-panel category-group is-{{ group.key }}">
+            <div class="category-group-head">
+                <h2 class="h5 mb-1">{{ group.title }}</h2>
+                <p class="text-muted small mb-0">{{ group.hint }}</p>
+            </div>
+            {% for entry in group.categories %}
+            <div class="finance-category-card" id="categorie-{{ entry.category.pk }}">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <strong>{{ entry.category }}</strong>
+                    <form method="post" action="{% url 'finance:delete_category' entry.category.pk %}" onsubmit="return confirm('{% translate "Supprimer cette catégorie et toutes ses sous-catégories ?" %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{% translate "Supprimer" %}</button>
+                    </form>
+                </div>
+                <ul class="finance-subcategory-list">
+                    {% if entry.subcategories %}
+                    {% for sub in entry.subcategories %}
+                    <li>
+                        <span>{{ sub }}</span>
+                        <div class="category-type-actions">
+                            <form method="post" action="{% url 'finance:update_budget_section' 'sous-categorie' sub.pk %}">
+                                {% csrf_token %}
+                                <select name="budget_section" class="form-select form-select-sm category-type-select is-{{ sub.budget_section|lower }}" aria-label="{% translate "Type dans le budget" %}" onchange="this.form.submit()">
+                                    {% for key, label in budget_sections %}<option value="{{ key }}" {% if key == sub.budget_section %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                </select>
+                            </form>
                             <form method="post" action="{% url 'finance:delete_subcategory' sub.pk %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">Supprimer</button>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="{% translate "Supprimer" %} {{ sub }}">×</button>
                             </form>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                        </div>
+                    </li>
+                    {% endfor %}
                     {% else %}
-                    <p class="text-muted mb-0 small">Aucune sous-catégorie.</p>
+                    <li>
+                        <span class="text-muted">{% translate "Toute la catégorie" %}</span>
+                        <div class="category-type-actions">
+                            <form method="post" action="{% url 'finance:update_budget_section' 'categorie' entry.category.pk %}">
+                                {% csrf_token %}
+                                <select name="budget_section" class="form-select form-select-sm category-type-select is-{{ entry.category.budget_section|lower }}" aria-label="{% translate "Type dans le budget" %}" onchange="this.form.submit()">
+                                    {% for key, label in budget_sections %}<option value="{{ key }}" {% if key == entry.category.budget_section %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    </li>
                     {% endif %}
-                </div>
+                </ul>
             </div>
+            {% empty %}
+            <p class="text-muted small mb-0">{% translate "Aucune catégorie dans ce groupe." %}</p>
             {% endfor %}
         </div>
+        {% endfor %}
+    </div>
+
+    <div class="content-panel">
+        <h2 class="h5 mb-3">{% translate "Revenus" %}</h2>
+        {% if income_categories %}
+        <ul class="finance-subcategory-list category-income-list">
+            {% for category in income_categories %}
+            <li>
+                <span>{{ category }}</span>
+                <form method="post" action="{% url 'finance:delete_category' category.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">{% translate "Supprimer" %}</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
         {% else %}
-        <p class="text-muted mb-0">Aucune catégorie pour l'instant.</p>
+        <p class="text-muted mb-0">{% translate "Aucune catégorie de revenus." %}</p>
         {% endif %}
+    </div>
+    {% endif %}
+    {% if active_tab == 'sauvegarde' %}
+    {% if backup_notice %}
+    <div class="settings-notice is-{{ backup_notice.0 }} mb-4" role="status">{{ backup_notice.1 }}</div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-7">
+            <div class="content-panel h-100">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">{% translate "Sauvegardes" %}</h2>
+                        <p class="text-muted small mb-0">{% translate "Une copie de ta base est faite chaque jour à l'ouverture de l'app, et avant chaque mise à jour. Les 14 dernières copies quotidiennes sont gardées." %}</p>
+                    </div>
+                    <form method="post" action="{% url 'finance:backup_now' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm">{% translate "Sauvegarder maintenant" %}</button>
+                    </form>
+                </div>
+                {% if backups %}
+                <ul class="backup-list">
+                    {% for backup in backups %}
+                    <li>
+                        <div class="backup-main">
+                            <strong>{{ backup.created|date:"j F Y · H:i" }}</strong>
+                            <small class="text-muted">
+                                {% if backup.label == "auto" %}{% translate "Automatique" %}{% elif backup.label == "manuelle" %}{% translate "Manuelle" %}{% elif backup.label == "avant-mise-a-jour" %}{% translate "Avant mise à jour" %}{% else %}{% translate "Avant restauration" %}{% endif %}
+                                · {{ backup.size|filesizeformat }}
+                            </small>
+                        </div>
+                        <div class="backup-actions">
+                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:download_backup' backup.name %}">{% translate "Télécharger" %}</a>
+                            <form method="post" action="{% url 'finance:restore_backup' backup.name %}" onsubmit="return confirm('{{ _("Remplacer toutes tes données actuelles par cette sauvegarde ? Une copie de la base actuelle est faite avant.")|escapejs }}');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Restaurer" %}</button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">{% translate "Aucune sauvegarde pour l'instant." %}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+            <div class="content-panel">
+                <h2 class="h5 mb-1">{% translate "Exporter mes données" %}</h2>
+                <p class="text-muted small mb-3">{% translate "Pour les ouvrir dans Excel ou Numbers, ou les garder ailleurs." %}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-primary btn-sm" href="{% url 'finance:export_workbook' %}">{% translate "Tout (Excel)" %}</a>
+                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:export_transactions_csv' %}">{% translate "Opérations (CSV)" %}</a>
+                </div>
+            </div>
+            <div class="content-panel">
+                <h2 class="h5 mb-1">{% translate "Restaurer depuis un fichier" %}</h2>
+                <p class="text-muted small mb-3">{% translate "Nouvel ordinateur ? Importe une sauvegarde (.sqlite3) téléchargée depuis BudgWealth." %}</p>
+                <form method="post" action="{% url 'finance:restore_backup_upload' %}" enctype="multipart/form-data" class="d-flex flex-column gap-2" onsubmit="return confirm('{{ _("Remplacer toutes tes données actuelles par ce fichier ? Une copie de la base actuelle est faite avant.")|escapejs }}');">
+                    {% csrf_token %}
+                    <input type="file" name="backup" accept=".sqlite3" class="form-control form-control-sm" required>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm align-self-start">{% translate "Importer et restaurer" %}</button>
+                </form>
+            </div>
+            <div class="content-panel">
+                <h2 class="h5 mb-1">{% translate "Où sont mes données ?" %}</h2>
+                <p class="text-muted small mb-1">{% translate "Base :" %} <code>{{ data_dir }}/db.sqlite3</code></p>
+                <p class="text-muted small mb-0">{% translate "Sauvegardes :" %} <code>{{ backup_dir }}</code></p>
+            </div>
+        </div>
     </div>
     {% endif %}
 </section>

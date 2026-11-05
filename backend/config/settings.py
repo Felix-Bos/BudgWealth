@@ -13,27 +13,41 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 # donc la base et les fichiers générés vont dans le dossier personnel de l'utilisateur.
 IS_PACKAGED = getattr(sys, "frozen", False)
 
+def _default_data_dir():
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "BudgWealth"
+    if sys.platform.startswith("win"):
+        return Path(os.getenv("APPDATA", Path.home())) / "BudgWealth"
+    return Path(os.getenv("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "BudgWealth"
+
+
+# Une seule base par utilisateur de l'ordinateur : l'app est 100 % locale.
+# Dev et application empaquetée partagent le même dossier de données
+# (BUDGWEALTH_DATA_DIR permet d'en choisir un autre, par exemple pour tester).
+DATA_DIR = Path(os.getenv("BUDGWEALTH_DATA_DIR") or _default_data_dir()).expanduser()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+BACKUP_DIR = DATA_DIR / "backups"
+
 if IS_PACKAGED:
     # Ressources en lecture seule dépaquetées par PyInstaller
     BUNDLE_DIR = Path(sys._MEIPASS)
     FRONTEND_DIR = BUNDLE_DIR / "frontend"
-    # Données modifiables, conservées entre deux lancements
-    DATA_DIR = Path.home() / "Library" / "Application Support" / "BudgWealth"
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    load_dotenv(DATA_DIR / ".env")
 else:
-    DATA_DIR = BASE_DIR
     load_dotenv(BASE_DIR / ".env")
+load_dotenv(DATA_DIR / ".env")
+
+# Sauvegarde automatique quotidienne (désactivée pendant les tests)
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+AUTO_BACKUP = not TESTING and os.getenv("BUDGWEALTH_AUTO_BACKUP", "1") != "0"
+AUTO_BACKUP_KEEP = 14
 
 
 def _get_or_create_secret_key():
-    """En dev, clé par défaut. En app empaquetée, une clé propre à chaque
-    installation, générée au premier lancement et conservée localement."""
+    """Clé propre à chaque installation, générée au premier lancement et
+    conservée dans le dossier de données (SECRET_KEY la remplace)."""
     env_key = os.getenv("SECRET_KEY")
     if env_key:
         return env_key
-    if not IS_PACKAGED:
-        return "django-insecure-local-development-key"
     key_file = DATA_DIR / "secret_key.txt"
     if key_file.exists():
         return key_file.read_text().strip()
@@ -75,9 +89,13 @@ MIDDLEWARE = [
     # Sert les fichiers statiques sans serveur de dev (utile pour l'app empaquetée)
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Langue choisie dans les paramètres (français par défaut)
+    "finance.middleware.LanguageCookieMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Une sauvegarde de la base par jour, au premier passage
+    "finance.middleware.DailyBackupMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -92,6 +110,7 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
+                "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "finance.context_processors.quick_add_transaction_form",
@@ -138,7 +157,17 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-LANGUAGE_CODE = "fr-fr"
+LANGUAGE_CODE = "fr"
+
+# Langues de l'interface (sélecteur dans Paramètres › Général). Les textes
+# sont écrits en français dans le code ; l'anglais est dans locale/en.
+LANGUAGES = [
+    ("fr", "Français"),
+    ("en", "English"),
+]
+LOCALE_PATHS = [(BUNDLE_DIR if IS_PACKAGED else BASE_DIR) / "locale"]
+# Le choix de langue est gardé un an
+LANGUAGE_COOKIE_AGE = 365 * 24 * 60 * 60
 
 TIME_ZONE = "Europe/Paris"
 

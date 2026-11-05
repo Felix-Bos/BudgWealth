@@ -1,0 +1,16 @@
+{% load i18n %}
+<h2 class="h6 mb-3">{% translate "Solde et marge de sécurité" %}</h2>
+<form method="post" action="{% url 'finance:update_current_balance' %}" class="row g-3">
+    {% csrf_token %}
+    {% for field in balance_form %}
+    <div class="col-12 col-sm-4">
+        <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<div class="budget-error">{{ error }}</div>{% endfor %}
+        {% if field.help_text %}<small class="form-text text-muted d-block">{{ field.help_text }}</small>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
+    </div>
+</form>

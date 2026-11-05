@@ -19,6 +19,7 @@ from django.db.models import Min
 from django.utils import timezone
 
 from .models import ExchangeRate, Instrument, PortfolioOperation, PricePoint
+from django.utils.translation import gettext as _
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ def _yfinance():
         import yfinance
     except ImportError as error:
         raise MarketDataError(
-            "Le module yfinance n'est pas installé (pip install yfinance)."
+            _("Le module yfinance n'est pas installé (pip install yfinance).")
         ) from error
     return yfinance
 
@@ -90,7 +91,7 @@ def search_instruments(query, limit=8):
         quotes = yf.Search(query, max_results=limit, news_count=0, lists_count=0).quotes
     except Exception as error:
         logger.warning("Recherche Yahoo Finance impossible (%s) : %s", query, error)
-        raise MarketDataError("Yahoo Finance ne répond pas. Réessaie dans un instant.") from error
+        raise MarketDataError(_("Yahoo Finance ne répond pas. Réessaie dans un instant.")) from error
 
     # Yahoo ne renvoie pas l'ISIN : on le garde quand c'est ce qui a été cherché
     isin = query.upper() if ISIN_RE.match(query.upper()) else ""
@@ -110,10 +111,11 @@ def search_instruments(query, limit=8):
     return results[:limit]
 
 
-def fetch_history(symbol, start, end=None):
+def fetch_history(symbol, start, end=None, adjusted=False):
     """
     Cours de clôture quotidiens de `start` à `end` (inclus, aujourd'hui par
     défaut). Renvoie {"currency", "name", "closes": [(date, Decimal)]}.
+    `adjusted` : cours ajustés des dividendes et divisions (rendement total).
     """
 
     yf = _yfinance()
@@ -123,13 +125,13 @@ def fetch_history(symbol, start, end=None):
             start=start.isoformat(),
             end=(end + timedelta(days=1)).isoformat() if end else None,
             interval="1d",
-            auto_adjust=False,
+            auto_adjust=adjusted,
             actions=False,
         )
         metadata = ticker.history_metadata or {}
     except Exception as error:
         logger.warning("Cours Yahoo Finance impossibles pour %s : %s", symbol, error)
-        raise MarketDataError(f"Cours indisponibles pour {symbol}.") from error
+        raise MarketDataError(_('Cours indisponibles pour %(symbol)s.') % {"symbol": symbol}) from error
 
     closes = []
     if frame is not None and not frame.empty and "Close" in frame:
@@ -139,7 +141,7 @@ def fetch_history(symbol, start, end=None):
                 closes.append((timestamp.date(), close))
 
     if not closes:
-        raise MarketDataError(f"Aucun cours trouvé pour {symbol} sur Yahoo Finance.")
+        raise MarketDataError(_('Aucun cours trouvé pour %(symbol)s sur Yahoo Finance.') % {"symbol": symbol})
 
     return {
         "currency": metadata.get("currency") or "EUR",
@@ -161,7 +163,7 @@ def price_on(symbol, day):
     data = fetch_history(symbol, day - timedelta(days=10), end=day)
     closes = [point for point in data["closes"] if point[0] <= day]
     if not closes:
-        raise MarketDataError("Pas de cotation à cette date.")
+        raise MarketDataError(_("Pas de cotation à cette date."))
     close_date, close = closes[-1]
 
     currency, factor = base_currency(data["currency"])
@@ -172,7 +174,7 @@ def price_on(symbol, day):
             if point[0] <= day
         ]
         if not rates:
-            raise MarketDataError(f"Taux de change {currency}/EUR indisponible.")
+            raise MarketDataError(_('Taux de change %(currency)s/EUR indisponible.') % {"currency": currency})
         price *= rates[-1][1]
 
     return {

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
+from django.utils.translation import gettext as _, gettext_lazy
 
 
 class SignUpForm(UserCreationForm):
@@ -19,7 +20,7 @@ class SignUpForm(UserCreationForm):
         email = self.cleaned_data["email"].strip().lower()
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("Un compte existe déjà avec cette adresse email.")
+            raise forms.ValidationError(_("Un compte existe déjà avec cette adresse email."))
         return email
 
     def save(self, commit=True):
@@ -31,7 +32,7 @@ class SignUpForm(UserCreationForm):
 
 
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(label="Nom d'utilisateur")
+    username = forms.CharField(label=gettext_lazy("Nom d'utilisateur"))
 
     def __init__(self, request=None, *args, **kwargs):
         super().__init__(request, *args, **kwargs)
@@ -53,14 +54,14 @@ class AccountForm(forms.ModelForm):
         email = self.cleaned_data["email"].strip().lower()
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("Un compte existe déjà avec cette adresse email.")
+            raise forms.ValidationError(_("Un compte existe déjà avec cette adresse email."))
         return email
 
     def clean_username(self):
         username = self.cleaned_data["username"]
         User = get_user_model()
         if User.objects.filter(username__iexact=username).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("Ce nom d'utilisateur est déjà pris.")
+            raise forms.ValidationError(_("Ce nom d'utilisateur est déjà pris."))
         return username
 
 

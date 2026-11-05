@@ -1,31 +1,30 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Import de votre historique - BudgWealth{% endblock %}
+{% block title %}{% translate "Import de votre historique - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="auth-layout">
     <div class="auth-panel">
         <div class="mb-4">
-            <p class="section-label mb-2">Import de l'historique</p>
-            <h1 class="h3 mb-2">Vos 12 derniers mois</h1>
+            <p class="section-label mb-2">{% translate "Import de l'historique" %}</p>
+            <h1 class="h3 mb-2">{% translate "Vos 12 derniers mois" %}</h1>
             <p class="text-muted mb-0">
-                Nous récupérons tout votre historique en une fois. Une fenêtre Crédit Agricole
-                s'affichera pour que vous tapiez votre code personnel, puis elle disparaîtra.
+                {% translate "Nous récupérons tout votre historique en une fois. Une fenêtre Crédit Agricole s'affichera pour que vous tapiez votre code personnel, puis elle disparaîtra." %}
             </p>
         </div>
 
         <form class="d-none">{% csrf_token %}</form>
 
         <ol class="bank-sync-steps mb-4">
-            <li data-step="CONNECTING">Connexion au Crédit Agricole</li>
-            <li data-step="WAITING_PASSWORD">Saisie de votre code personnel</li>
-            <li data-step="DOWNLOADING">Téléchargement des opérations</li>
-            <li data-step="IMPORTING">Import dans BudgWealth</li>
+            <li data-step="CONNECTING">{% translate "Connexion au Crédit Agricole" %}</li>
+            <li data-step="WAITING_PASSWORD">{% translate "Saisie de votre code personnel" %}</li>
+            <li data-step="DOWNLOADING">{% translate "Téléchargement des opérations" %}</li>
+            <li data-step="IMPORTING">{% translate "Import dans BudgWealth" %}</li>
         </ol>
 
         <div class="bank-sync-callout mb-3 js-bank-sync-password" hidden>
-            Une fenêtre Crédit Agricole vient de s'ouvrir : tapez votre code personnel sur le clavier du site.
-            Elle se fermera toute seule ensuite.
+            {% translate "Une fenêtre Crédit Agricole vient de s'ouvrir : tapez votre code personnel sur le clavier du site. Elle se fermera toute seule ensuite." %}
         </div>
         <div class="alert alert-danger js-bank-sync-error" hidden></div>
 
@@ -33,9 +32,9 @@
             <button type="button" class="btn btn-primary js-initial-start"
                     data-start-url="{% url 'finance:bank_initial_sync_start' %}"
                     data-status-url="{% url 'finance:bank_sync_status' 0 %}">
-                Démarrer l'import
+                {% translate "Démarrer l'import" %}
             </button>
-            <a class="btn btn-link text-muted js-initial-skip" href="{% url 'finance:dashboard' %}">Plus tard</a>
+            <a class="btn btn-link text-muted js-initial-skip" href="{% url 'finance:dashboard' %}">{% translate "Plus tard" %}</a>
         </div>
     </div>
 </section>
@@ -66,7 +65,7 @@
             errorBox.textContent = message;
             errorBox.hidden = false;
             button.disabled = false;
-            button.textContent = 'Réessayer';
+            button.textContent = '{{ _("Réessayer")|escapejs }}';
         }
 
         function poll(statusUrl) {
@@ -74,7 +73,7 @@
                 .then(function (r) { return r.json(); })
                 .then(function (sync) {
                     if (sync.status === 'ERROR') {
-                        showError(sync.message || "L'import a échoué.");
+                        showError(sync.message || "{{ _("L'import a échoué.")|escapejs }}");
                     } else if (sync.status === 'DONE') {
                         render('DONE');
                         window.location.href = "{% url 'finance:dashboard' %}";
@@ -88,7 +87,7 @@
 
         button.addEventListener('click', function () {
             button.disabled = true;
-            button.textContent = 'Import en cours…';
+            button.textContent = '{{ _("Import en cours…")|escapejs }}';
             errorBox.hidden = true;
             skip.hidden = true;
             render('CONNECTING');
@@ -99,10 +98,10 @@
             })
                 .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
                 .then(function (res) {
-                    if (!res.ok) { showError(res.body.error || "Impossible de lancer l'import."); return; }
+                    if (!res.ok) { showError(res.body.error || "{{ _("Impossible de lancer l'import.")|escapejs }}"); return; }
                     poll(button.dataset.statusUrl.replace(/0\/$/, res.body.id + '/'));
                 })
-                .catch(function () { showError('Impossible de joindre le serveur.'); });
+                .catch(function () { showError('{{ _("Impossible de joindre le serveur.")|escapejs }}'); });
         });
     });
 </script>

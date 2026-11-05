@@ -9,7 +9,7 @@
 
     var data = JSON.parse(dataEl.textContent);
     var num = function (values) { return values.map(Number); };
-    var dateLabel = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    var dateLabel = new Intl.DateTimeFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { day: 'numeric', month: 'short', year: 'numeric' });
 
     // ---------- Patrimoine : courbe claire sur la carte colorée ----------
     var wealthCanvas = document.getElementById('wealthChart');
@@ -26,7 +26,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Patrimoine',
+                        label: gettext('Patrimoine'),
                         data: totals,
                         borderColor: 'rgba(255,255,255,0.95)',
                         borderWidth: 2.5,
@@ -69,7 +69,7 @@
                 data: {
                     labels: data.history.labels,
                     datasets: [{
-                        label: 'Versé',
+                        label: gettext('Versé'),
                         data: num(data.history.savings),
                         backgroundColor: 'rgba(255,255,255,0.32)',
                         hoverBackgroundColor: 'rgba(255,255,255,0.9)',
@@ -120,9 +120,9 @@
                 data: {
                     labels: history.labels,
                     datasets: [
-                        bar('Revenus', num(history.income), p.income),
-                        bar('Charges', num(history.expense), p.expense),
-                        bar('Épargne', num(history.savings), p.savings)
+                        bar(gettext('Revenus'), num(history.income), p.income),
+                        bar(gettext('Charges'), num(history.expense), p.expense),
+                        bar(gettext('Épargne'), num(history.savings), p.savings)
                     ]
                 },
                 options: {
@@ -140,6 +140,60 @@
                     onHover: function (event, elements) {
                         event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
                     }
+                }
+            };
+        });
+    }
+
+    // ---------- Trésorerie : solde prévu ----------
+    var cashCanvas = document.getElementById('homeCashChart');
+    if (cashCanvas && data.cash) {
+        var lang = document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR';
+        var dayFormat = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' });
+        var cashDate = function (label) { var d = label.split('-'); return new Date(+d[0], +d[1] - 1, +d[2]); };
+        charts.create(cashCanvas, function (p) {
+            var scales = charts.scales(p);
+            scales.y.beginAtZero = false;
+            scales.y.ticks.maxTicksLimit = 4;
+            scales.x.ticks.maxTicksLimit = 5;
+            scales.x.ticks.callback = function (value, index) { return dayFormat.format(cashDate(data.cash.labels[index])); };
+            return {
+                type: 'line',
+                data: {
+                    labels: data.cash.labels,
+                    datasets: [
+                        {
+                            label: gettext('Solde prévu'),
+                            data: data.cash.values,
+                            borderColor: p.balance,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: { target: { value: 0 }, above: charts.alpha(p.balance, 0.12), below: charts.alpha(p.expense, 0.25) }
+                        },
+                        {
+                            label: gettext('Marge de sécurité'),
+                            data: data.cash.labels.map(function () { return data.cash.buffer; }),
+                            borderColor: p.expense,
+                            borderDash: [4, 4],
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) { return dayFormat.format(cashDate(data.cash.labels[items[0].dataIndex])); },
+                                label: charts.euroLabel
+                            }
+                        }
+                    },
+                    scales: scales
                 }
             };
         });

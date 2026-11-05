@@ -1,23 +1,24 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Mon budget - BudgWealth{% endblock %}
+{% block title %}{% translate "Mon budget - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="budget-page">
-    {% include "finance/_budget_tabs.html" with subtitle="Ton budget type, appliqué chaque mois" %}
+    {% include "finance/_budget_tabs.html" with subtitle=_("Ton budget type, appliqué chaque mois") %}
 
     {% if is_new_plan %}
     <div class="budget-callout mb-4">
-        <strong>Premier budget</strong>
-        <span>On l'a prérempli à partir de tes postes fixes, de tes abonnements et de tes dépenses des 3 derniers mois. Ajuste les montants puis enregistre.</span>
+        <strong>{% translate "Premier budget" %}</strong>
+        <span>{% translate "On l'a prérempli à partir de tes postes fixes, de tes abonnements et de tes dépenses des 3 derniers mois. Ajuste les montants puis enregistre." %}</span>
     </div>
     {% endif %}
 
-    <ol class="budget-guide" aria-label="Comment construire ton budget">
-        <li><span>1</span><div><strong>Ce qui rentre</strong><small>Ton revenu mensuel de référence</small></div></li>
-        <li><span>2</span><div><strong>Ce qui sort</strong><small>Charges fixes, variables, abonnements</small></div></li>
-        <li><span>3</span><div><strong>Ce que tu gardes</strong><small>Ton épargne, versée en début de mois</small></div></li>
-        <li class="is-result"><span>=</span><div><strong>Ton reste à vivre</strong><small>Calculé en direct à droite</small></div></li>
+    <ol class="budget-guide" aria-label="{% translate "Comment construire ton budget" %}">
+        <li><span>1</span><div><strong>{% translate "Ce qui rentre" %}</strong><small>{% translate "Ton revenu mensuel de référence" %}</small></div></li>
+        <li><span>2</span><div><strong>{% translate "Ce qui sort" %}</strong><small>{% translate "Charges fixes, variables, abonnements" %}</small></div></li>
+        <li><span>3</span><div><strong>{% translate "Ce que tu gardes" %}</strong><small>{% translate "Ton épargne, versée en début de mois" %}</small></div></li>
+        <li class="is-result"><span>=</span><div><strong>{% translate "Ton reste à vivre" %}</strong><small>{% translate "Calculé en direct à droite" %}</small></div></li>
     </ol>
 
     <div class="row g-4">
@@ -30,8 +31,8 @@
                 <div class="content-panel budget-panel mb-4">
                     <div class="budget-panel-head">
                         <div>
-                            <h2 class="h5 mb-1"><span class="budget-step">1</span>Revenus</h2>
-                            <p class="text-muted small mb-0">La base sur laquelle ton budget est construit.</p>
+                            <h2 class="h5 mb-1"><span class="budget-step">1</span>{% translate "Revenus" %}</h2>
+                            <p class="text-muted small mb-0">{% translate "La base sur laquelle ton budget est construit." %}</p>
                         </div>
                     </div>
 
@@ -43,12 +44,12 @@
                                 <strong>{{ choice.choice_label }}</strong>
                                 {% if choice.data.value == "AUTO" %}
                                     {% if salary_months %}
-                                    <span><span class="budget-amount">{{ salary_average|floatformat:"2g" }} €</span> en moyenne sur {{ salary_months }} mois</span>
+                                    <span><span class="budget-amount">{{ salary_average|floatformat:"2g" }} €</span> {% translate "en moyenne sur" %} {{ salary_months }} {% translate "mois" %}</span>
                                     {% else %}
-                                    <span>Pas encore de salaire enregistré : on utilisera le montant fixe en attendant.</span>
+                                    <span>{% translate "Pas encore de salaire enregistré : on utilisera le montant fixe en attendant." %}</span>
                                     {% endif %}
                                 {% else %}
-                                    <span>Tu indiques toi-même ton revenu mensuel.</span>
+                                    <span>{% translate "Tu indiques toi-même ton revenu mensuel." %}</span>
                                 {% endif %}
                             </span>
                         </label>
@@ -75,10 +76,10 @@
                         <div>
                             <h2 class="h5 mb-1"><span class="budget-step is-{{ key|lower }}">{{ forloop.counter|add:1 }}</span>{{ label }}</h2>
                             <p class="text-muted small mb-0">
-                                {% if key == "FIXED" %}Loyer, assurances, énergie, téléphone…
-                                {% elif key == "VARIABLE" %}Courses, restaurants, sorties : ce qui varie d'un mois à l'autre.
-                                {% elif key == "SUBSCRIPTION" %}Streaming, sport, logiciels…
-                                {% else %}Dépenses annuelles lissées : montant annuel ÷ 12.{% endif %}
+                                {% if key == "FIXED" %}{% translate "Loyer, assurances, énergie, téléphone…" %}
+                                {% elif key == "VARIABLE" %}{% translate "Courses, restaurants, sorties : ce qui varie d'un mois à l'autre." %}
+                                {% elif key == "SUBSCRIPTION" %}{% translate "Streaming, sport, logiciels…" %}
+                                {% else %}{% translate "Dépenses annuelles lissées : montant annuel ÷ 12." %}{% endif %}
                             </p>
                         </div>
                         <div class="budget-panel-total"><span class="js-section-total" data-section="{{ key }}">0</span> €</div>
@@ -86,7 +87,7 @@
 
                     <div class="budget-lines js-section-lines" data-section="{{ key }}">
                         <div class="budget-line budget-line-header" aria-hidden="true">
-                            <span>Catégorie</span><span>Sous-catégorie</span><span>Libellé</span><span class="text-end">€ / mois</span><span></span>
+                            <span>{% translate "Catégorie" %}</span><span>{% translate "Sous-catégorie" %}</span><span>{% translate "Libellé" %}</span><span class="text-end">{% translate "€ / mois" %}</span><span></span>
                         </div>
                         {% for form in formset.forms %}
                             {% if form.section.value == key %}
@@ -95,7 +96,7 @@
                         {% endfor %}
                     </div>
 
-                    <button type="button" class="btn btn-link budget-add-line js-add-line" data-section="{{ key }}">+ Ajouter une ligne</button>
+                    <button type="button" class="btn btn-link budget-add-line js-add-line" data-section="{{ key }}">{% translate "+ Ajouter une ligne" %}</button>
                 </div>
                 {% endfor %}
 
@@ -103,11 +104,11 @@
                 <div class="content-panel budget-panel mb-4">
                     <div class="budget-panel-head">
                         <div>
-                            <h2 class="h5 mb-1"><span class="budget-step is-savings">{{ sections|length|add:2 }}</span>Épargne</h2>
+                            <h2 class="h5 mb-1"><span class="budget-step is-savings">{{ sections|length|add:2 }}</span>{% translate "Épargne" %}</h2>
                             <p class="text-muted small mb-0">
-                                Ce que tu veux mettre de côté chaque mois.
-                                {% if projects.active_count %}Tes projets demandent <strong>{{ projects.monthly_needed }} € / mois</strong>.{% endif %}
-                                <a href="{% url 'finance:budget_goals' %}">Gérer mes projets</a>
+                                {% translate "Ce que tu veux mettre de côté chaque mois." %}
+                                {% if projects.active_count %}{% translate "Tes projets demandent" %} <strong>{{ projects.monthly_needed }} {% translate "€ / mois" %}</strong>.{% endif %}
+                                <a href="{% url 'finance:budget_goals' %}">{% translate "Gérer mes projets" %}</a>
                             </p>
                         </div>
                     </div>
@@ -117,19 +118,19 @@
                             {{ plan_form.savings_target_monthly }}
                         </div>
                         <div class="col-12 col-md-7">
-                            <span class="form-label d-block">Suggestions</span>
-                            <div class="budget-chips" role="group" aria-label="Montants suggérés">
+                            <span class="form-label d-block">{% translate "Suggestions" %}</span>
+                            <div class="budget-chips" role="group" aria-label="{% translate "Montants suggérés" %}">
                                 <button type="button" class="budget-chip js-savings-rate" data-rate="10">10 %</button>
                                 <button type="button" class="budget-chip js-savings-rate" data-rate="15">15 %</button>
                                 <button type="button" class="budget-chip js-savings-rate" data-rate="20">20 %</button>
                                 {% if projects.active_count %}
-                                <button type="button" class="budget-chip js-savings-amount" data-amount="{{ projects.monthly_needed|stringformat:'s' }}">Mes projets · {{ projects.monthly_needed|floatformat:"0g" }} €</button>
+                                <button type="button" class="budget-chip js-savings-amount" data-amount="{{ projects.monthly_needed|stringformat:'s' }}">{% translate "Mes projets ·" %} {{ projects.monthly_needed|floatformat:"0g" }} €</button>
                                 {% endif %}
-                                <button type="button" class="budget-chip is-accent js-savings-left">Tout le reste</button>
+                                <button type="button" class="budget-chip is-accent js-savings-left">{% translate "Tout le reste" %}</button>
                             </div>
                         </div>
                     </div>
-                    <p class="form-text mb-0 mt-2">Astuce : programme un virement automatique vers ton livret le jour de ta paie. L'épargne passe avant les dépenses.</p>
+                    <p class="form-text mb-0 mt-2">{% translate "Astuce : programme un virement automatique vers ton livret le jour de ta paie. L'épargne passe avant les dépenses." %}</p>
                 </div>
 
                 <div class="budget-save-bar">
@@ -137,12 +138,12 @@
                         <label class="form-label mb-0" for="{{ plan_form.valid_from.id_for_label }}">{{ plan_form.valid_from.label }}</label>
                         {{ plan_form.valid_from }}
                     </div>
-                    <button type="submit" class="btn btn-primary">Enregistrer le budget</button>
+                    <button type="submit" class="btn btn-primary">{% translate "Enregistrer le budget" %}</button>
                 </div>
-                <p class="text-muted small mt-2">Les mois précédents gardent la version du budget qui était en vigueur.</p>
+                <p class="text-muted small mt-2">{% translate "Les mois précédents gardent la version du budget qui était en vigueur." %}</p>
 
                 <a class="budget-live-pill js-live-pill" href="#resume">
-                    Reste à vivre <strong><span class="js-pill-left">0</span> €</strong>
+                    {% translate "Reste à vivre" %} <strong><span class="js-pill-left">0</span> €</strong>
                 </a>
 
                 <template id="budgetLineTemplate">
@@ -157,11 +158,11 @@
                  data-salary-average="{{ salary_average }}"
                  data-has-salary="{{ salary_months|yesno:'1,0' }}"
                  data-voucher-credit="{% if meal_vouchers %}{{ meal_vouchers.credit }}{% else %}0{% endif %}">
-                <h2 class="h5 mb-3">Résumé du mois</h2>
+                <h2 class="h5 mb-3">{% translate "Résumé du mois" %}</h2>
                 <div class="budget-left js-summary-left-box">
-                    <span>Reste à vivre</span>
+                    <span>{% translate "Reste à vivre" %}</span>
                     <strong><span class="js-summary-left">0</span> €</strong>
-                    <small class="js-summary-left-hint">par mois, une fois tes charges payées et ton épargne mise de côté</small>
+                    <small class="js-summary-left-hint">{% translate "par mois, une fois tes charges payées et ton épargne mise de côté" %}</small>
                 </div>
 
                 <div class="budget-alloc" aria-hidden="true">
@@ -173,65 +174,65 @@
                 </div>
 
                 <dl class="budget-summary-list">
-                    <div><dt>Revenu</dt><dd><span class="js-summary-income">0</span> €</dd></div>
+                    <div><dt>{% translate "Revenu" %}</dt><dd><span class="js-summary-income">0</span> €</dd></div>
                     {% if meal_vouchers %}
-                    <div><dt>Tickets restaurant</dt><dd>+ {{ meal_vouchers.credit }} €</dd></div>
+                    <div><dt>{% translate "Tickets restaurant" %}</dt><dd>+ {{ meal_vouchers.credit }} €</dd></div>
                     {% endif %}
-                    <div class="is-total"><dt>Ressources</dt><dd><span class="js-summary-resources">0</span> €</dd></div>
+                    <div class="is-total"><dt>{% translate "Ressources" %}</dt><dd><span class="js-summary-resources">0</span> €</dd></div>
                     {% for key, label in sections %}
                     <div><dt><i class="budget-dot is-{{ key|lower }}"></i>{{ label }}</dt><dd>− <span class="js-summary-section" data-section="{{ key }}">0</span> €</dd></div>
                     {% endfor %}
-                    <div><dt><i class="budget-dot is-savings"></i>Épargne</dt><dd>− <span class="js-summary-savings">0</span> €</dd></div>
-                    <div><dt><i class="budget-dot is-left"></i>Reste à vivre</dt><dd><span class="js-summary-left-copy">0</span> €</dd></div>
+                    <div><dt><i class="budget-dot is-savings"></i>{% translate "Épargne" %}</dt><dd>− <span class="js-summary-savings">0</span> €</dd></div>
+                    <div><dt><i class="budget-dot is-left"></i>{% translate "Reste à vivre" %}</dt><dd><span class="js-summary-left-copy">0</span> €</dd></div>
                 </dl>
 
-                <h3 class="budget-summary-subtitle">Repère 50 / 30 / 20</h3>
+                <h3 class="budget-summary-subtitle">{% translate "Repère 50 / 30 / 20" %}</h3>
                 <ul class="budget-rule">
                     <li class="js-rule" data-parts="FIXED PROVISION" data-max="50">
-                        <div class="budget-rule-head"><span>Charges fixes &amp; provisions</span><strong class="js-rule-value">0 %</strong></div>
+                        <div class="budget-rule-head"><span>{% translate "Charges fixes & provisions" %}</span><strong class="js-rule-value">0 %</strong></div>
                         <div class="budget-progress"><span class="js-rule-bar"></span><i style="left: 50%"></i></div>
-                        <small>50 % de tes ressources au maximum</small>
+                        <small>{% translate "50 % de tes ressources au maximum" %}</small>
                     </li>
                     <li class="js-rule" data-parts="VARIABLE SUBSCRIPTION" data-max="30">
-                        <div class="budget-rule-head"><span>Variables &amp; abonnements</span><strong class="js-rule-value">0 %</strong></div>
+                        <div class="budget-rule-head"><span>{% translate "Variables & abonnements" %}</span><strong class="js-rule-value">0 %</strong></div>
                         <div class="budget-progress"><span class="js-rule-bar"></span><i style="left: 30%"></i></div>
-                        <small>30 % au maximum : courses, sorties, loisirs</small>
+                        <small>{% translate "30 % au maximum : courses, sorties, loisirs" %}</small>
                     </li>
                     <li class="js-rule" data-parts="SAVINGS" data-min="20">
-                        <div class="budget-rule-head"><span>Épargne</span><strong class="js-rule-value">0 %</strong></div>
+                        <div class="budget-rule-head"><span>{% translate "Épargne" %}</span><strong class="js-rule-value">0 %</strong></div>
                         <div class="budget-progress is-savings"><span class="js-rule-bar"></span><i style="left: 20%"></i></div>
-                        <small>20 % au minimum, c'est un bon repère</small>
+                        <small>{% translate "20 % au minimum, c'est un bon repère" %}</small>
                     </li>
                 </ul>
 
                 {% if summary and summary.indicators %}
-                <h3 class="budget-summary-subtitle">Indicateurs du budget enregistré</h3>
+                <h3 class="budget-summary-subtitle">{% translate "Indicateurs du budget enregistré" %}</h3>
                 <ul class="budget-indicators">
                     {% for indicator in summary.indicators %}
                     <li class="{% if indicator.ok %}is-ok{% else %}is-ko{% endif %}">
                         <div>
                             <span>{{ indicator.label }}</span>
-                            <small>{{ indicator.diagnostic }} · seuil {{ indicator.threshold }}</small>
+                            <small>{{ indicator.diagnostic }} {% translate "· seuil" %} {{ indicator.threshold }}</small>
                         </div>
                         <strong>{{ indicator.value }} %</strong>
                     </li>
                     {% endfor %}
                 </ul>
-                <p class="text-muted small mb-0">Loyer maximum conseillé : {{ summary.max_rent }} € (33 % du revenu).</p>
+                <p class="text-muted small mb-0">{% translate "Loyer maximum conseillé :" %} {{ summary.max_rent }} {% translate "€ (33 % du revenu)." %}</p>
                 {% endif %}
             </div>
 
             {# ---------- Tickets restaurant ---------- #}
             <div class="content-panel budget-panel mt-4" id="tickets">
-                <h2 class="h5 mb-1">Tickets restaurant</h2>
-                <p class="text-muted small">Uniquement pour l'alimentation. Coche « Payé en tickets restaurant » quand tu saisis une dépense.</p>
+                <h2 class="h5 mb-1">{% translate "Tickets restaurant" %}</h2>
+                <p class="text-muted small">{% translate "Uniquement pour l'alimentation. Coche « Payé en tickets restaurant » quand tu saisis une dépense." %}</p>
 
                 {% if meal_vouchers %}
                 <div class="budget-voucher-month">
-                    <div><span>Crédités ce mois</span><strong>{{ meal_vouchers.credit }} €</strong><small>{{ meal_vouchers.days }} tickets × {{ meal_vouchers.face_value }} €</small></div>
-                    <div><span>Retenue sur salaire</span><strong>{{ meal_vouchers.employee_cost }} €</strong></div>
-                    <div><span>Dépensés</span><strong>{{ meal_vouchers.spent }} €</strong></div>
-                    <div><span>Restant</span><strong>{{ meal_vouchers.remaining }} €</strong></div>
+                    <div><span>{% translate "Crédités ce mois" %}</span><strong>{{ meal_vouchers.credit }} €</strong><small>{{ meal_vouchers.days }} {% translate "tickets ×" %} {{ meal_vouchers.face_value }} €</small></div>
+                    <div><span>{% translate "Retenue sur salaire" %}</span><strong>{{ meal_vouchers.employee_cost }} €</strong></div>
+                    <div><span>{% translate "Dépensés" %}</span><strong>{{ meal_vouchers.spent }} €</strong></div>
+                    <div><span>{% translate "Restant" %}</span><strong>{{ meal_vouchers.remaining }} €</strong></div>
                 </div>
                 <div class="budget-progress mb-3"><span style="width: {{ meal_vouchers.spent_percent|default:0 }}%"></span></div>
                 {% endif %}
@@ -258,19 +259,19 @@
                         <div class="form-text">{{ meal_voucher_form.employee_share_percent.help_text }} {{ meal_voucher_form.days_per_month.help_text }}</div>
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Enregistrer</button>
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Enregistrer" %}</button>
                     </div>
                 </form>
             </div>
 
             {% if versions|length > 1 %}
             <div class="content-panel budget-panel mt-4">
-                <h2 class="h5 mb-2">Versions du budget</h2>
+                <h2 class="h5 mb-2">{% translate "Versions du budget" %}</h2>
                 <ul class="budget-versions">
                     {% for version in versions %}
                     <li>
-                        Depuis {{ version.valid_from|date:"F Y" }}
-                        {% if version == plan %}<span class="budget-badge is-on">En vigueur</span>{% endif %}
+                        {% translate "Depuis" %} {{ version.valid_from|date:"F Y" }}
+                        {% if version == plan %}<span class="budget-badge is-on">{% translate "En vigueur" %}</span>{% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -290,7 +291,7 @@
         var totalForms = form.querySelector('[name="lines-TOTAL_FORMS"]');
         var template = document.getElementById('budgetLineTemplate');
         var summary = document.querySelector('.budget-summary');
-        var money = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        var money = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
         function number(value) {
             var parsed = parseFloat(String(value || '').replace(',', '.'));
@@ -298,16 +299,25 @@
         }
 
         // Sous-catégories filtrées selon la catégorie choisie
+        // Chaque section ne propose que les catégories et sous-catégories de son type
         function setupLine(line) {
+            var section = line.querySelector('.js-line-section').value;
             var category = line.querySelector('.js-category-select');
             var subcategory = line.querySelector('.js-subcategory-select');
             var options = Array.prototype.slice.call(subcategory.options);
+
+            Array.prototype.slice.call(category.options).forEach(function (option) {
+                if (!option.value || option.selected) return;
+                var sections = (option.getAttribute('data-sections') || '').split(' ');
+                if (sections.indexOf(section) === -1) option.remove();
+            });
 
             function filter() {
                 var previous = subcategory.value;
                 subcategory.innerHTML = '';
                 options.forEach(function (option) {
-                    if (!option.value || option.getAttribute('data-category') === category.value) {
+                    if (!option.value || (option.getAttribute('data-category') === category.value
+                            && (option.getAttribute('data-section') === section || option.value === previous && option.selected))) {
                         subcategory.appendChild(option.cloneNode(true));
                     }
                 });
@@ -392,8 +402,8 @@
             form.querySelector('.js-live-pill').classList.toggle('is-negative', left < 0);
             summary.querySelector('.js-summary-left-box').classList.toggle('is-negative', left < 0);
             summary.querySelector('.js-summary-left-hint').textContent = left < 0
-                ? 'Ton budget dépasse tes ressources : réduis une dépense ou ton épargne visée.'
-                : 'par mois, une fois tes charges payées et ton épargne mise de côté';
+                ? '{{ _("Ton budget dépasse tes ressources : réduis une dépense ou ton épargne visée.")|escapejs }}'
+                : '{{ _("par mois, une fois tes charges payées et ton épargne mise de côté")|escapejs }}';
 
             // Répartition des ressources (barre empilée)
             var parts = { SAVINGS: savings, LEFT: Math.max(0, left) };

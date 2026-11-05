@@ -80,6 +80,20 @@ def prepare_django():
     from django.core.management import call_command
 
     django.setup()
+
+    # Mise à jour de l'app : sauvegarde de la base avant de changer son schéma
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+
+    executor = MigrationExecutor(connection)
+    pending = executor.migration_plan(executor.loader.graph.leaf_nodes())
+    if pending and executor.loader.applied_migrations:
+        from finance.backups import BEFORE_UPDATE, create_backup
+        try:
+            create_backup(BEFORE_UPDATE)
+        except Exception as error:  # la mise à jour ne doit pas bloquer le lancement
+            print(f"Sauvegarde avant mise à jour impossible : {error}")
+
     call_command("migrate", interactive=False, verbosity=0)
 
 

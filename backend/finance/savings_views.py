@@ -4,6 +4,8 @@ compte-titres) et frais. Les calculs sont dans wealth.py, l'accès à Yahoo
 Finance dans market_data.py.
 """
 
+import math
+import secrets
 from datetime import date
 from decimal import Decimal
 
@@ -16,8 +18,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
 from . import market_data
-from . import wealth
+from . import simulation, wealth
 from .forms import (
+    SimulationForm,
     BalanceAccountForm,
     BalanceSnapshotForm,
     InstrumentForm,
@@ -36,6 +39,7 @@ from .models import (
     SavingsAccount,
     SavingsKind,
 )
+from django.utils.translation import gettext as _
 
 
 def _form_errors(form):
@@ -225,7 +229,7 @@ def savings_fees_view(request):
                 "kind": OperationKind.FEE,
                 "date": today,
                 "account": selected or (accounts[0] if accounts else None),
-                "note": "Droits de garde",
+                "note": _("Droits de garde"),
             },
         ),
         "savings_data": {
@@ -251,9 +255,9 @@ def add_balance_account(request):
         balance = form.cleaned_data.get("balance")
         if balance is not None:
             BalanceSnapshot.objects.create(account=account, date=date.today(), balance=balance)
-        messages.success(request, f"« {account.name} » ajouté.")
+        messages.success(request, _('« %(name)s » ajouté.') % {"name": account.name})
     else:
-        messages.error(request, f"Impossible d'ajouter le livret. {_form_errors(form)}")
+        messages.error(request, _("Impossible d'ajouter le livret. %(form_errors)s") % {"form_errors": _form_errors(form)})
     return redirect("finance:savings_balances")
 
 
@@ -265,9 +269,9 @@ def add_portfolio_account(request):
         account = form.save(commit=False)
         account.user = request.user
         account.save()
-        messages.success(request, f"« {account.name} » créé. Ajoute maintenant tes lignes.")
+        messages.success(request, _('« %(name)s » créé. Ajoute maintenant tes lignes.') % {"name": account.name})
         return redirect(_portfolio_url(account))
-    messages.error(request, f"Impossible de créer le compte. {_form_errors(form)}")
+    messages.error(request, _('Impossible de créer le compte. %(form_errors)s') % {"form_errors": _form_errors(form)})
     return redirect("finance:savings_portfolio")
 
 
@@ -283,9 +287,9 @@ def edit_savings_account(request, pk):
         default = reverse("finance:savings_balances")
     if form.is_valid():
         form.save()
-        messages.success(request, f"« {account.name} » mis à jour.")
+        messages.success(request, _('« %(name)s » mis à jour.') % {"name": account.name})
     else:
-        messages.error(request, f"Impossible de mettre à jour le support. {_form_errors(form)}")
+        messages.error(request, _('Impossible de mettre à jour le support. %(form_errors)s') % {"form_errors": _form_errors(form)})
     return redirect(_next_url(request, default))
 
 
@@ -296,7 +300,7 @@ def delete_savings_account(request, pk):
     name = account.name
     is_portfolio = account.is_portfolio
     account.delete()
-    messages.success(request, f"« {name} » supprimé.")
+    messages.success(request, _('« %(name)s » supprimé.') % {"name": name})
     return redirect("finance:savings_portfolio" if is_portfolio else "finance:savings_balances")
 
 
@@ -306,16 +310,16 @@ def add_balance_snapshot(request, pk):
     account = get_object_or_404(SavingsAccount, pk=pk, user=request.user)
     form = BalanceSnapshotForm(request.POST, prefix=f"s{pk}")
     if account.is_portfolio:
-        messages.error(request, "Un PEA ou un compte-titres se suit ligne par ligne.")
+        messages.error(request, _("Un PEA ou un compte-titres se suit ligne par ligne."))
     elif form.is_valid():
         BalanceSnapshot.objects.update_or_create(
             account=account,
             date=form.cleaned_data["date"],
             defaults={"balance": form.cleaned_data["balance"], "source": BalanceSource.MANUAL},
         )
-        messages.success(request, f"Solde de « {account.name} » mis à jour.")
+        messages.success(request, _('Solde de « %(name)s » mis à jour.') % {"name": account.name})
     else:
-        messages.error(request, f"Solde invalide. {_form_errors(form)}")
+        messages.error(request, _('Solde invalide. %(form_errors)s') % {"form_errors": _form_errors(form)})
     return redirect(_next_url(request, reverse("finance:savings_balances")))
 
 
@@ -324,7 +328,7 @@ def add_balance_snapshot(request, pk):
 def delete_balance_snapshot(request, pk):
     snapshot = get_object_or_404(BalanceSnapshot, pk=pk, account__user=request.user)
     snapshot.delete()
-    messages.success(request, "Relevé supprimé.")
+    messages.success(request, _("Relevé supprimé."))
     return redirect("finance:savings_balances")
 
 
@@ -345,8 +349,7 @@ def _check_sale(account, instrument, day, quantity, exclude_pk=None):
     held = wealth.held_quantity(account, instrument, day, exclude_pk=exclude_pk)
     if quantity > held:
         return (
-            f"Vente impossible : tu détiens {wealth.clean_quantity(held)} part(s) de "
-            f"« {instrument.name} » au {day:%d/%m/%Y}."
+            _('Vente impossible : tu détiens %(clean_quantity)s part(s) de « %(name)s » au %(day)s.') % {"clean_quantity": wealth.clean_quantity(held), "name": instrument.name, "day": format(day, "%d/%m/%Y")}
         )
     return None
 
@@ -356,7 +359,7 @@ def _check_sale(account, instrument, day, quantity, exclude_pk=None):
 def add_portfolio_operation(request):
     form = PortfolioOperationForm(request.POST, user=request.user)
     if not form.is_valid():
-        messages.error(request, f"Ligne non ajoutée. {_form_errors(form)}")
+        messages.error(request, _('Ligne non ajoutée. %(form_errors)s') % {"form_errors": _form_errors(form)})
         return redirect(_next_url(request, reverse("finance:savings_portfolio")))
 
     data = form.cleaned_data
@@ -380,21 +383,24 @@ def add_portfolio_operation(request):
 
     operation.save()
 
-    label = {
-        OperationKind.BUY: "Achat",
-        OperationKind.SELL: "Vente",
-        OperationKind.DIVIDEND: "Dividende",
-        OperationKind.FEE: "Frais",
-    }[operation.kind]
-    target = f" de « {operation.instrument.name} »" if operation.instrument else ""
+    name = operation.instrument.name if operation.instrument else ""
+    saved = {
+        OperationKind.BUY: _("Achat de « %(name)s » enregistré."),
+        OperationKind.POSITION: _("Position « %(name)s » enregistrée."),
+        OperationKind.SELL: _("Vente de « %(name)s » enregistrée."),
+        OperationKind.DIVIDEND: _("Dividende de « %(name)s » enregistré."),
+        OperationKind.FEE: _("Frais enregistrés."),
+    }[operation.kind] % {"name": name}
     if operation.instrument and not _ensure_prices(operation.instrument, operation.date, created):
         messages.warning(
             request,
-            f"{label}{target} enregistré, mais les cours n'ont pas pu être récupérés "
-            f"({operation.instrument.price_error}). La ligne est valorisée à son prix d'achat en attendant.",
+            saved + " " + _(
+                "Les cours n'ont pas pu être récupérés (%(error)s) : la ligne est valorisée "
+                "à son prix d'achat en attendant."
+            ) % {"error": operation.instrument.price_error},
         )
     else:
-        messages.success(request, f"{label}{target} enregistré.")
+        messages.success(request, saved)
     return redirect(_next_url(request, _portfolio_url(operation.account)))
 
 
@@ -405,7 +411,7 @@ def edit_portfolio_operation(request, pk):
     form = PortfolioOperationEditForm(request.POST, instance=operation, prefix=f"op{pk}")
     default = _portfolio_url(operation.account)
     if not form.is_valid():
-        messages.error(request, f"Ligne non modifiée. {_form_errors(form)}")
+        messages.error(request, _('Ligne non modifiée. %(form_errors)s') % {"form_errors": _form_errors(form)})
         return redirect(_next_url(request, default))
 
     operation = form.save(commit=False)
@@ -417,7 +423,7 @@ def edit_portfolio_operation(request, pk):
     operation.save()
     if operation.instrument:
         _ensure_prices(operation.instrument, operation.date, created=False)
-    messages.success(request, "Ligne mise à jour.")
+    messages.success(request, _("Ligne mise à jour."))
     return redirect(_next_url(request, default))
 
 
@@ -427,7 +433,7 @@ def delete_portfolio_operation(request, pk):
     operation = get_object_or_404(PortfolioOperation, pk=pk, account__user=request.user)
     account = operation.account
     operation.delete()
-    messages.success(request, "Ligne supprimée.")
+    messages.success(request, _("Ligne supprimée."))
     return redirect(_next_url(request, _portfolio_url(account)))
 
 
@@ -438,10 +444,10 @@ def delete_portfolio_position(request, account_pk, instrument_pk):
 
     account = get_object_or_404(SavingsAccount, pk=account_pk, user=request.user)
     instrument = get_object_or_404(Instrument, pk=instrument_pk, user=request.user)
-    count, _ = PortfolioOperation.objects.filter(account=account, instrument=instrument).delete()
+    count, _ignored = PortfolioOperation.objects.filter(account=account, instrument=instrument).delete()
     messages.success(
         request,
-        f"« {instrument.name} » retiré de « {account.name} » ({count} opération{'s' if count > 1 else ''} supprimée{'s' if count > 1 else ''}).",
+        _('« %(name)s » retiré de « %(name2)s » (%(count)s opération%(value)s supprimée%(value)s).') % {"name": instrument.name, "name2": account.name, "count": count, "value": 's' if count > 1 else ''},
     )
     return redirect(_next_url(request, _portfolio_url(account)))
 
@@ -453,9 +459,9 @@ def edit_instrument(request, pk):
     form = InstrumentForm(request.POST, instance=instrument, prefix=f"i{pk}")
     if form.is_valid():
         form.save()
-        messages.success(request, f"« {instrument.name} » mis à jour.")
+        messages.success(request, _('« %(name)s » mis à jour.') % {"name": instrument.name})
     else:
-        messages.error(request, f"Impossible de mettre à jour le titre. {_form_errors(form)}")
+        messages.error(request, _('Impossible de mettre à jour le titre. %(form_errors)s') % {"form_errors": _form_errors(form)})
     return redirect(_next_url(request, reverse("finance:savings_portfolio")))
 
 
@@ -480,9 +486,9 @@ def instrument_price(request):
     try:
         day = date.fromisoformat(request.GET.get("date", ""))
     except ValueError:
-        return JsonResponse({"ok": False, "error": "Date invalide."}, status=400)
+        return JsonResponse({"ok": False, "error": _("Date invalide.")}, status=400)
     if not symbol or day > date.today():
-        return JsonResponse({"ok": False, "error": "Titre ou date invalide."}, status=400)
+        return JsonResponse({"ok": False, "error": _("Titre ou date invalide.")}, status=400)
     try:
         price = market_data.price_on(symbol, day)
     except market_data.MarketDataError as error:
@@ -501,3 +507,105 @@ def instrument_price(request):
 def refresh_prices(request):
     updated, errors = market_data.refresh_prices(request.user, force=request.POST.get("force") == "1")
     return JsonResponse({"ok": not errors, "updated": updated, "errors": errors})
+
+
+# ============================================================
+# SIMULATION DU PEA (générateur de scénarios économiques)
+# ============================================================
+
+@login_required
+def savings_simulation_view(request):
+    today = date.today()
+    accounts = list(SavingsAccount.objects.filter(user=request.user, kind=SavingsKind.PEA))
+
+    data = request.GET.copy()
+    if "nouveau_tirage" in data:
+        data["seed"] = str(secrets.randbelow(10**6))
+    form = SimulationForm(data if data else None)
+    if data and not form.is_valid():
+        messages.error(request, _("Hypothèses invalides : valeurs par défaut utilisées. %(errors)s") % {"errors": _form_errors(form)})
+    assumptions = form.assumptions()
+    if not data:
+        form = SimulationForm(initial={name: field.initial for name, field in form.fields.items()})
+
+    context = {"savings_tab": "simulation", "accounts": accounts, "form": form, "assumptions": assumptions}
+    lines = []
+    if accounts:
+        analysis = wealth.analyse_portfolio(accounts, today)
+        lines = simulation.pea_lines(analysis)
+        context["analysis"] = analysis
+
+    if lines:
+        calibration = simulation.calibrate_from_market(lines, today)
+        cash = float(sum((account.cash_balance for account in accounts), Decimal("0")))
+        deposits = float(sum(
+            (info["pea"]["deposits"] for info in analysis["accounts"] if "pea" in info), Decimal("0")
+        ))
+        invested = sum(line["cost"] for line in lines)
+        ceiling = float(min((account.ceiling or wealth.DEFAULT_CEILINGS[SavingsKind.PEA]) for account in accounts))
+        result = simulation.simulate(
+            calibration, assumptions, cash=cash, invested=invested, deposits=deposits, ceiling=ceiling,
+        )
+        opened = min((account.opened_on for account in accounts if account.opened_on), default=None)
+        age = (today - opened).days / 365.25 if opened else None
+        summary = simulation.summarize(result, assumptions, pea_age_years=age)
+
+        total = sum(asset.value for asset in calibration.assets)
+        simulation_data = simulation.chart_data(result, today)
+        # Couple rendement / risque de chaque ligne (graphique à bulles)
+        simulation_data["assets"] = [
+            {
+                "key": asset.key,
+                "name": asset.name,
+                "weight": round(asset.value / total * 100, 1) if total else 0,
+                "drift": round(asset.drift * 100, 2),
+                "volatility": round(asset.volatility * 100, 2),
+            }
+            for asset in calibration.assets
+        ]
+        simulation_data["market"] = {
+            "name": calibration.market.name,
+            "drift": round(calibration.market.drift * 100, 2),
+            "volatility": round(calibration.market.volatility * 100, 2),
+        } if calibration.market else None
+        simulation_data["inflation_target"] = round(calibration.inflation.target * 100, 2)
+        labels = [asset.key for asset in calibration.assets] + [_("Inflation")]
+        names = [asset.name for asset in calibration.assets] + [_("Inflation (France)")]
+        context.update({
+            "summary": summary,
+            "gain_probability": 100 - summary["nominal"]["loss_probability"],
+            "start_value": float(result["nominal"][0, 0]),
+            "cash": cash,
+            "calibration": calibration,
+            "calibration_rows": [
+                {
+                    "asset": asset,
+                    "weight": asset.value / total * 100 if total else 0,
+                    "volatility": asset.volatility * 100,
+                    "drift": asset.drift * 100,
+                    "years": asset.months / 12,
+                }
+                for asset in calibration.assets
+            ],
+            "market_row": {
+                "asset": calibration.market,
+                "volatility": calibration.market.volatility * 100,
+                "drift": calibration.market.drift * 100,
+                "years": calibration.market.months / 12,
+            } if calibration.market else None,
+            "inflation": {
+                "target": calibration.inflation.target * 100,
+                "start": calibration.inflation.start * 100,
+                "speed": calibration.inflation.speed,
+                "half_life": math.log(2) / calibration.inflation.speed if calibration.inflation.speed else None,
+                "volatility": calibration.inflation.volatility * 100,
+                "calibration": calibration.inflation,
+            },
+            "correlation_labels": labels,
+            "correlation_rows": [
+                {"name": names[i], "values": [round(float(v), 2) for v in calibration.correlation[i]]}
+                for i in range(len(names))
+            ],
+            "simulation_data": simulation_data,
+        })
+    return render(request, "finance/savings_simulation.html", context)

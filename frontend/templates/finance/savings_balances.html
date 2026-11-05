@@ -1,35 +1,36 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static savings_format %}
 
-{% block title %}Livrets - BudgWealth{% endblock %}
+{% block title %}{% translate "Livrets - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-dashboard budget-page savings-page">
-    {% include "finance/_savings_tabs.html" with subtitle="Livrets, PEL, assurance vie : suivis par leur solde" %}
+    {% include "finance/_savings_tabs.html" with subtitle=_("Livrets, PEL, assurance vie : suivis par leur solde") %}
 
     <div class="budget-panel-head mb-3">
         <div>
-            <h2 class="h5 mb-1">Mes livrets</h2>
+            <h2 class="h5 mb-1">{% translate "Mes livrets" %}</h2>
             {% if rows %}
             <p class="text-muted small mb-0">
-                {{ totals.balance|floatformat:"2g" }} € au total
-                {% if totals.interest_year %} · ≈ {{ totals.interest_year|floatformat:"0g" }} € d'intérêts par an{% if totals.average_rate %} (taux moyen {{ totals.average_rate|floatformat:"2" }} %){% endif %}{% endif %}
+                {{ totals.balance|floatformat:"2g" }} {% translate "€ au total" %}
+                {% if totals.interest_year %} · ≈ {{ totals.interest_year|floatformat:"0g" }} {% translate "€ d'intérêts par an" %}{% if totals.average_rate %} {% translate "(taux moyen" %} {{ totals.average_rate|floatformat:"2" }} %){% endif %}{% endif %}
             </p>
             {% endif %}
         </div>
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newBalanceAccount" aria-expanded="{{ rows|yesno:'false,true' }}">+ Ajouter un livret</button>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newBalanceAccount" aria-expanded="{{ rows|yesno:'false,true' }}">{% translate "+ Ajouter un livret" %}</button>
     </div>
 
     {% if has_bank_connection %}
     <div class="budget-callout mb-4">
-        <strong>Tes livrets Crédit Agricole se mettent à jour tout seuls</strong>
-        <span>À chaque synchronisation bancaire, leur solde est relevé ici. Les autres se mettent à jour à la main.</span>
+        <strong>{% translate "Tes livrets Crédit Agricole se mettent à jour tout seuls" %}</strong>
+        <span>{% translate "À chaque synchronisation bancaire, leur solde est relevé ici. Les autres se mettent à jour à la main." %}</span>
     </div>
     {% endif %}
 
     <div class="collapse {% if not rows %}show{% endif %}" id="newBalanceAccount">
         <div class="content-panel budget-panel mb-4">
-            <h3 class="h6 mb-3">Nouveau livret</h3>
+            <h3 class="h6 mb-3">{% translate "Nouveau livret" %}</h3>
             <form method="post" action="{% url 'finance:add_balance_account' %}" class="row g-3">
                 {% csrf_token %}
                 <div class="col-12 col-sm-6 col-lg-3">
@@ -37,7 +38,7 @@
                     {{ account_form.kind }}
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                    <label class="form-label" for="{{ account_form.name.id_for_label }}">{{ account_form.name.label }} <span class="quick-add-optional">facultatif</span></label>
+                    <label class="form-label" for="{{ account_form.name.id_for_label }}">{{ account_form.name.label }} <span class="quick-add-optional">{% translate "facultatif" %}</span></label>
                     {{ account_form.name }}
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
@@ -58,7 +59,7 @@
                     <div class="form-text">{{ account_form.ceiling.help_text }}</div>
                 </div>
                 <div class="col-12 col-lg-6 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary">Ajouter le livret</button>
+                    <button type="submit" class="btn btn-primary">{% translate "Ajouter le livret" %}</button>
                 </div>
             </form>
         </div>
@@ -74,31 +75,31 @@
                     <h3 class="h5 mb-1">{{ account.name }}</h3>
                     <p class="text-muted small mb-0">{{ account.get_kind_display }}{% if account.institution %} · {{ account.institution }}{% endif %}</p>
                 </div>
-                {% if row.is_full %}<span class="budget-badge is-watch">Plafond atteint</span>{% endif %}
+                {% if row.is_full %}<span class="budget-badge is-watch">{% translate "Plafond atteint" %}</span>{% endif %}
             </header>
 
             <div class="savings-card-amount">
                 <strong>{{ row.balance|floatformat:"2g" }} €</strong>
                 <small>
-                    {% if row.date %}au {{ row.date|date:"j F Y" }}{% if row.is_bank %} · <span class="savings-source">relevé bancaire</span>{% endif %}{% else %}aucun solde saisi{% endif %}
-                    {% if row.change_year is not None %} · <span class="{{ row.change_year|trend }}">{{ row.change_year|signed:0 }} € sur 12 mois</span>{% endif %}
+                    {% if row.date %}{% translate "au" %} {{ row.date|date:"j F Y" }}{% if row.is_bank %} · <span class="savings-source">{% translate "relevé bancaire" %}</span>{% endif %}{% else %}{% translate "aucun solde saisi" %}{% endif %}
+                    {% if row.change_year is not None %} · <span class="{{ row.change_year|trend }}">{{ row.change_year|signed:0 }} {% translate "€ sur 12 mois" %}</span>{% endif %}
                 </small>
             </div>
 
             {% if row.series|length > 1 %}
-            <div class="dash-chart is-mini"><canvas data-sparkline="{{ account.pk }}" role="img" aria-label="Évolution du solde de {{ account.name }}"></canvas></div>
+            <div class="dash-chart is-mini"><canvas data-sparkline="{{ account.pk }}" role="img" aria-label="{% translate "Évolution du solde de" %} {{ account.name }}"></canvas></div>
             {% endif %}
 
             <dl class="budget-project-stats savings-card-stats">
-                <div><dt>Taux</dt><dd>{% if account.interest_rate is not None %}{{ account.interest_rate|floatformat:"2" }} %{% else %}—{% endif %}</dd></div>
-                <div class="is-highlight"><dt>Intérêts / an</dt><dd>{% if row.interest_year %}≈ {{ row.interest_year|floatformat:"0g" }} €{% else %}—{% endif %}</dd></div>
-                <div><dt>Plafond</dt><dd>{% if row.ceiling %}{{ row.ceiling|floatformat:"0g" }} €{% else %}Aucun{% endif %}</dd></div>
+                <div><dt>{% translate "Taux" %}</dt><dd>{% if account.interest_rate is not None %}{{ account.interest_rate|floatformat:"2" }} %{% else %}—{% endif %}</dd></div>
+                <div class="is-highlight"><dt>{% translate "Intérêts / an" %}</dt><dd>{% if row.interest_year %}≈ {{ row.interest_year|floatformat:"0g" }} €{% else %}—{% endif %}</dd></div>
+                <div><dt>{% translate "Plafond" %}</dt><dd>{% if row.ceiling %}{{ row.ceiling|floatformat:"0g" }} €{% else %}{% translate "Aucun" %}{% endif %}</dd></div>
             </dl>
 
             {% if row.ceiling %}
             <div class="savings-ceiling">
                 <div class="budget-progress {% if row.is_full %}is-warning{% else %}is-savings{% endif %}"><span style="width: {{ row.fill }}%"></span></div>
-                <small class="text-muted">{% if row.is_full %}Plafond atteint : seuls les intérêts peuvent encore le faire grossir.{% else %}Encore {{ row.room|floatformat:"0g" }} € de versements possibles.{% endif %}</small>
+                <small class="text-muted">{% if row.is_full %}{% translate "Plafond atteint : seuls les intérêts peuvent encore le faire grossir." %}{% else %}{% translate "Encore" %} {{ row.room|floatformat:"0g" }} {% translate "€ de versements possibles." %}{% endif %}</small>
             </div>
             {% endif %}
 
@@ -113,23 +114,23 @@
                     <label class="form-label small" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
                     {{ form.date }}
                 </div>
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Mettre à jour le solde</button>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Mettre à jour le solde" %}</button>
             </form>
             {% endwith %}
 
             <div class="savings-card-foot">
                 {% if row.snapshots %}
                 <details class="budget-project-edit">
-                    <summary>Historique ({{ row.snapshots|length }})</summary>
+                    <summary>{% translate "Historique (" %}{{ row.snapshots|length }})</summary>
                     <ul class="savings-snapshots">
                         {% for snapshot in row.snapshots %}
                         <li>
                             <span>{{ snapshot.date|date:"d/m/Y" }}</span>
                             <strong>{{ snapshot.balance|floatformat:"2g" }} €</strong>
                             <small class="text-muted">{{ snapshot.get_source_display }}</small>
-                            <form method="post" action="{% url 'finance:delete_balance_snapshot' snapshot.pk %}" onsubmit="return confirm('Supprimer ce relevé ?');">
+                            <form method="post" action="{% url 'finance:delete_balance_snapshot' snapshot.pk %}" onsubmit="return confirm('{{ _("Supprimer ce relevé ?")|escapejs }}');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-link btn-sm text-danger p-0" aria-label="Supprimer le relevé du {{ snapshot.date|date:'d/m/Y' }}">×</button>
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0" aria-label="{% translate "Supprimer le relevé du" %} {{ snapshot.date|date:'d/m/Y' }}">×</button>
                             </form>
                         </li>
                         {% endfor %}
@@ -138,7 +139,7 @@
                 {% endif %}
 
                 <details class="budget-project-edit">
-                    <summary>Modifier</summary>
+                    <summary>{% translate "Modifier" %}</summary>
                     {% with form=row.edit_form %}
                     <form method="post" action="{% url 'finance:edit_savings_account' account.pk %}" class="row g-2 mt-1">
                         {% csrf_token %}
@@ -163,13 +164,13 @@
                             {{ form.ceiling }}
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                            <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
                         </div>
                     </form>
                     {% endwith %}
-                    <form method="post" action="{% url 'finance:delete_savings_account' account.pk %}" class="mt-2" onsubmit="return confirm('Supprimer ce livret et son historique de soldes ?');">
+                    <form method="post" action="{% url 'finance:delete_savings_account' account.pk %}" class="mt-2" onsubmit="return confirm('{{ _("Supprimer ce livret et son historique de soldes ?")|escapejs }}');">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer le livret</button>
+                        <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer le livret" %}</button>
                     </form>
                 </details>
             </div>
@@ -184,5 +185,5 @@
 {% block extra_js %}
 {% include "finance/_charts_js.html" %}
 {{ savings_data|json_script:"savings-data" }}
-<script src="{% static 'js/bw-savings.js' %}?v=2"></script>
+<script src="{% static 'js/bw-savings.js' %}?v=4"></script>
 {% endblock %}

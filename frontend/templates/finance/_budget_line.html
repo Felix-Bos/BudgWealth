@@ -1,24 +1,25 @@
+{% load i18n %}
 <div class="budget-line js-budget-line">
     <div class="d-none">{{ form.section }}{{ form.DELETE }}</div>
     <div>
-        <label class="visually-hidden" for="{{ form.category.id_for_label }}">Catégorie</label>
+        <label class="visually-hidden" for="{{ form.category.id_for_label }}">{% translate "Catégorie" %}</label>
         {{ form.category }}
         {% for error in form.category.errors %}<div class="budget-error">{{ error }}</div>{% endfor %}
     </div>
     <div>
-        <label class="visually-hidden" for="{{ form.subcategory.id_for_label }}">Sous-catégorie</label>
+        <label class="visually-hidden" for="{{ form.subcategory.id_for_label }}">{% translate "Sous-catégorie" %}</label>
         {{ form.subcategory }}
     </div>
     <div>
-        <label class="visually-hidden" for="{{ form.label.id_for_label }}">Libellé</label>
+        <label class="visually-hidden" for="{{ form.label.id_for_label }}">{% translate "Libellé" %}</label>
         {{ form.label }}
     </div>
     <div>
-        <label class="visually-hidden" for="{{ form.amount.id_for_label }}">Montant par mois</label>
+        <label class="visually-hidden" for="{{ form.amount.id_for_label }}">{% translate "Montant par mois" %}</label>
         {{ form.amount }}
         {% for error in form.amount.errors %}<div class="budget-error">{{ error }}</div>{% endfor %}
     </div>
-    <button type="button" class="budget-line-remove js-remove-line" aria-label="Supprimer la ligne">
+    <button type="button" class="budget-line-remove js-remove-line" aria-label="{% translate "Supprimer la ligne" %}">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
 </div>

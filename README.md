@@ -89,7 +89,8 @@ Django · SQLite (ou PostgreSQL) · Playwright · yfinance · Chart.js · applic
 - **Seuls ton identifiant à 11 chiffres et ton code postal sont enregistrés**, pour pré-remplir la connexion.
 - **Chaque synchronisation part d'un navigateur neuf** : aucun cookie ni session bancaire ne reste sur le disque.
 - **Le relevé CSV téléchargé est supprimé** dès la fin de l'import.
-- **Les sauvegardes locales et les données personnelles sont exclues de Git** : `db.sqlite3`, `*.sqlite3.*.bak` et `backend/data/` sont dans le `.gitignore`.
+- **Une installation = une base = un compte.** La base et ses sauvegardes vivent hors du projet, dans `~/Library/Application Support/BudgWealth/` : rien de personnel n'est dans le dépôt Git.
+- **Sauvegardes automatiques** : une copie par jour à l'ouverture (14 gardées), une avant chaque mise à jour du schéma, et à la demande dans *Paramètres → Sauvegarde & export* (téléchargement, restauration, import d'un fichier, export Excel / CSV).
 
 > L'automatisation d'un site bancaire reste une zone grise vis-à-vis des conditions d'utilisation de la banque. BudgWealth n'agit que sur ton propre compte, à ta demande, avec ta saisie du code.
 
@@ -109,7 +110,7 @@ Au premier lancement, l'application :
 2. crée la base de données ;
 3. ouvre ton navigateur sur l'application.
 
-Les données sont stockées dans `~/Library/Application Support/BudgWealth/`.
+Les données sont stockées dans `~/Library/Application Support/BudgWealth/`, le même dossier qu'en développement : il n'y a qu'une base. Le premier lancement propose de créer le compte ; ensuite, l'app ne connaît que celui-là.
 
 ### Option B : en développement
 
@@ -138,12 +139,14 @@ L'application est sur **http://127.0.0.1:8000/**. Crée un compte : le parcours 
 
 ## Configuration
 
-Les variables sont lues dans un fichier `.env` : à la racine du projet en développement, dans `~/Library/Application Support/BudgWealth/.env` dans l'application empaquetée. Aucune n'est obligatoire.
+Les variables sont lues dans `~/Library/Application Support/BudgWealth/.env` (et aussi dans le `.env` à la racine du projet en développement). Aucune n'est obligatoire.
 
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `DEBUG` | `False` | `1` pour afficher les erreurs détaillées et recharger les templates à chaud |
-| `SECRET_KEY` | clé de dev / clé générée | En application empaquetée, une clé unique est générée au premier lancement |
+| `SECRET_KEY` | clé générée | Une clé unique est générée au premier lancement (`secret_key.txt`) |
+| `BUDGWEALTH_DATA_DIR` | `~/Library/Application Support/BudgWealth` | Autre dossier de données (base, sauvegardes), par exemple pour tester sur une copie |
+| `BUDGWEALTH_AUTO_BACKUP` | `1` | `0` pour couper la sauvegarde quotidienne |
 | `DATABASE_URL` | SQLite local | Ex. `postgresql://user:password@host/db` pour utiliser PostgreSQL |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hôtes autorisés, séparés par des virgules |
 | `CSRF_TRUSTED_ORIGINS` | *(vide)* | Origines de confiance si l'app est servie derrière un proxy |
@@ -378,7 +381,8 @@ Relance-le après chaque modification du code, des templates ou du CSS.
 
 | Emplacement | Contenu |
 |---|---|
-| `~/Library/Application Support/BudgWealth/db.sqlite3` | Base de données |
+| `~/Library/Application Support/BudgWealth/db.sqlite3` | Base de données (la seule, en dev comme dans l'app) |
+| `~/Library/Application Support/BudgWealth/backups/` | Sauvegardes de la base (`anciennes/` : copies faites à la main avant la fusion) |
 | `~/Library/Application Support/BudgWealth/secret_key.txt` | Clé secrète générée au premier lancement |
 | `~/Library/Application Support/BudgWealth/browsers/` | Chromium, téléchargé au premier lancement (non embarqué, ~360 Mo) |
 | `~/Library/Application Support/BudgWealth/.env` | Configuration facultative |
@@ -412,3 +416,22 @@ Relance-le après chaque modification du code, des templates ou du CSS.
   - rattacher un salaire reçu en fin de mois au mois suivant ;
   - affecter automatiquement les virements bancaires aux projets ;
   - export des données.
+
+
+## Langues (français / anglais)
+
+Les textes sont écrits en français dans le code ; l'anglais est dans `locale/en/LC_MESSAGES/`.
+La langue se choisit dans **Paramètres › Compte › Langue** (cookie `django_language`, français par défaut).
+
+Après avoir ajouté ou modifié un texte (`{% translate %}` dans les gabarits, `gettext` / `_()` en Python,
+`gettext()` dans les fichiers JS) :
+
+```bash
+python manage.py makemessages -l en -i "staticfiles/*" -i "build/*" -i "dist/*" -i "*/tests.py" -i "*/migrations/*" --no-obsolete
+python manage.py makemessages -d djangojs -l en -i "staticfiles/*" -i "build/*" -i "dist/*" --no-obsolete
+# renseigner les msgstr vides dans locale/en/LC_MESSAGES/*.po, puis :
+cd locale && python ../manage.py compilemessages -l en
+```
+
+Les noms de catégories restent en français en base (l'import bancaire et le budget s'y réfèrent) :
+les catégories par défaut sont traduites à l'affichage, celles créées par l'utilisateur restent telles quelles.

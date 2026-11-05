@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static savings_format %}
 
-{% block title %}Portefeuille - BudgWealth{% endblock %}
+{% block title %}{% translate "Portefeuille - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-dashboard budget-page savings-page">
-    {% include "finance/_savings_tabs.html" with subtitle="PEA et compte-titres, valorisés avec les cours Yahoo Finance" %}
+    {% include "finance/_savings_tabs.html" with subtitle=_("PEA et compte-titres, valorisés avec les cours Yahoo Finance") %}
 
     {% if not accounts %}
     <div class="content-panel budget-panel">
-        <h2 class="h5 mb-1">Crée ton PEA ou ton compte-titres</h2>
-        <p class="text-muted small mb-3">Tu pourras ensuite y ajouter tes lignes (ISIN, nom ou ticker), avec la date, le prix d'achat et les frais.</p>
-        {% include "finance/_portfolio_account_form.html" with form=account_form action_label="Créer le compte" %}
+        <h2 class="h5 mb-1">{% translate "Crée ton PEA ou ton compte-titres" %}</h2>
+        <p class="text-muted small mb-3">{% translate "Tu pourras ensuite y ajouter tes lignes (ISIN, nom ou ticker), avec la date, le prix d'achat et les frais." %}</p>
+        {% include "finance/_portfolio_account_form.html" with form=account_form action_label=_("Créer le compte") %}
     </div>
     {% else %}
 
@@ -19,8 +20,8 @@
 
     <div class="collapse" id="newPortfolioAccount">
         <div class="content-panel budget-panel mb-4">
-            <h3 class="h6 mb-3">Nouveau compte</h3>
-            {% include "finance/_portfolio_account_form.html" with form=account_form action_label="Créer le compte" %}
+            <h3 class="h6 mb-3">{% translate "Nouveau compte" %}</h3>
+            {% include "finance/_portfolio_account_form.html" with form=account_form action_label=_("Créer le compte") %}
         </div>
     </div>
 
@@ -28,38 +29,38 @@
     {# ---------- Indicateurs ---------- #}
     <div class="dash-kpis mb-4">
         <div class="dash-kpi is-savings">
-            <span>Valeur</span>
+            <span>{% translate "Valeur" %}</span>
             <strong>{{ totals.value|floatformat:"0g" }} €</strong>
-            <small>{% if totals.cash %}dont {{ totals.cash|floatformat:"2g" }} € de liquidités{% else %}{{ analysis.positions|length }} ligne{{ analysis.positions|length|pluralize }}{% endif %}</small>
+            <small>{% if totals.cash %}{% translate "dont" %} {{ totals.cash|floatformat:"2g" }} {% translate "€ de liquidités" %}{% else %}{{ analysis.positions|length }} {% translate "ligne" %}{{ analysis.positions|length|pluralize }}{% endif %}</small>
         </div>
         <div class="dash-kpi">
-            <span>Investi</span>
+            <span>{% translate "Investi" %}</span>
             <strong>{{ totals.cost|floatformat:"0g" }} €</strong>
-            <small>prix de revient, frais inclus</small>
+            <small>{% translate "prix de revient, frais inclus" %}</small>
         </div>
         <div class="dash-kpi {% if totals.latent > 0 %}is-good{% elif totals.latent < 0 %}is-bad{% endif %}">
-            <span>Plus-value latente</span>
+            <span>{% translate "Plus-value latente" %}</span>
             <strong class="{{ totals.latent|trend }}">{{ totals.latent|signed:0 }} €</strong>
             <small class="{{ totals.latent_pct|trend }}">{% if totals.latent_pct is not None %}{{ totals.latent_pct|signed }} %{% else %}—{% endif %}</small>
         </div>
         <div class="dash-kpi">
-            <span>Gain total</span>
+            <span>{% translate "Gain total" %}</span>
             <strong class="{{ totals.gain|trend }}">{{ totals.gain|signed:0 }} €</strong>
-            <small>réalisé {{ totals.realized|signed:0 }} € · dividendes {{ totals.dividends|floatformat:"0g" }} €</small>
+            <small>{% translate "réalisé" %} {{ totals.realized|signed:0 }} {% translate "€ · dividendes" %} {{ totals.dividends|floatformat:"0g" }} €</small>
         </div>
         <div class="dash-kpi">
             {% if totals.annualized is not None %}
-            <span>Rendement annualisé</span>
+            <span>{% translate "Rendement annualisé" %}</span>
             <strong class="{{ totals.annualized|trend }}">{{ totals.annualized|signed }} %</strong>
-            <small>par an, depuis le {{ totals.first_date|date:"d/m/Y" }}</small>
+            <small>{% translate "par an, depuis le" %} {{ totals.first_date|date:"d/m/Y" }}</small>
             {% else %}
-            <span>Performance</span>
+            <span>{% translate "Performance" %}</span>
             <strong class="{{ totals.gain_pct|trend }}">{% if totals.gain_pct is not None %}{{ totals.gain_pct|signed }} %{% else %}—{% endif %}</strong>
-            <small>{% if totals.first_date %}depuis le {{ totals.first_date|date:"d/m/Y" }}{% else %}sur le total investi{% endif %}</small>
+            <small>{% if totals.first_date %}{% translate "depuis le" %} {{ totals.first_date|date:"d/m/Y" }}{% else %}{% translate "sur le total investi" %}{% endif %}</small>
             {% endif %}
         </div>
         <div class="dash-kpi">
-            <span>Dernière séance</span>
+            <span>{% translate "Dernière séance" %}</span>
             <strong class="{{ totals.day_change|trend }}">{{ totals.day_change|signed:0 }} €</strong>
             <small class="{{ totals.day_change_pct|trend }}">{% if totals.day_change_pct is not None %}{{ totals.day_change_pct|signed }} %{% else %}—{% endif %}</small>
         </div>
@@ -68,8 +69,8 @@
 
     {% if analysis.price_errors %}
     <div class="budget-callout is-warning mb-4">
-        <strong>Cours indisponibles pour {{ analysis.price_errors|length }} titre{{ analysis.price_errors|length|pluralize }}</strong>
-        <span>{% for instrument in analysis.price_errors %}{{ instrument.name }} : {{ instrument.price_error }}{% if not forloop.last %} · {% endif %}{% endfor %}. Ces lignes sont valorisées à leur prix de revient.</span>
+        <strong>{% translate "Cours indisponibles pour" %} {{ analysis.price_errors|length }} {% translate "titre" %}{{ analysis.price_errors|length|pluralize }}</strong>
+        <span>{% for instrument in analysis.price_errors %}{{ instrument.name }} : {{ instrument.price_error }}{% if not forloop.last %} · {% endif %}{% endfor %}{% translate ". Ces lignes sont valorisées à leur prix de revient." %}</span>
     </div>
     {% endif %}
 
@@ -78,23 +79,23 @@
     <div class="content-panel budget-panel mb-4 savings-pea">
         <div class="savings-pea-block">
             <div class="budget-goal-meter-head">
-                <span>Plafond du PEA</span>
+                <span>{% translate "Plafond du PEA" %}</span>
                 <strong>{{ info.pea.deposits|floatformat:"0g" }} € <small>/ {{ info.pea.ceiling|floatformat:"0g" }} €</small></strong>
             </div>
             <div class="budget-progress is-savings"><span style="width: {{ info.pea.fill }}%"></span></div>
-            <small class="text-muted">Versements estimés (achats − ventes + liquidités) · encore {{ info.pea.room|floatformat:"0g" }} € possibles</small>
+            <small class="text-muted">{% translate "Versements estimés (achats − ventes + liquidités) · encore" %} {{ info.pea.room|floatformat:"0g" }} {% translate "€ possibles" %}</small>
         </div>
         <div class="savings-pea-block">
             {% if info.pea.tax_date %}
                 {% if info.pea.is_mature %}
-                <span class="budget-badge is-done">PEA de plus de 5 ans</span>
-                <small class="text-muted d-block mt-2">Retraits possibles sans clôture, gains exonérés d'impôt sur le revenu (prélèvements sociaux dus).</small>
+                <span class="budget-badge is-done">{% translate "PEA de plus de 5 ans" %}</span>
+                <small class="text-muted d-block mt-2">{% translate "Retraits possibles sans clôture, gains exonérés d'impôt sur le revenu (prélèvements sociaux dus)." %}</small>
                 {% else %}
-                <span class="budget-badge is-watch">{{ info.pea.age_years }} an{{ info.pea.age_years|pluralize }} d'ancienneté</span>
-                <small class="text-muted d-block mt-2">Avantage fiscal à partir du {{ info.pea.tax_date|date:"j F Y" }}. Un retrait avant cette date clôture le plan.</small>
+                <span class="budget-badge is-watch">{{ info.pea.age_years }} {% translate "an" %}{{ info.pea.age_years|pluralize }} {% translate "d'ancienneté" %}</span>
+                <small class="text-muted d-block mt-2">{% translate "Avantage fiscal à partir du" %} {{ info.pea.tax_date|date:"j F Y" }}{% translate ". Un retrait avant cette date clôture le plan." %}</small>
                 {% endif %}
             {% else %}
-                <span class="text-muted small">Indique la date d'ouverture du PEA (« Modifier le compte ») pour suivre son ancienneté fiscale.</span>
+                <span class="text-muted small">{% translate "Indique la date d'ouverture du PEA (« Modifier le compte ») pour suivre son ancienneté fiscale." %}</span>
             {% endif %}
         </div>
     </div>
@@ -104,10 +105,10 @@
     <div class="content-panel budget-panel mb-4" id="ajouter">
         <div class="budget-panel-head">
             <div>
-                <h2 class="h5 mb-1">Ajouter une ligne</h2>
-                <p class="text-muted small mb-0">Cherche le titre par son ISIN, son nom ou son ticker, puis indique la date, le prix et les frais.</p>
+                <h2 class="h5 mb-1">{% translate "Ajouter une ligne" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Cherche le titre par son ISIN, son nom ou son ticker, puis indique la date, le prix et les frais. Pour un portefeuille existant, choisis « Déjà détenu » : le nombre de parts et ton prix de revient unitaire (PRU)." %}</p>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#newPortfolioAccount">+ Nouveau compte</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#newPortfolioAccount">{% translate "+ Nouveau compte" %}</button>
         </div>
         {% with form=operation_form %}
         <form method="post" action="{% url 'finance:add_portfolio_operation' %}" class="savings-op-form js-operation-form" data-kind="BUY" novalidate>
@@ -116,7 +117,7 @@
             {{ form.symbol }}{{ form.instrument_name }}{{ form.isin }}{{ form.exchange }}{{ form.quote_type }}
 
             <div class="savings-op-top">
-                <div class="savings-kind" role="radiogroup" aria-label="Type d'opération">
+                <div class="savings-kind" role="radiogroup" aria-label="{% translate "Type d'opération" %}">
                     {% for radio in form.kind %}
                     <label class="savings-kind-option" for="{{ radio.id_for_label }}">
                         {{ radio.tag }}
@@ -135,10 +136,10 @@
             </div>
 
             <div class="row g-3">
-                <div class="col-12" data-show-for="BUY SELL DIVIDEND">
-                    <label class="form-label" for="instrumentQuery">Titre</label>
+                <div class="col-12" data-show-for="BUY POSITION SELL DIVIDEND">
+                    <label class="form-label" for="instrumentQuery">{% translate "Titre" %}</label>
                     <div class="savings-search js-instrument-search">
-                        <input type="search" id="instrumentQuery" class="form-control js-instrument-query" placeholder="ISIN, nom ou ticker · ex. LU1681043599, Amundi MSCI World, CW8.PA" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="instrumentResults">
+                        <input type="search" id="instrumentQuery" class="form-control js-instrument-query" placeholder="{% translate "ISIN, nom ou ticker · ex. LU1681043599, Amundi MSCI World, CW8.PA" %}" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="instrumentResults">
                         <ul class="savings-search-results js-instrument-results" id="instrumentResults" role="listbox" hidden></ul>
                     </div>
                     <div class="savings-picked js-instrument-picked" hidden>
@@ -146,24 +147,24 @@
                             <strong class="js-picked-name"></strong>
                             <small class="js-picked-meta"></small>
                         </div>
-                        <button type="button" class="btn btn-link btn-sm p-0 js-instrument-clear">Changer</button>
+                        <button type="button" class="btn btn-link btn-sm p-0 js-instrument-clear">{% translate "Changer" %}</button>
                     </div>
                     <p class="savings-search-status js-instrument-status" hidden></p>
                     <div class="savings-held js-held" hidden>
-                        <span>Mes titres :</span>
+                        <span>{% translate "Mes titres :" %}</span>
                     </div>
                 </div>
 
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+                    <label class="form-label" for="{{ form.date.id_for_label }}" data-label-position="{% translate "Détenu au" %}">{{ form.date.label }}</label>
                     {{ form.date }}
                 </div>
-                <div class="col-6 col-md-3" data-show-for="BUY SELL">
-                    <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+                <div class="col-6 col-md-3" data-show-for="BUY POSITION SELL">
+                    <label class="form-label" for="{{ form.quantity.id_for_label }}" data-label-position="{% translate "Nombre de parts" %}">{{ form.quantity.label }}</label>
                     {{ form.quantity }}
                 </div>
-                <div class="col-6 col-md-3" data-show-for="BUY SELL">
-                    <label class="form-label" for="{{ form.unit_price.id_for_label }}">{{ form.unit_price.label }}</label>
+                <div class="col-6 col-md-3" data-show-for="BUY POSITION SELL">
+                    <label class="form-label" for="{{ form.unit_price.id_for_label }}" data-label-position="{% translate "PRU (€)" %}" title="{% translate "Prix de revient unitaire : prix moyen payé par part, frais compris" %}">{{ form.unit_price.label }}</label>
                     {{ form.unit_price }}
                 </div>
                 <div class="col-6 col-md-3" data-show-for="BUY SELL">
@@ -175,7 +176,7 @@
                     {{ form.amount }}
                 </div>
                 <div class="col-12 col-md-6" data-show-for="DIVIDEND FEE">
-                    <label class="form-label" for="{{ form.note.id_for_label }}">{{ form.note.label }} <span class="quick-add-optional">facultatif</span></label>
+                    <label class="form-label" for="{{ form.note.id_for_label }}">{{ form.note.label }} <span class="quick-add-optional">{% translate "facultatif" %}</span></label>
                     {{ form.note }}
                 </div>
             </div>
@@ -185,7 +186,7 @@
                     <span class="savings-price-hint js-price-hint" hidden></span>
                     <span class="savings-op-total js-op-total" hidden></span>
                 </div>
-                <button type="submit" class="btn btn-primary js-op-submit">Ajouter la ligne</button>
+                <button type="submit" class="btn btn-primary js-op-submit">{% translate "Ajouter la ligne" %}</button>
             </div>
         </form>
         {% endwith %}
@@ -196,20 +197,20 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Évolution du portefeuille</h2>
-                <p class="text-muted small mb-0">Valeur des titres face au montant investi, jour par jour</p>
+                <h2 class="h5 mb-1">{% translate "Évolution du portefeuille" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Valeur des titres face au montant investi, jour par jour" %}</p>
             </div>
             {% include "finance/_savings_range.html" with chart="portfolioHistoryChart" %}
         </div>
-        <div class="dash-chart is-tall"><canvas id="portfolioHistoryChart" role="img" aria-label="Valeur du portefeuille comparée au montant investi"></canvas></div>
+        <div class="dash-chart is-tall"><canvas id="portfolioHistoryChart" role="img" aria-label="{% translate "Valeur du portefeuille comparée au montant investi" %}"></canvas></div>
     </div>
 
     {# ---------- Positions ---------- #}
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Positions</h2>
-                <p class="text-muted small mb-0">PRU frais inclus · « Modifier » pour classer un titre ou indiquer ses frais courants</p>
+                <h2 class="h5 mb-1">{% translate "Positions" %}</h2>
+                <p class="text-muted small mb-0">{% translate "PRU frais inclus · « Modifier » pour classer un titre ou indiquer ses frais courants" %}</p>
             </div>
         </div>
         {% if analysis.positions %}
@@ -217,14 +218,14 @@
             <table class="table finance-table align-middle savings-table">
                 <thead>
                     <tr>
-                        <th>Ligne</th>
-                        <th class="text-end">Quantité</th>
-                        <th class="text-end">PRU</th>
-                        <th class="text-end">Cours</th>
-                        <th class="text-end">Valeur</th>
-                        <th class="text-end">+/− value</th>
-                        <th class="text-end">Poids</th>
-                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                        <th>{% translate "Ligne" %}</th>
+                        <th class="text-end">{% translate "Quantité" %}</th>
+                        <th class="text-end">{% translate "PRU" %}</th>
+                        <th class="text-end">{% translate "Cours" %}</th>
+                        <th class="text-end">{% translate "Valeur" %}</th>
+                        <th class="text-end">{% translate "+/− value" %}</th>
+                        <th class="text-end">{% translate "Poids" %}</th>
+                        <th class="text-end"><span class="visually-hidden">{% translate "Actions" %}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -243,7 +244,7 @@
                             {% if row.has_price %}
                             {{ row.price|floatformat:"2g" }} €
                             <small class="d-block {{ row.day_change_pct|trend }}">{% if row.day_change_pct is not None %}{{ row.day_change_pct|signed }} %{% endif %}</small>
-                            {% else %}<span class="text-muted" title="Cours indisponible">—</span>{% endif %}
+                            {% else %}<span class="text-muted" title="{% translate "Cours indisponible" %}">—</span>{% endif %}
                         </td>
                         <td class="text-end savings-num"><strong>{{ row.value|floatformat:"2g" }} €</strong></td>
                         <td class="text-end savings-num {{ row.pnl|trend }}">
@@ -252,7 +253,7 @@
                         </td>
                         <td class="text-end savings-num">{{ row.weight|floatformat:"1" }} %</td>
                         <td class="text-end">
-                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="collapse" data-bs-target="#position-{{ row.account.pk }}-{{ instrument.pk }}" aria-expanded="false">Modifier</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="collapse" data-bs-target="#position-{{ row.account.pk }}-{{ instrument.pk }}" aria-expanded="false">{% translate "Modifier" %}</button>
                         </td>
                     </tr>
                     <tr class="collapse savings-row-detail" id="position-{{ row.account.pk }}-{{ instrument.pk }}">
@@ -270,7 +271,7 @@
                                     {{ form.isin }}
                                 </div>
                                 <div class="col-6 col-md-2">
-                                    <label class="form-label small" for="{{ form.ter.id_for_label }}">Frais courants (%/an)</label>
+                                    <label class="form-label small" for="{{ form.ter.id_for_label }}">{% translate "Frais courants (%/an)" %}</label>
                                     {{ form.ter }}
                                 </div>
                                 <div class="col-6 col-md-2">
@@ -282,15 +283,15 @@
                                     {{ form.zone }}
                                 </div>
                                 <div class="col-12 d-flex flex-wrap align-items-center gap-3">
-                                    <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
-                                    <small class="text-muted">Cotation {{ instrument.currency }}{% if instrument.exchange %} · {{ instrument.exchange }}{% endif %} · courtage payé {{ row.fees|floatformat:"2g" }} € en {{ row.orders }} ordre{{ row.orders|pluralize }}</small>
+                                    <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
+                                    <small class="text-muted">{% translate "Cotation" %} {{ instrument.currency }}{% if instrument.exchange %} · {{ instrument.exchange }}{% endif %} {% translate "· courtage payé" %} {{ row.fees|floatformat:"2g" }} {% translate "€ en" %} {{ row.orders }} {% translate "ordre" %}{{ row.orders|pluralize }}</small>
                                 </div>
                             </form>
                             {% endwith %}
-                            <form method="post" action="{% url 'finance:delete_portfolio_position' row.account.pk instrument.pk %}" class="mt-2" onsubmit="return confirm('Supprimer cette ligne et tout son historique (achats, ventes, dividendes) ?');">
+                            <form method="post" action="{% url 'finance:delete_portfolio_position' row.account.pk instrument.pk %}" class="mt-2" onsubmit="return confirm('{{ _("Supprimer cette ligne et tout son historique (achats, ventes, dividendes) ?")|escapejs }}');">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer la ligne du portefeuille</button>
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer la ligne du portefeuille" %}</button>
                             </form>
                         </td>
                     </tr>
@@ -300,23 +301,23 @@
             </table>
         </div>
         {% else %}
-        <p class="text-muted mb-0">Aucune position ouverte : toutes les lignes ont été vendues.</p>
+        <p class="text-muted mb-0">{% translate "Aucune position ouverte : toutes les lignes ont été vendues." %}</p>
         {% endif %}
     </div>
 
     {# ---------- Allocation ---------- #}
     <div class="savings-alloc-grid mb-4">
-        {% include "finance/_savings_allocation.html" with title="Par ligne" key="lines" items=analysis.allocation.lines center="Valeur" %}
-        {% include "finance/_savings_allocation.html" with title="Par classe d'actifs" key="classes" items=analysis.allocation.classes center="Valeur" %}
-        {% include "finance/_savings_allocation.html" with title="Par zone" key="zones" items=analysis.allocation.zones center="Titres" %}
+        {% include "finance/_savings_allocation.html" with title=_("Par ligne") key="lines" items=analysis.allocation.lines center=_("Valeur") %}
+        {% include "finance/_savings_allocation.html" with title=_("Par classe d'actifs") key="classes" items=analysis.allocation.classes center=_("Valeur") %}
+        {% include "finance/_savings_allocation.html" with title=_("Par zone") key="zones" items=analysis.allocation.zones center=_("Titres") %}
     </div>
 
     {% if analysis.closed %}
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Lignes soldées</h2>
-                <p class="text-muted small mb-0">Titres entièrement vendus</p>
+                <h2 class="h5 mb-1">{% translate "Lignes soldées" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Titres entièrement vendus" %}</p>
             </div>
         </div>
         <ul class="budget-overruns">
@@ -324,9 +325,9 @@
             <li>
                 <div>
                     <strong>{{ position.instrument.name }}</strong>
-                    <small>{{ position.orders }} ordre{{ position.orders|pluralize }} · {{ position.fees|floatformat:"2g" }} € de courtage{% if position.dividends %} · {{ position.dividends|floatformat:"2g" }} € de dividendes{% endif %}</small>
+                    <small>{{ position.orders }} {% translate "ordre" %}{{ position.orders|pluralize }} · {{ position.fees|floatformat:"2g" }} {% translate "€ de courtage" %}{% if position.dividends %} · {{ position.dividends|floatformat:"2g" }} {% translate "€ de dividendes" %}{% endif %}</small>
                 </div>
-                <span class="{{ position.realized|trend }}">{{ position.realized|signed }} €<small>plus-value réalisée</small></span>
+                <span class="{{ position.realized|trend }}">{{ position.realized|signed }} €<small>{% translate "plus-value réalisée" %}</small></span>
             </li>
             {% endfor %}
         </ul>
@@ -337,21 +338,21 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Historique des opérations</h2>
-                <p class="text-muted small mb-0">{{ analysis.operations|length }} opération{{ analysis.operations|length|pluralize }} · « Modifier » pour corriger une ligne</p>
+                <h2 class="h5 mb-1">{% translate "Historique des opérations" %}</h2>
+                <p class="text-muted small mb-0">{{ analysis.operations|length }} {% translate "opération" %}{{ analysis.operations|length|pluralize }} {% translate "· « Modifier » pour corriger une ligne" %}</p>
             </div>
         </div>
         <div class="table-responsive">
             <table class="table finance-table align-middle savings-table">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Opération</th>
-                        <th class="text-end">Quantité</th>
-                        <th class="text-end">Prix</th>
-                        <th class="text-end">Frais</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                        <th>{% translate "Date" %}</th>
+                        <th>{% translate "Opération" %}</th>
+                        <th class="text-end">{% translate "Quantité" %}</th>
+                        <th class="text-end">{% translate "Prix" %}</th>
+                        <th class="text-end">{% translate "Frais" %}</th>
+                        <th class="text-end">{% translate "Total" %}</th>
+                        <th class="text-end"><span class="visually-hidden">{% translate "Actions" %}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -361,16 +362,16 @@
                         <td class="savings-num">{{ op.date|date:"d/m/Y" }}</td>
                         <td>
                             <div class="savings-cell-name">
-                                <strong><span class="savings-op-badge is-{{ op.kind|lower }}">{{ op.get_kind_display }}</span> {% if op.instrument %}{{ op.instrument.name }}{% else %}{{ op.note|default:"Frais de compte" }}{% endif %}</strong>
+                                <strong><span class="savings-op-badge is-{{ op.kind|lower }}">{{ op.get_kind_display }}</span> {% if op.instrument %}{{ op.instrument.name }}{% else %}{{ op.note|default:_("Frais de compte") }}{% endif %}</strong>
                                 <small>{% if op.instrument %}{{ op.instrument.symbol }}{% if op.note %} · {{ op.note }}{% endif %}{% endif %}{% if not selected %}{% if op.instrument %} · {% endif %}{{ op.account.name }}{% endif %}</small>
                             </div>
                         </td>
                         <td class="text-end savings-num">{{ op.quantity|quantity }}</td>
                         <td class="text-end savings-num">{% if op.unit_price %}{{ op.unit_price|floatformat:"2g" }} €{% else %}—{% endif %}</td>
                         <td class="text-end savings-num">{% if op.fees %}{{ op.fees|floatformat:"2g" }} €{% else %}—{% endif %}</td>
-                        <td class="text-end savings-num"><strong>{% if op.kind == "BUY" or op.kind == "FEE" %}−{% else %}+{% endif %}{{ op.total|floatformat:"2g" }} €</strong></td>
+                        <td class="text-end savings-num"><strong>{% if op.kind == "BUY" or op.kind == "POSITION" or op.kind == "FEE" %}−{% else %}+{% endif %}{{ op.total|floatformat:"2g" }} €</strong></td>
                         <td class="text-end">
-                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="collapse" data-bs-target="#operation-{{ op.pk }}" aria-expanded="false">Modifier</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="collapse" data-bs-target="#operation-{{ op.pk }}" aria-expanded="false">{% translate "Modifier" %}</button>
                         </td>
                     </tr>
                     <tr class="collapse savings-row-detail" id="operation-{{ op.pk }}">
@@ -392,10 +393,12 @@
                                     <label class="form-label small" for="{{ form.unit_price.id_for_label }}">{{ form.unit_price.label }}</label>
                                     {{ form.unit_price }}
                                 </div>
+                                {% if form.fees %}
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small" for="{{ form.fees.id_for_label }}">{{ form.fees.label }}</label>
                                     {{ form.fees }}
                                 </div>
+                                {% endif %}
                                 {% else %}
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small" for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
@@ -407,14 +410,14 @@
                                     {{ form.note }}
                                 </div>
                                 <div class="col-12 d-flex flex-wrap gap-3 align-items-center">
-                                    <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
                                 </div>
                             </form>
                             {% endwith %}
-                            <form method="post" action="{% url 'finance:delete_portfolio_operation' op.pk %}" class="mt-2" onsubmit="return confirm('Supprimer cette opération ?');">
+                            <form method="post" action="{% url 'finance:delete_portfolio_operation' op.pk %}" class="mt-2" onsubmit="return confirm('{{ _("Supprimer cette opération ?")|escapejs }}');">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer l'opération</button>
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer l'opération" %}</button>
                             </form>
                         </td>
                     </tr>
@@ -428,12 +431,12 @@
 
     {% if selected %}
     <details class="content-panel budget-panel savings-account-edit">
-        <summary>Modifier le compte « {{ selected.name }} »</summary>
+        <summary>{% translate "Modifier le compte «" %} {{ selected.name }} »</summary>
         <div class="mt-3">
-            {% include "finance/_portfolio_account_form.html" with form=edit_account_form action=selected.pk action_label="Enregistrer" %}
-            <form method="post" action="{% url 'finance:delete_savings_account' selected.pk %}" class="mt-3" onsubmit="return confirm('Supprimer ce compte et toutes ses lignes ?');">
+            {% include "finance/_portfolio_account_form.html" with form=edit_account_form action=selected.pk action_label=_("Enregistrer") %}
+            <form method="post" action="{% url 'finance:delete_savings_account' selected.pk %}" class="mt-3" onsubmit="return confirm('{{ _("Supprimer ce compte et toutes ses lignes ?")|escapejs }}');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer le compte</button>
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer le compte" %}</button>
             </form>
         </div>
     </details>
@@ -445,5 +448,5 @@
 {% block extra_js %}
 {% include "finance/_charts_js.html" %}
 {{ savings_data|json_script:"savings-data" }}
-<script src="{% static 'js/bw-savings.js' %}?v=2"></script>
+<script src="{% static 'js/bw-savings.js' %}?v=4"></script>
 {% endblock %}

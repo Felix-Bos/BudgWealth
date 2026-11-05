@@ -1,22 +1,23 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static savings_format %}
 
-{% block title %}Épargne - BudgWealth{% endblock %}
+{% block title %}{% translate "Épargne - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-dashboard budget-page savings-page">
-    {% include "finance/_savings_tabs.html" with subtitle="Tous tes supports d'épargne et de placement, au même endroit" %}
+    {% include "finance/_savings_tabs.html" with subtitle=_("Tous tes supports d'épargne et de placement, au même endroit") %}
 
     {% if not overview.has_accounts %}
     <div class="content-panel savings-empty">
         <span class="dashboard-hub-card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
         </span>
-        <h2 class="h4 mb-2">Ajoute tes supports d'épargne</h2>
-        <p class="text-muted mb-4">Les livrets se suivent par leur solde. Le PEA et le compte-titres se suivent ligne par ligne, avec les cours de Yahoo Finance, les frais et l'allocation.</p>
+        <h2 class="h4 mb-2">{% translate "Ajoute tes supports d'épargne" %}</h2>
+        <p class="text-muted mb-4">{% translate "Les livrets se suivent par leur solde. Le PEA et le compte-titres se suivent ligne par ligne, avec les cours de Yahoo Finance, les frais et l'allocation." %}</p>
         <div class="d-flex flex-wrap gap-2 justify-content-center">
-            <a class="btn btn-primary" href="{% url 'finance:savings_balances' %}">Ajouter un livret</a>
-            <a class="btn btn-outline-secondary" href="{% url 'finance:savings_portfolio' %}">Ajouter un PEA ou un compte-titres</a>
+            <a class="btn btn-primary" href="{% url 'finance:savings_balances' %}">{% translate "Ajouter un livret" %}</a>
+            <a class="btn btn-outline-secondary" href="{% url 'finance:savings_portfolio' %}">{% translate "Ajouter un PEA ou un compte-titres" %}</a>
         </div>
     </div>
     {% else %}
@@ -24,31 +25,31 @@
     {# ---------- Indicateurs ---------- #}
     <div class="dash-kpis mb-4">
         <div class="dash-kpi is-savings">
-            <span>Épargne totale</span>
+            <span>{% translate "Épargne totale" %}</span>
             <strong>{{ overview.total|floatformat:"0g" }} €</strong>
-            <small>{{ overview.supports|length }} support{{ overview.supports|length|pluralize }}</small>
+            <small>{{ overview.supports|length }} {% translate "support" %}{{ overview.supports|length|pluralize }}</small>
         </div>
         <div class="dash-kpi">
-            <span>Livrets</span>
+            <span>{% translate "Livrets" %}</span>
             <strong>{{ overview.balances.balance|floatformat:"0g" }} €</strong>
-            <small>{% if overview.balances.interest_year %}≈ {{ overview.balances.interest_year|floatformat:"0g" }} € d'intérêts par an{% else %}{{ overview.balances.count }} livret{{ overview.balances.count|pluralize }}{% endif %}</small>
+            <small>{% if overview.balances.interest_year %}≈ {{ overview.balances.interest_year|floatformat:"0g" }} {% translate "€ d'intérêts par an" %}{% else %}{{ overview.balances.count }} {% translate "livret" %}{{ overview.balances.count|pluralize }}{% endif %}</small>
         </div>
         {% if portfolio %}
         <div class="dash-kpi">
-            <span>Placements</span>
+            <span>{% translate "Placements" %}</span>
             <strong>{{ portfolio.totals.value|floatformat:"0g" }} €</strong>
-            <small class="{{ portfolio.totals.latent|trend }}">{{ portfolio.totals.latent|signed:0 }} € de plus-value latente{% if portfolio.totals.latent_pct is not None %} ({{ portfolio.totals.latent_pct|signed }} %){% endif %}</small>
+            <small class="{{ portfolio.totals.latent|trend }}">{{ portfolio.totals.latent|signed:0 }} {% translate "€ de plus-value latente" %}{% if portfolio.totals.latent_pct is not None %} ({{ portfolio.totals.latent_pct|signed }} %){% endif %}</small>
         </div>
         <div class="dash-kpi {% if portfolio.totals.gain > 0 %}is-good{% elif portfolio.totals.gain < 0 %}is-bad{% endif %}">
-            <span>Gain des placements</span>
+            <span>{% translate "Gain des placements" %}</span>
             <strong class="{{ portfolio.totals.gain|trend }}">{{ portfolio.totals.gain|signed:0 }} €</strong>
-            <small>après {{ portfolio.fees.paid|floatformat:"0g" }} € de frais payés</small>
+            <small>{% translate "après" %} {{ portfolio.fees.paid|floatformat:"0g" }} {% translate "€ de frais payés" %}</small>
         </div>
         {% endif %}
         <div class="dash-kpi">
-            <span>Versé sur 12 mois</span>
+            <span>{% translate "Versé sur 12 mois" %}</span>
             <strong>{{ overview.contributions|floatformat:"0g" }} €</strong>
-            <small>vers l'épargne, d'après ton budget</small>
+            <small>{% translate "vers l'épargne, d'après ton budget" %}</small>
         </div>
     </div>
 
@@ -56,8 +57,8 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Évolution de ton épargne</h2>
-                <p class="text-muted small mb-0">Livrets d'après leurs relevés de solde, titres d'après les cours de clôture</p>
+                <h2 class="h5 mb-1">{% translate "Évolution de ton épargne" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Livrets d'après leurs relevés de solde, titres d'après les cours de clôture" %}</p>
             </div>
             <div class="d-flex flex-column align-items-end gap-2">
                 {% include "finance/_savings_prices.html" with price_date=portfolio.price_date %}
@@ -65,38 +66,38 @@
             </div>
         </div>
         {% if overview.history.dates %}
-        <div class="dash-chart is-tall"><canvas id="savingsHistoryChart" role="img" aria-label="Évolution de l'épargne : livrets et titres"></canvas></div>
+        <div class="dash-chart is-tall"><canvas id="savingsHistoryChart" role="img" aria-label="{% translate "Évolution de l'épargne : livrets et titres" %}"></canvas></div>
         {% else %}
-        <p class="text-muted mb-0">L'évolution apparaîtra dès que tu auras saisi un solde ou une première ligne.</p>
+        <p class="text-muted mb-0">{% translate "L'évolution apparaîtra dès que tu auras saisi un solde ou une première ligne." %}</p>
         {% endif %}
     </div>
 
     {# ---------- Allocation ---------- #}
     <div class="dash-grid mb-4">
-        {% include "finance/_savings_allocation.html" with title="Par support" subtitle="Où est placée ton épargne" key="supports" items=overview.allocation.supports center="Total" %}
-        {% include "finance/_savings_allocation.html" with title="Par classe d'actifs" subtitle="Livrets, actions, obligations, liquidités…" key="classes" items=overview.allocation.classes center="Total" %}
+        {% include "finance/_savings_allocation.html" with title=_("Par support") subtitle=_("Où est placée ton épargne") key="supports" items=overview.allocation.supports center=_("Total") %}
+        {% include "finance/_savings_allocation.html" with title=_("Par classe d'actifs") subtitle=_("Livrets, actions, obligations, liquidités…") key="classes" items=overview.allocation.classes center=_("Total") %}
     </div>
 
     {# ---------- Supports ---------- #}
     <div class="content-panel dash-card">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Mes supports</h2>
-                <p class="text-muted small mb-0">Clique sur un support pour le détail</p>
+                <h2 class="h5 mb-1">{% translate "Mes supports" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Clique sur un support pour le détail" %}</p>
             </div>
             <div class="d-flex gap-2">
-                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:savings_balances' %}">+ Livret</a>
-                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:savings_portfolio' %}">+ PEA / CTO</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:savings_balances' %}">{% translate "+ Livret" %}</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:savings_portfolio' %}">{% translate "+ PEA / CTO" %}</a>
             </div>
         </div>
         <div class="table-responsive">
             <table class="table finance-table align-middle finance-table-clickable savings-table">
                 <thead>
                     <tr>
-                        <th>Support</th>
-                        <th class="text-end">Valeur</th>
-                        <th class="text-end">Poids</th>
-                        <th class="text-end">Rendement</th>
+                        <th>{% translate "Support" %}</th>
+                        <th class="text-end">{% translate "Valeur" %}</th>
+                        <th class="text-end">{% translate "Poids" %}</th>
+                        <th class="text-end">{% translate "Rendement" %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -115,7 +116,7 @@
                             {% if account.is_portfolio %}
                             <span class="{{ support.latent|trend }}">{{ support.latent|signed }} €{% if support.latent_pct is not None %} · {{ support.latent_pct|signed }} %{% endif %}</span>
                             {% elif account.interest_rate %}
-                            {{ account.interest_rate|floatformat:"2" }} % · ≈ {{ support.interest_year|floatformat:"0g" }} € / an
+                            {{ account.interest_rate|floatformat:"2" }} % · ≈ {{ support.interest_year|floatformat:"0g" }} {% translate "€ / an" %}
                             {% else %}
                             <span class="text-muted">—</span>
                             {% endif %}
@@ -134,5 +135,5 @@
 {% block extra_js %}
 {% include "finance/_charts_js.html" %}
 {{ savings_data|json_script:"savings-data" }}
-<script src="{% static 'js/bw-savings.js' %}?v=2"></script>
+<script src="{% static 'js/bw-savings.js' %}?v=4"></script>
 {% endblock %}

@@ -7,8 +7,12 @@ Règles :
     "Épargne & placements › Livret" ; virement dans l'autre sens -> ignoré ;
   - chaque opération a une empreinte (external_id) : resynchroniser un mois
     ne crée pas de doublons ;
-  - la catégorie est devinée par mots-clés (BANK_CATEGORY_RULES), en attendant
-    un modèle de classification.
+  - l'opération est datée du jour où elle a été faite : un achat carte du 30/10
+    débité le 02/11 compte en octobre, même s'il arrive avec la synchro de novembre ;
+  - un salaire de fin de mois est compté le 1er du mois suivant
+    (voir models.salary_budget_date) ;
+  - la catégorie reprend celle déjà donnée à ce commerçant / émetteur, sinon
+    elle est devinée par mots-clés (BANK_CATEGORY_RULES).
 """
 
 import hashlib
@@ -17,6 +21,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction as db_transaction
+from django.utils.translation import gettext_noop
 
 from .ca_csv import normalize_name
 from .models import (
@@ -101,6 +106,31 @@ def is_internal_transfer(op):
     return "virement" in op.kind.lower() and normalize_name(op.merchant) == op.holder
 
 
+def learned_category(user, entry_type, description, learned_cache):
+    """
+    Catégorie de la dernière opération de même libellé déjà catégorisée
+    (ex. un virement de l'employeur rangé une fois en Salaire).
+    Renvoie (Category, Subcategory) ou None.
+    """
+
+    key = (entry_type, description)
+    if key not in learned_cache:
+        previous = (
+            Transaction.objects.filter(
+                user=user,
+                transaction_type=entry_type,
+                description=description,
+                category__isnull=False,
+            )
+            .select_related("category", "subcategory")
+            .order_by("-transaction_date", "-pk")
+            .first()
+        ) if description else None
+        learned_cache[key] = (previous.category, previous.subcategory) if previous else None
+
+    return learned_cache[key]
+
+
 def guess_category(user, entry_type, text, categories_cache):
     """
     Renvoie (Category, Subcategory) d'après les règles, ou (None, None).
@@ -147,6 +177,7 @@ def import_operations(user, operations):
     result = ImportResult()
     occurrences = Counter()
     categories_cache = {}
+    learned_cache = {}
     budgets = {}
 
     for op in operations:
@@ -170,14 +201,16 @@ def import_operations(user, operations):
             category, subcategory = resolve_category(
                 user, EntryType.EXPENSE, *SAVINGS_CATEGORY, categories_cache
             )
-            description = "Virement vers l'épargne"
+            description = gettext_noop("Virement vers l'épargne")
 
         else:
 
-            category, subcategory = guess_category(
+            description = op.merchant
+            category, subcategory = learned_category(
+                user, entry_type, description, learned_cache
+            ) or guess_category(
                 user, entry_type, f"{op.kind} {op.label}", categories_cache
             )
-            description = op.merchant
 
         if Transaction.objects.filter(user=user, external_id=external_id).exists():
             result.skipped += 1

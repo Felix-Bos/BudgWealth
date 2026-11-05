@@ -24,7 +24,10 @@ from .bank_import import SAVINGS_ACCOUNT_RE, import_operations
 from .ca_csv import mask_digits, outline_ca_csv, parse_account_card, parse_ca_csv
 from .ca_scraper import BankSyncError, download_ca_operations
 from .models import BankConnection, BankSync, BankSyncKind, BankSyncStatus
+from .forecast import import_current_balance
 from .wealth import SECURITIES_ACCOUNT_RE, import_bank_balances
+from django.utils import translation
+from django.utils.translation import gettext as _
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +57,7 @@ def missing_savings_accounts(csv_path, card_texts):
     Appelé depuis le thread de Playwright : pas d'accès à la base ici.
     """
 
-    _, balances = parse_ca_csv(csv_path)
+    _ignored, balances = parse_ca_csv(csv_path)
     known = {balance.account_number for balance in balances}
     missing = []
     for text in card_texts:
@@ -70,7 +73,7 @@ def download_balances(download):
     operations, balances = parse_ca_csv(download.path)
     known = {balance.account_number for balance in balances}
     for path in download.balance_paths:
-        _, extra = parse_ca_csv(path)
+        _ignored, extra = parse_ca_csv(path)
         for balance in extra:
             if balance.account_number not in known:
                 known.add(balance.account_number)
@@ -94,7 +97,7 @@ def write_diagnostic(download, balances, imported_numbers):
 
     lines.append(f"Soldes lus : {len(balances)}")
     for balance in balances:
-        state = "importé" if balance.account_number in imported_numbers else "ignoré (pas un livret)"
+        state = "importé" if balance.account_number in imported_numbers else "ignoré"
         lines.append(f"  - {balance.account} · {_number_end(balance.account_number)} → {state}")
 
     for title, path in [("Relevé de la période", download.path)] + [
@@ -117,7 +120,7 @@ def write_diagnostic(download, balances, imported_numbers):
 def balances_summary(accounts):
     if not accounts:
         return ""
-    return ("Soldes mis à jour : " + ", ".join(account.name for account in accounts) + ".")[:255]
+    return (_("Soldes mis à jour : ") + ", ".join(account.name for account in accounts) + ".")[:255]
 
 
 def sync_period(year, month, today=None):
@@ -179,9 +182,10 @@ def start_bank_sync(user, year=None, month=None, kind=BankSyncKind.MONTH):
 
     sync = BankSync.objects.create(user=user, kind=kind, year=year, month=month)
 
+    # Messages d'avancement dans la langue de l'utilisateur
     thread = threading.Thread(
         target=run_bank_sync,
-        args=(sync.pk,),
+        args=(sync.pk, translation.get_language()),
         name=f"bank-sync-{sync.pk}",
         daemon=True,
     )
@@ -190,7 +194,10 @@ def start_bank_sync(user, year=None, month=None, kind=BankSyncKind.MONTH):
     return sync
 
 
-def run_bank_sync(sync_id):
+def run_bank_sync(sync_id, language=None):
+
+    if language:
+        translation.activate(language)
 
     sync = BankSync.objects.select_related("user").get(pk=sync_id)
     user = sync.user
@@ -215,7 +222,7 @@ def run_bank_sync(sync_id):
 
         connection = BankConnection.objects.filter(user=user).first()
         if not connection:
-            raise BankSyncError("Renseignez votre identifiant bancaire dans les paramètres.")
+            raise BankSyncError(_("Renseignez votre identifiant bancaire dans les paramètres."))
 
         if sync.kind == BankSyncKind.INITIAL:
             start, end = initial_period()
@@ -237,15 +244,20 @@ def run_bank_sync(sync_id):
                 balance_start=initial_period()[0],
             )
 
-            set_status(BankSyncStatus.IMPORTING, "Import des opérations…")
+            set_status(BankSyncStatus.IMPORTING, _("Import des opérations…"))
 
             operations, balances = download_balances(download)
             result = import_operations(user, operations)
             # Les soldes des livrets alimentent le module Épargne
             updated_accounts = import_bank_balances(user, balances)
+            # Le solde du compte courant alimente la prévision de trésorerie
+            current_balance = import_current_balance(user, balances)
 
             try:
-                write_diagnostic(download, balances, {account.bank_account_number for account in updated_accounts})
+                imported = {account.bank_account_number for account in updated_accounts}
+                if current_balance:
+                    imported.add(current_balance.account.bank_account_number)
+                write_diagnostic(download, balances, imported)
             except Exception:
                 logger.exception("Diagnostic de synchronisation impossible à écrire")
 
@@ -274,7 +286,7 @@ def run_bank_sync(sync_id):
 
         logger.exception("Échec de la synchronisation bancaire %s", sync_id)
         sync.status = BankSyncStatus.ERROR
-        sync.message = "Erreur inattendue pendant la synchronisation."
+        sync.message = _("Erreur inattendue pendant la synchronisation.")
 
     finally:
 

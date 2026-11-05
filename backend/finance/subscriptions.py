@@ -31,6 +31,7 @@ from .models import (
     RecurringItem,
     Transaction,
 )
+from django.utils.translation import gettext as _, ngettext
 
 # ~2 ans : il faut deux paiements pour reconnaître un abonnement annuel
 HISTORY_DAYS = 800
@@ -145,7 +146,10 @@ class Candidate:
 
     @property
     def frequency_label(self):
-        return "Tous les mois" if self.unit == RecurrenceUnit.MONTH else "Tous les ans"
+        # Mêmes textes que RecurringItem.frequency_label (forme au singulier)
+        if self.unit == RecurrenceUnit.MONTH:
+            return ngettext("Tous les mois", "Tous les %(count)s mois", 1) % {"count": 1}
+        return ngettext("Tous les ans", "Tous les %(count)s ans", 1) % {"count": 1}
 
     @property
     def monthly_amount(self):
@@ -249,11 +253,11 @@ def payment_status(last_paid, unit, today, interval_days=None):
     stop_after = next_due + timedelta(days=rule["grace"])
 
     if today > stop_after:
-        status, label = "stopped", "Arrêté"
+        status, label = "stopped", _("Arrêté")
     elif today >= next_due - timedelta(days=3):
-        status, label = "due", "Paiement attendu"
+        status, label = "due", _("Paiement attendu")
     else:
-        status, label = "active", "Actif"
+        status, label = "active", _("Actif")
 
     return {
         "status": status,
@@ -459,7 +463,7 @@ def month_subscriptions(user, year, month, today=None):
     import calendar
 
     today = today or date.today()
-    _, last_day = calendar.monthrange(year, month)
+    _ignored, last_day = calendar.monthrange(year, month)
     month_start = date(year, month, 1)
     month_end = date(year, month, last_day)
 
@@ -475,7 +479,7 @@ def month_subscriptions(user, year, month, today=None):
         )
         if payments:
             paid = sum((p.amount for p in payments), Decimal("0"))
-            rows.append({"item": item, "state": "paid", "label": "Payé", "date": payments[-1].transaction_date, "amount": money(paid)})
+            rows.append({"item": item, "state": "paid", "label": _("Payé"), "date": payments[-1].transaction_date, "amount": money(paid)})
             continue
 
         start = item.start_date or month_start
@@ -494,15 +498,15 @@ def month_subscriptions(user, year, month, today=None):
             if item.end_date and item.end_date < month_start:
                 first_missed = item.end_date + timedelta(days=_item_interval_days(item))
                 if month_start <= first_missed <= month_end + grace:
-                    rows.append({"item": item, "state": "stopped", "label": "Arrêté", "date": due, "amount": item.default_amount})
+                    rows.append({"item": item, "state": "stopped", "label": _("Arrêté"), "date": due, "amount": item.default_amount})
             continue
 
         if due > today:
-            state, label = "upcoming", "À venir"
+            state, label = "upcoming", _("À venir")
         elif today - due <= grace:
-            state, label = "pending", "En attente"
+            state, label = "pending", _("En attente")
         else:
-            state, label = "missed", "Non payé"
+            state, label = "missed", _("Non payé")
         rows.append({"item": item, "state": state, "label": label, "date": due, "amount": item.default_amount})
 
     rows.sort(key=lambda row: row["date"])
@@ -549,7 +553,7 @@ def track_transaction(transaction, unit=RecurrenceUnit.MONTH):
     if item is None:
         item = RecurringItem.objects.create(
             user=user,
-            name=(transaction.description or key.title() or "Abonnement")[:150],
+            name=(transaction.description or key.title() or _("Abonnement"))[:150],
             kind=RecurrenceKind.SUBSCRIPTION,
             entry_type=EntryType.EXPENSE,
             category=transaction.category,

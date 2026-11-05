@@ -1,3 +1,4 @@
+{% load i18n %}
 {# Création (sans `action`) ou modification (action = id du compte) d'un PEA / compte-titres #}
 <form method="post" action="{% if action %}{% url 'finance:edit_savings_account' action %}{% else %}{% url 'finance:add_portfolio_account' %}{% endif %}" class="row g-3">
     {% csrf_token %}
@@ -7,7 +8,7 @@
         {{ form.kind }}
     </div>
     <div class="col-6 col-lg-3">
-        <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }} <span class="quick-add-optional">facultatif</span></label>
+        <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }} <span class="quick-add-optional">{% translate "facultatif" %}</span></label>
         {{ form.name }}
     </div>
     <div class="col-12 col-lg-3">

@@ -1,6 +1,7 @@
+{% load i18n %}
 {% load static %}
 <!doctype html>
-<html lang="fr">
+<html lang="{{ LANGUAGE_CODE|default:'fr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,7 +15,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{% static 'css/styles.css' %}?v=31" rel="stylesheet">
+    <link href="{% static 'css/styles.css' %}?v=43" rel="stylesheet">
+    {# gettext() / interpolate() pour les textes des scripts #}
+    <script src="{% url 'javascript-catalog' %}"></script>
 
     <script>
         (function () {
@@ -31,7 +34,7 @@
     {% with nav=request.resolver_match.url_name %}
     {% if user.is_authenticated %}
     <div class="app-shell">
-        <aside class="app-sidebar" aria-label="Navigation principale">
+        <aside class="app-sidebar" aria-label="{% translate "Navigation principale" %}">
             <a class="brand" href="{% url 'finance:dashboard' %}">
                 <img class="brand-mark" src="{% static 'img/logo-mark.svg' %}?v=2" alt="" width="34" height="34">
                 <span class="brand-name">Budg<span class="brand-name-accent">Wealth</span></span>
@@ -39,29 +42,29 @@
 
             <button type="button" class="btn btn-primary app-sidebar-cta" data-bs-toggle="modal" data-bs-target="#quickAddModal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Nouvelle opération
+                {% translate "Nouvelle opération" %}
             </button>
 
             <nav class="app-nav">
-                <span class="app-nav-title">Suivi</span>
+                <span class="app-nav-title">{% translate "Suivi" %}</span>
                 <a class="app-nav-link {% if nav == 'dashboard' %}is-active{% endif %}" href="{% url 'finance:dashboard' %}" {% if nav == 'dashboard' %}aria-current="page"{% endif %}>
-                    {% include "_icon.html" with name="home" %}Accueil
+                    {% include "_icon.html" with name="home" %}{% translate "Accueil" %}
                 </a>
                 <a class="app-nav-link {% if nav == 'month' %}is-active{% endif %}" href="{% url 'finance:index' %}" {% if nav == 'month' %}aria-current="page"{% endif %}>
-                    {% include "_icon.html" with name="calendar" %}Mon mois
+                    {% include "_icon.html" with name="calendar" %}{% translate "Mon mois" %}
                 </a>
 
-                <span class="app-nav-title">Planifier</span>
+                <span class="app-nav-title">{% translate "Planifier" %}</span>
                 <a class="app-nav-link {% if nav == 'dashboard_budget' or nav|slice:':7' == 'budget_' %}is-active{% endif %}" href="{% url 'finance:dashboard_budget' %}">
-                    {% include "_icon.html" with name="pie" %}Budget
+                    {% include "_icon.html" with name="pie" %}{% translate "Budget" %}
                 </a>
                 <a class="app-nav-link {% if nav|slice:':7' == 'savings' %}is-active{% endif %}" href="{% url 'finance:savings' %}">
-                    {% include "_icon.html" with name="trend" %}Épargne &amp; patrimoine
+                    {% include "_icon.html" with name="trend" %}{% translate "Épargne & patrimoine" %}
                 </a>
 
-                <span class="app-nav-title">Compte</span>
+                <span class="app-nav-title">{% translate "Compte" %}</span>
                 <a class="app-nav-link {% if nav == 'settings' %}is-active{% endif %}" href="{% url 'finance:settings' %}">
-                    {% include "_icon.html" with name="settings" %}Paramètres
+                    {% include "_icon.html" with name="settings" %}{% translate "Paramètres" %}
                 </a>
             </nav>
 
@@ -70,7 +73,7 @@
                     <span class="app-avatar" aria-hidden="true">{{ user.get_username|slice:":1"|upper }}</span>
                     <span class="min-w-0">
                         <span class="app-user-name">{{ user.get_username }}</span>
-                        <span class="app-user-meta">Données locales</span>
+                        <span class="app-user-meta">{% translate "Données locales" %}</span>
                     </span>
                 </div>
                 {% include "_theme_toggle.html" %}
@@ -83,7 +86,7 @@
                 <span class="brand-name">Budg<span class="brand-name-accent">Wealth</span></span>
             </a>
             {% include "_theme_toggle.html" %}
-            <a class="app-topbar-link {% if nav == 'settings' %}is-active{% endif %}" href="{% url 'finance:settings' %}" aria-label="Paramètres">
+            <a class="app-topbar-link {% if nav == 'settings' %}is-active{% endif %}" href="{% url 'finance:settings' %}" aria-label="{% translate "Paramètres" %}">
                 {% include "_icon.html" with name="settings" %}
             </a>
         </header>
@@ -108,27 +111,27 @@
             </div>
         </main>
 
-        <nav class="app-tabbar" aria-label="Navigation">
+        <nav class="app-tabbar" aria-label="{% translate "Navigation" %}">
             <a class="app-tab {% if nav == 'dashboard' %}is-active{% endif %}" href="{% url 'finance:dashboard' %}">
-                {% include "_icon.html" with name="home" %}Accueil
+                {% include "_icon.html" with name="home" %}{% translate "Accueil" %}
             </a>
             <a class="app-tab {% if nav == 'month' %}is-active{% endif %}" href="{% url 'finance:index' %}">
-                {% include "_icon.html" with name="calendar" %}Mois
+                {% include "_icon.html" with name="calendar" %}{% translate "Mois" %}
             </a>
-            <button type="button" class="app-tab-add" data-bs-toggle="modal" data-bs-target="#quickAddModal" aria-label="Nouvelle opération">
+            <button type="button" class="app-tab-add" data-bs-toggle="modal" data-bs-target="#quickAddModal" aria-label="{% translate "Nouvelle opération" %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             </button>
             <a class="app-tab {% if nav == 'dashboard_budget' or nav|slice:':7' == 'budget_' %}is-active{% endif %}" href="{% url 'finance:dashboard_budget' %}">
-                {% include "_icon.html" with name="pie" %}Budget
+                {% include "_icon.html" with name="pie" %}{% translate "Budget" %}
             </a>
             <a class="app-tab {% if nav|slice:':7' == 'savings' %}is-active{% endif %}" href="{% url 'finance:savings' %}">
-                {% include "_icon.html" with name="trend" %}Épargne
+                {% include "_icon.html" with name="trend" %}{% translate "Épargne" %}
             </a>
         </nav>
     </div>
     {% else %}
     </main>
-    <footer class="site-footer">&copy; {% now "Y" %} BudgWealth · Tes données restent sur ta machine</footer>
+    <footer class="site-footer">&copy; {% now "Y" %} {% translate "BudgWealth · Tes données restent sur ta machine" %}</footer>
     {% endif %}
     {% endwith %}
 
@@ -140,26 +143,26 @@
                     {% csrf_token %}
                     <div class="modal-header">
                         <div>
-                            <span class="section-label">Nouvelle opération</span>
-                            <h2 class="modal-title h4 mt-1" id="quickAddModalLabel">Ajouter <span class="js-quick-add-noun">une dépense</span></h2>
+                            <span class="section-label">{% translate "Nouvelle opération" %}</span>
+                            <h2 class="modal-title h4 mt-1" id="quickAddModalLabel">{% translate "Ajouter" %} <span class="js-quick-add-noun">{% translate "une dépense" %}</span></h2>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Fermer" %}"></button>
                     </div>
 
                     <div class="modal-body">
                         {# Le select reste la source de vérité (JS catégories) : on l'affiche en sélecteur segmenté #}
                         <div class="visually-hidden">{{ quick_add_transaction_form.transaction_type }}</div>
-                        <div class="quick-add-type" role="radiogroup" aria-label="Type d'opération">
+                        <div class="quick-add-type" role="radiogroup" aria-label="{% translate "Type d'opération" %}">
                             <button type="button" class="quick-add-type-option is-expense" data-type="EXPENSE" role="radio">
-                                <span aria-hidden="true">−</span> Dépense
+                                <span aria-hidden="true">−</span> {% translate "Dépense" %}
                             </button>
                             <button type="button" class="quick-add-type-option is-income" data-type="INCOME" role="radio">
-                                <span aria-hidden="true">+</span> Revenu
+                                <span aria-hidden="true">+</span> {% translate "Revenu" %}
                             </button>
                         </div>
 
                         <label class="quick-add-amount" for="{{ quick_add_transaction_form.amount.id_for_label }}">
-                            <span class="visually-hidden">Montant</span>
+                            <span class="visually-hidden">{% translate "Montant" %}</span>
                             <span class="quick-add-amount-sign js-quick-add-sign" aria-hidden="true">−</span>
                             {{ quick_add_transaction_form.amount }}
                             <span class="quick-add-amount-currency" aria-hidden="true">€</span>
@@ -167,19 +170,19 @@
 
                         <div class="row g-3">
                             <div class="col-12 col-sm-6">
-                                <label class="form-label" for="{{ quick_add_transaction_form.category.id_for_label }}">Catégorie</label>
+                                <label class="form-label" for="{{ quick_add_transaction_form.category.id_for_label }}">{% translate "Catégorie" %}</label>
                                 {{ quick_add_transaction_form.category }}
                             </div>
                             <div class="col-12 col-sm-6 js-subcategory-field">
-                                <label class="form-label" for="{{ quick_add_transaction_form.subcategory.id_for_label }}">Sous-catégorie</label>
+                                <label class="form-label" for="{{ quick_add_transaction_form.subcategory.id_for_label }}">{% translate "Sous-catégorie" %}</label>
                                 {{ quick_add_transaction_form.subcategory }}
                             </div>
                             <div class="col-12 col-sm-7">
-                                <label class="form-label" for="{{ quick_add_transaction_form.description.id_for_label }}">Description <span class="quick-add-optional">facultatif</span></label>
+                                <label class="form-label" for="{{ quick_add_transaction_form.description.id_for_label }}">{% translate "Description" %} <span class="quick-add-optional">{% translate "facultatif" %}</span></label>
                                 {{ quick_add_transaction_form.description }}
                             </div>
                             <div class="col-12 col-sm-5">
-                                <label class="form-label" for="{{ quick_add_transaction_form.transaction_date.id_for_label }}">Date</label>
+                                <label class="form-label" for="{{ quick_add_transaction_form.transaction_date.id_for_label }}">{% translate "Date" %}</label>
                                 {{ quick_add_transaction_form.transaction_date }}
                             </div>
                             {% include "finance/_transaction_extras.html" with form=quick_add_transaction_form %}
@@ -189,21 +192,21 @@
                             <div class="form-check form-switch">
                                 {{ quick_add_transaction_form.create_recurring }}
                                 <label class="form-check-label" for="{{ quick_add_transaction_form.create_recurring.id_for_label }}">
-                                    <strong>Opération récurrente</strong>
-                                    <span>Abonnement ou poste fixe qui revient régulièrement</span>
+                                    <strong>{% translate "Opération récurrente" %}</strong>
+                                    <span>{% translate "Abonnement ou poste fixe qui revient régulièrement" %}</span>
                                 </label>
                             </div>
                             <div class="row g-3 js-recurring-options-fields">
                                 <div class="col-12 col-sm-4">
-                                    <label class="form-label" for="{{ quick_add_transaction_form.recurring_kind.id_for_label }}">Type</label>
+                                    <label class="form-label" for="{{ quick_add_transaction_form.recurring_kind.id_for_label }}">{% translate "Type" %}</label>
                                     {{ quick_add_transaction_form.recurring_kind }}
                                 </div>
                                 <div class="col-6 col-sm-4">
-                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_interval.id_for_label }}">Tous les</label>
+                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_interval.id_for_label }}">{% translate "Tous les" %}</label>
                                     {{ quick_add_transaction_form.frequency_interval }}
                                 </div>
                                 <div class="col-6 col-sm-4">
-                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_unit.id_for_label }}">Période</label>
+                                    <label class="form-label" for="{{ quick_add_transaction_form.frequency_unit.id_for_label }}">{% translate "Période" %}</label>
                                     {{ quick_add_transaction_form.frequency_unit }}
                                 </div>
                             </div>
@@ -211,8 +214,8 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Annuler" %}</button>
+                        <button type="submit" class="btn btn-primary">{% translate "Ajouter" %}</button>
                     </div>
                 </form>
             </div>
@@ -339,7 +342,7 @@
                     option.classList.toggle('is-active', active);
                     option.setAttribute('aria-checked', active ? 'true' : 'false');
                 });
-                if (noun) noun.textContent = type === 'INCOME' ? 'un revenu' : 'une dépense';
+                if (noun) noun.textContent = type === 'INCOME' ? '{{ _("un revenu")|escapejs }}' : '{{ _("une dépense")|escapejs }}';
                 if (sign) sign.textContent = type === 'INCOME' ? '+' : '−';
             }
 

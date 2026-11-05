@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Abonnements - BudgWealth{% endblock %}
+{% block title %}{% translate "Abonnements - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="budget-page">
-    {% include "finance/_budget_tabs.html" with subtitle="Détectés automatiquement dans tes opérations bancaires" %}
+    {% include "finance/_budget_tabs.html" with subtitle=_("Détectés automatiquement dans tes opérations bancaires") %}
 
     {% if history_months < 3 %}
     <div class="budget-callout is-warning mb-4">
-        <strong>Seulement {{ history_months }} mois d'opérations</strong>
+        <strong>{% translate "Seulement" %} {{ history_months }} {% translate "mois d'opérations" %}</strong>
         <span>
-            Il faut au moins 3 mois de paiements pour reconnaître un abonnement mensuel.
+            {% translate "Il faut au moins 3 mois de paiements pour reconnaître un abonnement mensuel." %}
             {% if bank_connection and not bank_connection.initial_import_done %}
-            <a href="{% url 'finance:bank_initial_sync' %}">Importe ton historique bancaire (12 mois)</a>.
+            <a href="{% url 'finance:bank_initial_sync' %}">{% translate "Importe ton historique bancaire (12 mois)" %}</a>.
             {% else %}
-            Synchronise tes mois précédents depuis la page de chaque mois.
+            {% translate "Synchronise tes mois précédents depuis la page de chaque mois." %}
             {% endif %}
         </span>
     </div>
@@ -22,24 +23,24 @@
 
     <div class="budget-kpis mb-4">
         <div class="budget-kpi">
-            <span>Abonnements actifs</span>
+            <span>{% translate "Abonnements actifs" %}</span>
             <strong>{{ summary.active_count }}</strong>
-            <small>{{ summary.monthly_total }} € par mois</small>
+            <small>{{ summary.monthly_total }} {% translate "€ par mois" %}</small>
         </div>
         <div class="budget-kpi">
-            <span>Par an</span>
+            <span>{% translate "Par an" %}</span>
             <strong>{% widthratio summary.monthly_total 1 12 %} €</strong>
-            <small>au rythme actuel</small>
+            <small>{% translate "au rythme actuel" %}</small>
         </div>
         <div class="budget-kpi">
-            <span>À valider</span>
+            <span>{% translate "À valider" %}</span>
             <strong>{{ summary.suggestion_count }}</strong>
-            <small>détectés dans tes opérations</small>
+            <small>{% translate "détectés dans tes opérations" %}</small>
         </div>
         <div class="budget-kpi">
-            <span>Arrêtés</span>
+            <span>{% translate "Arrêtés" %}</span>
             <strong>{{ summary.stopped_count }}</strong>
-            <small>plus payés depuis l'échéance</small>
+            <small>{% translate "plus payés depuis l'échéance" %}</small>
         </div>
     </div>
 
@@ -47,22 +48,22 @@
     <div class="content-panel budget-panel mb-4" id="calendrier">
         <div class="budget-panel-head">
             <div>
-                <h2 class="h5 mb-1">Calendrier des paiements</h2>
+                <h2 class="h5 mb-1">{% translate "Calendrier des paiements" %}</h2>
                 <p class="text-muted small mb-0">
-                    {{ calendar.subs.paid_total }} € payés
-                    {% if calendar.subs.remaining %}· {{ calendar.subs.remaining_total }} € à venir{% endif %}
-                    {% if calendar.subs.problems %}· {{ calendar.subs.problems|length }} non payé{{ calendar.subs.problems|length|pluralize }}{% endif %}
+                    {{ calendar.subs.paid_total }} {% translate "€ payés" %}
+                    {% if calendar.subs.remaining %}· {{ calendar.subs.remaining_total }} {% translate "€ à venir" %}{% endif %}
+                    {% if calendar.subs.problems %}· {{ calendar.subs.problems|length }} {% translate "non payé" %}{{ calendar.subs.problems|length|pluralize }}{% endif %}
                 </p>
             </div>
             <div class="sub-cal-nav">
-                <a class="btn btn-outline-secondary btn-sm" href="?mois={{ calendar.prev }}#calendrier" aria-label="Mois précédent">&larr;</a>
+                <a class="btn btn-outline-secondary btn-sm" href="?mois={{ calendar.prev }}#calendrier" aria-label="{% translate "Mois précédent" %}">&larr;</a>
                 <strong>{{ calendar.label }}</strong>
-                <a class="btn btn-outline-secondary btn-sm" href="?mois={{ calendar.next }}#calendrier" aria-label="Mois suivant">&rarr;</a>
-                {% if not calendar.is_current %}<a class="btn btn-link btn-sm" href="?mois={{ calendar.current }}#calendrier">Aujourd'hui</a>{% endif %}
+                <a class="btn btn-outline-secondary btn-sm" href="?mois={{ calendar.next }}#calendrier" aria-label="{% translate "Mois suivant" %}">&rarr;</a>
+                {% if not calendar.is_current %}<a class="btn btn-link btn-sm" href="?mois={{ calendar.current }}#calendrier">{% translate "Aujourd'hui" %}</a>{% endif %}
             </div>
         </div>
 
-        <div class="sub-cal" role="grid" aria-label="Paiements d'abonnement de {{ calendar.label }}">
+        <div class="sub-cal" role="grid" aria-label="{% translate "Paiements d'abonnement de" %} {{ calendar.label }}">
             {% for name in "LMMJVSD" %}<div class="sub-cal-head" role="columnheader">{{ name }}</div>{% endfor %}
             {% for week in calendar.weeks %}
                 {% for cell in week %}
@@ -84,10 +85,10 @@
         </div>
 
         <div class="sub-cal-legend">
-            <span><i class="is-paid"></i>Payé</span>
-            <span><i class="is-upcoming"></i>À venir</span>
-            <span><i class="is-pending"></i>En attente</span>
-            <span><i class="is-missed"></i>Non payé / arrêté</span>
+            <span><i class="is-paid"></i>{% translate "Payé" %}</span>
+            <span><i class="is-upcoming"></i>{% translate "À venir" %}</span>
+            <span><i class="is-pending"></i>{% translate "En attente" %}</span>
+            <span><i class="is-missed"></i>{% translate "Non payé / arrêté" %}</span>
         </div>
     </div>
 
@@ -95,8 +96,8 @@
     {% if suggestions.active %}
     <div class="budget-panel-head mb-3">
         <div>
-            <h2 class="h5 mb-1">Détectés dans tes opérations</h2>
-            <p class="text-muted small mb-0">Ces paiements reviennent à intervalle régulier. Suis-les pour être alerté s'ils s'arrêtent.</p>
+            <h2 class="h5 mb-1">{% translate "Détectés dans tes opérations" %}</h2>
+            <p class="text-muted small mb-0">{% translate "Ces paiements reviennent à intervalle régulier. Suis-les pour être alerté s'ils s'arrêtent." %}</p>
         </div>
     </div>
     <div class="sub-grid mb-4">
@@ -107,24 +108,24 @@
                 <span class="sub-avatar" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
                 <div>
                     <h3>{{ c.name }}</h3>
-                    <small>{{ c.category.name|default:"Sans catégorie" }}</small>
+                    <small>{{ c.category|default:_("Sans catégorie") }}</small>
                 </div>
-                <strong class="sub-amount">{{ c.amount }} €<small>{% if c.unit == "MONTH" %}/ mois{% else %}/ an{% endif %}</small></strong>
+                <strong class="sub-amount">{{ c.amount }} €<small>{% if c.unit == "MONTH" %}{% translate "/ mois" %}{% else %}{% translate "/ an" %}{% endif %}</small></strong>
             </header>
             <ul class="sub-facts">
-                <li>{{ c.count }} paiements depuis le {{ c.first_date|date:"j M Y" }}</li>
-                <li>Dernier le {{ c.last_date|date:"j M" }} · prochain vers le {{ entry.status.next_due|date:"j M" }}</li>
+                <li>{{ c.count }} {% translate "paiements depuis le" %} {{ c.first_date|date:"j M Y" }}</li>
+                <li>{% translate "Dernier le" %} {{ c.last_date|date:"j M" }} {% translate "· prochain vers le" %} {{ entry.status.next_due|date:"j M" }}</li>
             </ul>
             <div class="sub-actions">
                 <form method="post" action="{% url 'finance:follow_subscription' %}">
                     {% csrf_token %}
                     <input type="hidden" name="key" value="{{ c.key }}">
-                    <button type="submit" class="btn btn-primary btn-sm">Suivre</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{% translate "Suivre" %}</button>
                 </form>
                 <form method="post" action="{% url 'finance:dismiss_subscription' %}">
                     {% csrf_token %}
                     <input type="hidden" name="key" value="{{ c.key }}">
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Ce n'est pas un abonnement</button>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">{% translate "Ce n'est pas un abonnement" %}</button>
                 </form>
             </div>
         </article>
@@ -137,8 +138,8 @@
     <div class="content-panel budget-panel mb-4">
         <div class="budget-panel-head">
             <div>
-                <h2 class="h5 mb-1">Mes abonnements</h2>
-                <p class="text-muted small mb-0">Rattachés automatiquement à chaque nouveau paiement importé. Sans paiement après l'échéance (+10 jours, +30 pour un annuel), ils passent en « Arrêté ».</p>
+                <h2 class="h5 mb-1">{% translate "Mes abonnements" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Rattachés automatiquement à chaque nouveau paiement importé. Sans paiement après l'échéance (+10 jours, +30 pour un annuel), ils passent en « Arrêté »." %}</p>
             </div>
         </div>
         {% if tracked_active %}
@@ -148,7 +149,7 @@
             {% endfor %}
         </ul>
         {% else %}
-        <p class="text-muted mb-0">Aucun abonnement suivi pour l'instant.{% if suggestions.active %} Clique sur « Suivre » sur une suggestion ci-dessus.{% endif %}</p>
+        <p class="text-muted mb-0">{% translate "Aucun abonnement suivi pour l'instant." %}{% if suggestions.active %} {% translate "Clique sur « Suivre » sur une suggestion ci-dessus." %}{% endif %}</p>
         {% endif %}
     </div>
 
@@ -157,8 +158,8 @@
     <div class="content-panel budget-panel mb-4">
         <div class="budget-panel-head">
             <div>
-                <h2 class="h5 mb-1">Arrêtés</h2>
-                <p class="text-muted small mb-0">Le paiement attendu n'est pas arrivé : tu as arrêté de payer. S'il réapparaît, l'abonnement redevient actif tout seul.</p>
+                <h2 class="h5 mb-1">{% translate "Arrêtés" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Le paiement attendu n'est pas arrivé : tu as arrêté de payer. S'il réapparaît, l'abonnement redevient actif tout seul." %}</p>
             </div>
         </div>
         <ul class="sub-list">
@@ -171,19 +172,19 @@
                 <span class="sub-avatar" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
                 <div class="sub-row-main">
                     <strong>{{ c.name }}</strong>
-                    <small>{{ c.amount }} € · {{ c.frequency_label|lower }} · {{ c.count }} paiements · dernier le {{ c.last_date|date:"j M Y" }}</small>
+                    <small>{{ c.amount }} € · {{ c.frequency_label|lower }} · {{ c.count }} {% translate "paiements · dernier le" %} {{ c.last_date|date:"j M Y" }}</small>
                 </div>
-                <span class="budget-badge is-off">Arrêté depuis {{ entry.status.stopped_since|date:"M Y" }}</span>
+                <span class="budget-badge is-off">{% translate "Arrêté depuis" %} {{ entry.status.stopped_since|date:"M Y" }}</span>
                 <div class="sub-row-actions">
                     <form method="post" action="{% url 'finance:follow_subscription' %}">
                         {% csrf_token %}
                         <input type="hidden" name="key" value="{{ c.key }}">
-                        <button type="submit" class="btn btn-link btn-sm p-0">Garder dans l'historique</button>
+                        <button type="submit" class="btn btn-link btn-sm p-0">{% translate "Garder dans l'historique" %}</button>
                     </form>
                     <form method="post" action="{% url 'finance:dismiss_subscription' %}">
                         {% csrf_token %}
                         <input type="hidden" name="key" value="{{ c.key }}">
-                        <button type="submit" class="btn btn-link btn-sm p-0 text-muted">Ignorer</button>
+                        <button type="submit" class="btn btn-link btn-sm p-0 text-muted">{% translate "Ignorer" %}</button>
                     </form>
                 </div>
             </li>
@@ -195,8 +196,8 @@
 
     {% if manual_subscriptions %}
     <p class="text-muted small">
-        {{ manual_subscriptions|length }} abonnement(s) saisi(s) à la main génèrent toujours une ligne chaque mois.
-        <a href="{% url 'finance:settings' %}?tab=postes-fixes">Les gérer</a>
+        {{ manual_subscriptions|length }} {% translate "abonnement(s) saisi(s) à la main génèrent toujours une ligne chaque mois." %}
+        <a href="{% url 'finance:settings' %}?tab=postes-fixes">{% translate "Les gérer" %}</a>
     </p>
     {% endif %}
 </section>

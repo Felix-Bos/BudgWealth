@@ -1,29 +1,63 @@
+from datetime import date
 from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext, gettext_lazy, ngettext
+
+
+SALARY_CATEGORY_NAME = "Salaire"
+SAVINGS_CATEGORY_NAME = "Épargne & placements"
+
+# Salaire versé en fin de mois (ex. le 30/10) : il finance le mois suivant,
+# il est donc compté le 1er de ce mois. Un salaire reçu en tout début de mois
+# (versement décalé au 1er/2 à cause d'un week-end) reste dans son mois.
+# L'épargne mise de côté le jour du salaire ou après, jusqu'à la fin du mois,
+# suit le salaire ; celle d'avant le salaire reste dans son mois.
+SALARY_NEXT_MONTH_FROM_DAY = 15
+
+
+def salary_budget_date(day):
+    """Date à laquelle un salaire reçu le `day` est compté dans le budget."""
+
+    if day.day < SALARY_NEXT_MONTH_FROM_DAY:
+        return day
+    if day.month == 12:
+        return date(day.year + 1, 1, 1)
+    return date(day.year, day.month + 1, 1)
 
 
 class EntryType(models.TextChoices):
-    EXPENSE = "EXPENSE", "Dépense"
-    INCOME = "INCOME", "Revenu"
+    EXPENSE = "EXPENSE", gettext_lazy("Dépense")
+    INCOME = "INCOME", gettext_lazy("Revenu")
 
 
 class TransactionSource(models.TextChoices):
-    MANUAL = "MANUAL", "Saisie manuelle"
-    BANK = "BANK", "Import bancaire"
+    MANUAL = "MANUAL", gettext_lazy("Saisie manuelle")
+    BANK = "BANK", gettext_lazy("Import bancaire")
 
 
 class RecurrenceKind(models.TextChoices):
-    FIXED = "FIXED", "Poste fixe"
-    SUBSCRIPTION = "SUBSCRIPTION", "Abonnement"
+    FIXED = "FIXED", gettext_lazy("Poste fixe")
+    SUBSCRIPTION = "SUBSCRIPTION", gettext_lazy("Abonnement")
 
 
 class RecurrenceUnit(models.TextChoices):
-    DAY = "DAY", "jour"
-    WEEK = "WEEK", "semaine"
-    MONTH = "MONTH", "mois"
-    YEAR = "YEAR", "an"
+    DAY = "DAY", gettext_lazy("jour")
+    WEEK = "WEEK", gettext_lazy("semaine")
+    MONTH = "MONTH", gettext_lazy("mois")
+    YEAR = "YEAR", gettext_lazy("an")
+
+
+class BudgetSection(models.TextChoices):
+    FIXED = "FIXED", gettext_lazy("Charges fixes")
+    VARIABLE = "VARIABLE", gettext_lazy("Charges variables")
+    SUBSCRIPTION = "SUBSCRIPTION", gettext_lazy("Abonnements")
+    PROVISION = "PROVISION", gettext_lazy("Provisions annuelles")
+
+
+# Sections du budget rangées dans le groupe « charges fixes » (Paramètres)
+FIXED_GROUP_SECTIONS = (BudgetSection.FIXED, BudgetSection.SUBSCRIPTION, BudgetSection.PROVISION)
 
 
 class Category(models.Model):
@@ -34,6 +68,11 @@ class Category(models.Model):
     )
     name = models.CharField(max_length=100)
     entry_type = models.CharField(max_length=20, choices=EntryType.choices)
+    # Dépenses : section du budget de la catégorie quand elle n'a pas de
+    # sous-catégorie, et type proposé pour ses nouvelles sous-catégories
+    budget_section = models.CharField(
+        max_length=20, choices=BudgetSection.choices, default=BudgetSection.VARIABLE
+    )
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -46,7 +85,16 @@ class Category(models.Model):
         ]
 
     def __str__(self):
-        return self.name
+        # Les catégories par défaut sont traduites à l'affichage
+        return gettext(self.name)
+
+    def budget_sections(self):
+        """Sections du budget où la catégorie peut être choisie : celles de
+        ses sous-catégories, ou la sienne si elle n'en a pas."""
+        subcategories = list(self.subcategories.all())
+        if subcategories:
+            return {sub.budget_section for sub in subcategories}
+        return {self.budget_section}
 
 
 class Subcategory(models.Model):
@@ -56,6 +104,10 @@ class Subcategory(models.Model):
         related_name="subcategories",
     )
     name = models.CharField(max_length=100)
+    # Section du budget où cette sous-catégorie peut être choisie
+    budget_section = models.CharField(
+        max_length=20, choices=BudgetSection.choices, default=BudgetSection.VARIABLE
+    )
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -68,7 +120,12 @@ class Subcategory(models.Model):
         ]
 
     def __str__(self):
-        return self.name
+        # Les catégories par défaut sont traduites à l'affichage
+        return gettext(self.name)
+
+    @property
+    def is_fixed(self):
+        return self.budget_section in FIXED_GROUP_SECTIONS
 
 
 class RecurringItem(models.Model):
@@ -127,11 +184,13 @@ class RecurringItem(models.Model):
     @property
     def frequency_label(self):
         interval = self.frequency_interval or 1
-        unit = self.get_frequency_unit_display()
-        if interval == 1:
-            return f"Tous les {unit}"
-        plural = "mois" if self.frequency_unit == RecurrenceUnit.MONTH else f"{unit}s"
-        return f"Tous les {interval} {plural}"
+        labels = {
+            RecurrenceUnit.DAY: ngettext("Tous les jours", "Tous les %(count)s jours", interval),
+            RecurrenceUnit.WEEK: ngettext("Toutes les semaines", "Toutes les %(count)s semaines", interval),
+            RecurrenceUnit.MONTH: ngettext("Tous les mois", "Tous les %(count)s mois", interval),
+            RecurrenceUnit.YEAR: ngettext("Tous les ans", "Tous les %(count)s ans", interval),
+        }
+        return labels.get(self.frequency_unit, labels[RecurrenceUnit.MONTH]) % {"count": interval}
 
     @property
     def is_cancelled(self):
@@ -228,8 +287,102 @@ class Transaction(models.Model):
         null=True,
         blank=True,
     )
+    # Date réelle de l'opération quand le budget la compte un autre jour
+    # (salaire de fin de mois et épargne qui le suit, comptés le 1er du mois suivant).
+    actual_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @staticmethod
+    def budget_date(entry_type, category, day):
+        """Date retenue dans le budget pour un salaire : celle de l'opération,
+        sauf en fin de mois, reportée au 1er du mois suivant."""
+
+        if entry_type == EntryType.INCOME and category is not None and category.name == SALARY_CATEGORY_NAME:
+            return salary_budget_date(day)
+        return day
+
+    @property
+    def is_salary(self):
+        return (
+            self.transaction_type == EntryType.INCOME
+            and self.category is not None
+            and self.category.name == SALARY_CATEGORY_NAME
+        )
+
+    @property
+    def is_savings_transfer(self):
+        return (
+            self.transaction_type == EntryType.EXPENSE
+            and self.category is not None
+            and self.category.name == SAVINGS_CATEGORY_NAME
+        )
+
+    def _budget_date_for(self, real_date):
+        """Date de budget d'une opération réellement faite le `real_date`."""
+
+        if self.is_salary:
+            return salary_budget_date(real_date)
+
+        if self.is_savings_transfer:
+            # Salaire de fin de mois déjà reçu ce mois-ci, avant ou le jour même
+            salary = (
+                Transaction.objects.filter(
+                    user_id=self.user_id,
+                    transaction_type=EntryType.INCOME,
+                    category__name=SALARY_CATEGORY_NAME,
+                    actual_date__year=real_date.year,
+                    actual_date__month=real_date.month,
+                    actual_date__lte=real_date,
+                )
+                .exclude(pk=self.pk)
+                .order_by("actual_date")
+                .first()
+            )
+            if salary:
+                return salary.transaction_date
+
+        return real_date
+
+    def save(self, *args, **kwargs):
+        if isinstance(self.transaction_date, date):
+            # Ligne déjà décalée : on repart de sa date réelle, sauf si la
+            # date a été changée depuis (édition à la main)
+            real_date = self.transaction_date
+            if self.actual_date and self._budget_date_for(self.actual_date) == self.transaction_date:
+                real_date = self.actual_date
+
+            target = self._budget_date_for(real_date)
+            moved = target != self.transaction_date
+            self.actual_date = real_date if target != real_date else None
+            self.transaction_date = target
+            if moved:
+                self.monthly_budget = MonthlyBudget.objects.filter(
+                    user_id=self.user_id, year=target.year, month=target.month
+                ).first()
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {
+                    *kwargs["update_fields"], "transaction_date", "actual_date", "monthly_budget",
+                }
+
+        super().save(*args, **kwargs)
+
+        if self.is_salary and self.actual_date:
+            self._attach_savings_to_salary()
+
+    def _attach_savings_to_salary(self):
+        """L'épargne versée après ce salaire, dans le même mois, le suit."""
+
+        # transaction_date du salaire = 1er du mois suivant sa réception
+        savings = Transaction.objects.filter(
+            user_id=self.user_id,
+            transaction_type=EntryType.EXPENSE,
+            category__name=SAVINGS_CATEGORY_NAME,
+            transaction_date__gte=self.actual_date,
+            transaction_date__lt=self.transaction_date,
+        ).select_related("category")
+        for saving in savings:
+            saving.save(update_fields=["updated_at"])
 
     class Meta:
         ordering = ["-transaction_date", "-created_at"]
@@ -271,18 +424,18 @@ class BankConnection(models.Model):
 
 
 class BankSyncStatus(models.TextChoices):
-    PENDING = "PENDING", "En attente"
-    CONNECTING = "CONNECTING", "Connexion à la banque"
-    WAITING_PASSWORD = "WAITING_PASSWORD", "En attente du code personnel"
-    DOWNLOADING = "DOWNLOADING", "Téléchargement des opérations"
-    IMPORTING = "IMPORTING", "Import des opérations"
-    DONE = "DONE", "Terminé"
-    ERROR = "ERROR", "Erreur"
+    PENDING = "PENDING", gettext_lazy("En attente")
+    CONNECTING = "CONNECTING", gettext_lazy("Connexion à la banque")
+    WAITING_PASSWORD = "WAITING_PASSWORD", gettext_lazy("En attente du code personnel")
+    DOWNLOADING = "DOWNLOADING", gettext_lazy("Téléchargement des opérations")
+    IMPORTING = "IMPORTING", gettext_lazy("Import des opérations")
+    DONE = "DONE", gettext_lazy("Terminé")
+    ERROR = "ERROR", gettext_lazy("Erreur")
 
 
 class BankSyncKind(models.TextChoices):
-    MONTH = "MONTH", "Un mois"
-    INITIAL = "INITIAL", "Import initial (12 mois)"
+    MONTH = "MONTH", gettext_lazy("Un mois")
+    INITIAL = "INITIAL", gettext_lazy("Import initial (12 mois)")
 
 
 class BankSync(models.Model):
@@ -327,15 +480,8 @@ class BankSync(models.Model):
 
 
 class IncomeMode(models.TextChoices):
-    AUTO = "AUTO", "Moyenne de mes salaires"
-    MANUAL = "MANUAL", "Montant fixe"
-
-
-class BudgetSection(models.TextChoices):
-    FIXED = "FIXED", "Charges fixes"
-    VARIABLE = "VARIABLE", "Charges variables"
-    SUBSCRIPTION = "SUBSCRIPTION", "Abonnements"
-    PROVISION = "PROVISION", "Provisions annuelles"
+    AUTO = "AUTO", gettext_lazy("Moyenne de mes salaires")
+    MANUAL = "MANUAL", gettext_lazy("Montant fixe")
 
 
 class BudgetPlan(models.Model):
@@ -415,8 +561,8 @@ class BudgetLine(models.Model):
         if self.label:
             return self.label
         if self.subcategory:
-            return self.subcategory.name
-        return self.category.name
+            return str(self.subcategory)
+        return str(self.category)
 
 
 class SavingsProject(models.Model):
@@ -439,7 +585,29 @@ class SavingsProject(models.Model):
         ordering = ["is_done", "target_date", "name"]
 
     def __str__(self):
-        return self.name
+        # Les catégories par défaut sont traduites à l'affichage
+        return gettext(self.name)
+
+
+class SavingsGoal(models.Model):
+    """Objectif d'épargne global : le total que l'on veut avoir de côté
+    (livrets, PEA, assurance vie...) à une date donnée."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="savings_goal",
+    )
+    target_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    target_date = models.DateField()
+    # Rendement annuel moyen espéré de l'épargne (%), 0 = sans rendement
+    expected_return = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("2"))
+    # Épargne non suivie dans l'application (autre banque, espèces...)
+    extra_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.target_amount} € au {self.target_date}"
 
 
 class MealVoucherSettings(models.Model):
@@ -487,14 +655,14 @@ class DismissedSubscription(models.Model):
 # ============================================================
 
 class SavingsKind(models.TextChoices):
-    LIVRET_A = "LIVRET_A", "Livret A"
+    LIVRET_A = "LIVRET_A", gettext_lazy("Livret A")
     LDDS = "LDDS", "LDDS"
     LEP = "LEP", "LEP"
-    LIVRET_JEUNE = "LIVRET_JEUNE", "Livret Jeune"
+    LIVRET_JEUNE = "LIVRET_JEUNE", gettext_lazy("Livret Jeune")
     CEL = "CEL", "CEL"
     PEL = "PEL", "PEL"
-    LIVRET = "LIVRET", "Autre livret"
-    ASSURANCE_VIE = "ASSURANCE_VIE", "Assurance vie"
+    LIVRET = "LIVRET", gettext_lazy("Autre livret")
+    ASSURANCE_VIE = "ASSURANCE_VIE", gettext_lazy("Assurance vie")
     PER = "PER", "PER"
     PEA = "PEA", "PEA"
     CTO = "CTO", "Compte-titres"
@@ -534,7 +702,8 @@ class SavingsAccount(models.Model):
         ordering = ["order", "kind", "name"]
 
     def __str__(self):
-        return self.name
+        # Les catégories par défaut sont traduites à l'affichage
+        return gettext(self.name)
 
     @property
     def is_portfolio(self):
@@ -542,8 +711,8 @@ class SavingsAccount(models.Model):
 
 
 class BalanceSource(models.TextChoices):
-    MANUAL = "MANUAL", "Saisie manuelle"
-    BANK = "BANK", "Import bancaire"
+    MANUAL = "MANUAL", gettext_lazy("Saisie manuelle")
+    BANK = "BANK", gettext_lazy("Import bancaire")
 
 
 class BalanceSnapshot(models.Model):
@@ -572,24 +741,64 @@ class BalanceSnapshot(models.Model):
         return f"{self.account} - {self.date} : {self.balance}"
 
 
+class CurrentAccount(models.Model):
+    """Compte courant : son solde sert de point de départ à la prévision de
+    trésorerie. Rempli par la synchronisation bancaire, ou saisi à la main."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="current_account",
+    )
+    name = models.CharField(max_length=100, default="Compte courant")
+    bank_account_number = models.CharField(max_length=30, blank=True, default="")
+    # Seuil sous lequel on ne veut pas descendre (marge de sécurité)
+    safety_buffer = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("200"))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.name}"
+
+    @property
+    def latest_balance(self):
+        return self.balances.first()
+
+
+class CurrentAccountBalance(models.Model):
+    account = models.ForeignKey(CurrentAccount, on_delete=models.CASCADE, related_name="balances")
+    date = models.DateField()
+    balance = models.DecimalField(max_digits=12, decimal_places=2)
+    source = models.CharField(max_length=10, choices=BalanceSource.choices, default=BalanceSource.MANUAL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["account", "date"], name="unique_current_balance_per_day"),
+        ]
+
+    def __str__(self):
+        return f"{self.account.name} {self.date} : {self.balance}"
+
+
 class AssetClass(models.TextChoices):
-    EQUITY = "EQUITY", "Actions"
-    BOND = "BOND", "Obligations"
-    MONEY = "MONEY", "Monétaire"
-    REAL_ESTATE = "REAL_ESTATE", "Immobilier"
-    COMMODITY = "COMMODITY", "Or & matières premières"
-    CRYPTO = "CRYPTO", "Crypto"
-    OTHER = "OTHER", "Autre"
+    EQUITY = "EQUITY", gettext_lazy("Actions")
+    BOND = "BOND", gettext_lazy("Obligations")
+    MONEY = "MONEY", gettext_lazy("Monétaire")
+    REAL_ESTATE = "REAL_ESTATE", gettext_lazy("Immobilier")
+    COMMODITY = "COMMODITY", gettext_lazy("Or & matières premières")
+    CRYPTO = "CRYPTO", gettext_lazy("Crypto")
+    OTHER = "OTHER", gettext_lazy("Autre")
 
 
 class Zone(models.TextChoices):
-    WORLD = "WORLD", "Monde"
-    US = "US", "États-Unis"
-    EUROPE = "EUROPE", "Europe"
-    FRANCE = "FRANCE", "France"
-    EMERGING = "EMERGING", "Pays émergents"
-    ASIA = "ASIA", "Japon & Asie"
-    OTHER = "OTHER", "Autre"
+    WORLD = "WORLD", gettext_lazy("Monde")
+    US = "US", gettext_lazy("États-Unis")
+    EUROPE = "EUROPE", gettext_lazy("Europe")
+    FRANCE = "FRANCE", gettext_lazy("France")
+    EMERGING = "EMERGING", gettext_lazy("Pays émergents")
+    ASIA = "ASIA", gettext_lazy("Japon & Asie")
+    OTHER = "OTHER", gettext_lazy("Autre")
 
 
 class Instrument(models.Model):
@@ -661,10 +870,14 @@ class ExchangeRate(models.Model):
 
 
 class OperationKind(models.TextChoices):
-    BUY = "BUY", "Achat"
-    SELL = "SELL", "Vente"
-    DIVIDEND = "DIVIDEND", "Dividende"
-    FEE = "FEE", "Frais de compte"
+    BUY = "BUY", gettext_lazy("Achat")
+    # Titres déjà en portefeuille, repris avec leur prix de revient unitaire
+    # (PRU) : ni frais, ni ordre de bourse ; valorisés au PRU à leur date,
+    # puis au cours.
+    POSITION = "POSITION", gettext_lazy("Déjà détenu")
+    SELL = "SELL", gettext_lazy("Vente")
+    DIVIDEND = "DIVIDEND", gettext_lazy("Dividende")
+    FEE = "FEE", gettext_lazy("Frais de compte")
 
 
 class PortfolioOperation(models.Model):
@@ -708,9 +921,12 @@ class PortfolioOperation(models.Model):
 
     @property
     def total(self):
-        """Montant débité (achat, frais) ou crédité (vente, dividende)."""
+        """Montant débité (achat, frais) ou crédité (vente, dividende).
+        Pour des titres déjà détenus : le montant investi (quantité × PRU)."""
         if self.kind == OperationKind.BUY:
             return self.gross + self.fees
+        if self.kind == OperationKind.POSITION:
+            return self.gross
         if self.kind == OperationKind.SELL:
             return self.gross - self.fees
         return self.amount or Decimal("0")

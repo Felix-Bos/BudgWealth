@@ -1,5 +1,5 @@
 """
-Prépare les fichiers statiques pour l'empaquetage de BudgWealth.
+Prépare les fichiers statiques et les traductions pour l'empaquetage de BudgWealth.
 
 Lance collectstatic en mode "application empaquetée", pour que staticfiles/
 contienne le manifeste (staticfiles.json) exigé par WhiteNoise dans l'app.
@@ -25,6 +25,10 @@ from django.core.management import call_command
 
 django.setup()
 call_command("collectstatic", interactive=False, clear=True, verbosity=1)
+
+# Traductions (.mo, non versionnés) : embarquées via locale/ dans budgwealth.spec
+os.chdir(ROOT)
+call_command("compilemessages", locale=["en"], ignore_patterns=["dist/*", "build/*", "staticfiles/*"], verbosity=1)
 
 manifest = ROOT / "staticfiles" / "staticfiles.json"
 if not manifest.exists():

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Trésorerie - BudgWealth" %}{% endblock %}
+
+{% block content %}
+<section class="budget-page">
+    {% include "finance/_budget_tabs.html" with subtitle=_("Ton compte courant dans les semaines qui viennent") %}
+
+    {% with f=forecast %}
+    {% if f.has_balance %}
+
+    {# ---------- Chiffres clés ---------- #}
+    <div class="dash-kpis mb-4 cash-kpis">
+        <div class="dash-kpi">
+            <span>{% translate "Solde aujourd'hui" %}</span>
+            <strong>{{ f.current|floatformat:"0g" }} €</strong>
+            <small>
+                {% translate "relevé du" %} {{ f.snapshot.date|date:"j F" }}{% if f.since_balance %} {% if f.since_balance > 0 %}+{% else %}−{% endif %}{{ f.since_balance|floatformat:"0g"|cut:"-" }} € {% translate "depuis" %}{% endif %}
+            </small>
+        </div>
+        <div class="dash-kpi {% if f.month_end_balance is not None and f.month_end_balance < 0 %}is-bad{% endif %}">
+            <span>{% translate "Fin du mois" %}</span>
+            <strong>{% if f.month_end_balance is not None %}{{ f.month_end_balance|floatformat:"0g" }} €{% else %}—{% endif %}</strong>
+            <small>{% translate "prévu au" %} {{ f.month_end|date:"j F" }}</small>
+        </div>
+        <div class="dash-kpi {% if f.status == 'off' %}is-bad{% endif %}">
+            <span>{% translate "Point le plus bas" %}</span>
+            <strong class="{% if f.low.balance < 0 %}dash-negative{% endif %}">{{ f.low.balance|floatformat:"0g" }} €</strong>
+            <small>{% translate "le" %} {{ f.low.date|date:"j F" }}</small>
+        </div>
+        <div class="dash-kpi is-savings {% if f.safe_to_save > 0 %}is-good{% endif %}">
+            <span>{% translate "Tu peux mettre de côté" %}</span>
+            <strong>{{ f.safe_to_save|floatformat:"0g" }} €</strong>
+            <small>{% translate "aujourd'hui, sans passer sous" %} {{ f.buffer|floatformat:"0g" }} €</small>
+        </div>
+    </div>
+
+    <div class="goal-feasibility goal-is-{{ f.status }} mb-4 cash-verdict">
+        <div class="goal-feasibility-text">
+            <strong>{{ f.status_label }}</strong>
+            {% if f.status == "off" %}
+            <span>{% translate "Ton solde passerait sous zéro le" %} <strong>{{ f.first_negative|date:"j F" }}</strong>{% translate ". Décale une dépense ou fais un virement depuis ton épargne avant cette date." %}</span>
+            {% elif f.status == "watch" %}
+            <span>{% translate "Ton solde descendrait à" %} {{ f.low.balance|floatformat:"0g" }} € {% translate "le" %} {{ f.low.date|date:"j F" }}{% translate ", sous ta marge de" %} {{ f.buffer|floatformat:"0g" }} €. {% translate "Évite les virements vers l'épargne d'ici là." %}</span>
+            {% else %}
+            <span>{% translate "Ton solde reste au-dessus de ta marge de sécurité jusqu'au" %} {{ f.end|date:"j F Y" }}.</span>
+            {% endif %}
+            {% if f.stale %}
+            <span class="text-muted">{% blocktranslate with day=f.snapshot.date|date:"j F" %}Ton dernier solde date du {{ day }} : synchronise ta banque ou saisis ton solde pour une prévision juste.{% endblocktranslate %}</span>
+            {% endif %}
+        </div>
+        <div class="cash-flows">
+            <div><span>{% translate "Entrées prévues" %}</span><strong class="dash-income">+{{ f.income_total|floatformat:"0g" }} €</strong></div>
+            <div><span>{% translate "Prélèvements prévus" %}</span><strong class="dash-negative">−{{ f.outflow_total|floatformat:"0g" }} €</strong></div>
+            <div><span>{% translate "Dépenses courantes" %}</span><strong class="dash-negative">−{{ f.spending_total|floatformat:"0g" }} €</strong><small>{{ f.per_day|floatformat:"0g" }} {% translate "€ / jour en moyenne" %}</small></div>
+        </div>
+    </div>
+
+    {# ---------- Courbe ---------- #}
+    <div class="content-panel dash-card mb-4">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "Solde prévu, jour par jour" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Jusqu'au" %} {{ f.end|date:"j F Y" }} · {% translate "la ligne pointillée est ta marge de sécurité" %}</p>
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="{% translate "Horizon" %}">
+                {% for key, label in horizons %}
+                <a class="btn {% if key == horizon %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?horizon={{ key }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="dash-chart is-tall"><canvas id="cashChart" role="img" aria-label="{% translate "Solde prévu du compte courant" %}"></canvas></div>
+    </div>
+
+    <div class="dash-grid mb-4">
+        {# ---------- À venir ---------- #}
+        <div class="content-panel dash-card">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">{% translate "À venir" %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Salaire, postes fixes et abonnements attendus" %}</p>
+                </div>
+            </div>
+            {% if f.events %}
+            <ul class="cash-events">
+                {% for event in f.events %}
+                <li class="is-{{ event.kind }}">
+                    <span class="cash-event-date">{{ event.date|date:"j M" }}</span>
+                    <span class="cash-event-label">
+                        <strong>{{ event.label }}</strong>
+                        <small>{% if event.kind == "income" %}{% translate "Revenu" %}{% elif event.kind == "subscription" %}{% translate "Abonnement" %}{% elif event.kind == "fixed" %}{% translate "Poste fixe" %}{% else %}{% translate "Déjà saisi" %}{% endif %}{% if event.detail %} · {{ event.detail }}{% endif %}</small>
+                    </span>
+                    <span class="cash-event-amount {% if event.amount > 0 %}dash-income{% endif %}">{% if event.amount > 0 %}+{% else %}−{% endif %}{{ event.amount|floatformat:"0g"|cut:"-" }} €</span>
+                    <span class="cash-event-after {% if event.after < 0 %}dash-negative{% endif %}">{{ event.after|floatformat:"0g" }} €</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">{% translate "Rien de prévu d'ici là, à part tes dépenses courantes." %}</p>
+            {% endif %}
+        </div>
+
+        {# ---------- Solde et marge ---------- #}
+        <div class="content-panel dash-card">
+            {% include "finance/_cash_balance_form.html" %}
+            <p class="text-muted small mt-3 mb-0">{% translate "Comment c'est calculé : ton dernier solde, les opérations saisies depuis, puis jour après jour ton salaire, tes postes fixes, tes abonnements à leur date habituelle et tes dépenses courantes (moyenne des 90 derniers jours). Les virements vers l'épargne ne sont pas prévus : c'est ce que tu peux mettre de côté." %}</p>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="content-panel budget-panel mb-4">
+        <h2 class="h5 mb-2">{% translate "Quel est le solde de ton compte courant ?" %}</h2>
+        <p class="text-muted mb-3">{% if has_bank %}{% translate "Il sera relevé automatiquement à la prochaine synchronisation bancaire. Tu peux aussi le saisir maintenant :" %}{% else %}{% translate "Saisis-le pour voir ton solde des prochaines semaines. Avec la synchronisation bancaire, il se met à jour tout seul." %}{% endif %}</p>
+        {% include "finance/_cash_balance_form.html" %}
+    </div>
+    {% endif %}
+    {% endwith %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart %}
+{% include "finance/_charts_js.html" %}
+{{ chart|json_script:"cash-data" }}
+<script>
+    (function () {
+        var data = JSON.parse(document.getElementById('cash-data').textContent);
+        var charts = window.BW && window.BW.charts;
+        var canvas = document.getElementById('cashChart');
+        if (!charts || !canvas) return;
+        var lang = document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR';
+        var dayFormat = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' });
+        function labelDate(label) { var p = label.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+        charts.create(canvas, function (p) {
+            var scales = charts.scales(p);
+            scales.y.beginAtZero = false;
+            scales.x.ticks.maxTicksLimit = 10;
+            scales.x.ticks.callback = function (value, index) { return dayFormat.format(labelDate(data.labels[index])); };
+            return {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '{{ _("Solde prévu")|escapejs }}',
+                            data: data.values,
+                            borderColor: p.balance,
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            stepped: false,
+                            tension: 0.1,
+                            fill: { target: { value: 0 }, above: charts.alpha(p.balance, 0.12), below: charts.alpha(p.expense, 0.25) }
+                        },
+                        {
+                            label: '{{ _("Marge de sécurité")|escapejs }}',
+                            data: data.labels.map(function () { return data.buffer; }),
+                            borderColor: p.expense,
+                            borderDash: [5, 4],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) { return dayFormat.format(labelDate(data.labels[items[0].dataIndex])); },
+                                label: charts.euroLabel
+                            }
+                        }
+                    },
+                    scales: scales
+                }
+            };
+        });
+    })();
+</script>
+{% endif %}
+{% endblock %}

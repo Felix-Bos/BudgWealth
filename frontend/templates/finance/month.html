@@ -1,28 +1,29 @@
 {% extends "base.html" %}
+{% load i18n i18n_extras %}
 {% load static %}
 
-{% block title %}{{ month_label }} - BudgWealth{% endblock %}
+{% block title %}{{ month_label }} {% translate "- BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-month">
     <header class="page-head">
         <div>
-            <span class="page-eyebrow">Mon mois{% if is_current_month %} · en cours{% endif %}</span>
+            <span class="page-eyebrow">{% translate "Mon mois" %}{% if is_current_month %} {% translate "· en cours" %}{% endif %}</span>
             <h1>{{ month_label }}</h1>
         </div>
-        <nav class="month-nav" aria-label="Changer de mois">
-            <a class="month-nav-btn" href="{% url 'finance:month' prev_year prev_month %}" aria-label="Mois précédent" title="Mois précédent">
+        <nav class="month-nav" aria-label="{% translate "Changer de mois" %}">
+            <a class="month-nav-btn" href="{% url 'finance:month' prev_year prev_month %}" aria-label="{% translate "Mois précédent" %}" title="{% translate "Mois précédent" %}">
                 {% include "_icon.html" with name="chevron-left" %}
             </a>
             {% if not is_current_month %}
-            <a class="month-nav-today" href="{% url 'finance:index' %}">Ce mois-ci</a>
+            <a class="month-nav-today" href="{% url 'finance:index' %}">{% translate "Ce mois-ci" %}</a>
             {% endif %}
             {% if is_current_month %}
-            <button class="month-nav-btn" disabled title="Vous êtes sur le mois en cours" aria-label="Mois suivant">
+            <button class="month-nav-btn" disabled title="{% translate "Vous êtes sur le mois en cours" %}" aria-label="{% translate "Mois suivant" %}">
                 {% include "_icon.html" with name="chevron-right" %}
             </button>
             {% else %}
-            <a class="month-nav-btn" href="{% url 'finance:month' next_year next_month %}" aria-label="Mois suivant" title="Mois suivant">
+            <a class="month-nav-btn" href="{% url 'finance:month' next_year next_month %}" aria-label="{% translate "Mois suivant" %}" title="{% translate "Mois suivant" %}">
                 {% include "_icon.html" with name="chevron-right" %}
             </a>
             {% endif %}
@@ -33,47 +34,47 @@
         <div class="stat-row">
             <div class="stat-card stat-card-income">
                 <div class="stat-value"><span class="js-stat" data-key="income">{{ total_income|floatformat:"2g" }}</span> €</div>
-                <div class="stat-label">Revenus</div>
+                <div class="stat-label">{% translate "Revenus" %}</div>
             </div>
             <div class="stat-card stat-card-expense">
                 <div class="stat-value"><span class="js-stat" data-key="expense">{{ total_expense|floatformat:"2g" }}</span> €</div>
-                <div class="stat-label">Charges</div>
+                <div class="stat-label">{% translate "Charges" %}</div>
             </div>
             <div class="stat-card stat-card-savings">
                 <div class="stat-value"><span class="js-stat" data-key="savings">{{ total_savings|floatformat:"2g" }}</span> €</div>
-                <div class="stat-label">Épargne</div>
+                <div class="stat-label">{% translate "Épargne" %}</div>
             </div>
             <div class="stat-card stat-card-balance">
                 <div class="stat-value"><span class="js-stat" data-key="balance">{{ balance|floatformat:"2g" }}</span> €</div>
-                <div class="stat-label">Solde</div>
-                <div class="stat-hint">revenus − charges</div>
+                <div class="stat-label">{% translate "Solde" %}</div>
+                <div class="stat-hint">{% translate "revenus − charges" %}</div>
             </div>
         </div>
 
         <div class="bank-sync-bar mt-4">
             <div>
-                <strong>Import depuis la banque</strong>
+                <strong>{% translate "Import depuis la banque" %}</strong>
                 <p class="text-muted small mb-0">
                     {% if not has_bank_connection %}
-                        Connectez votre banque pour importer vos opérations automatiquement.
+                        {% translate "Connectez votre banque pour importer vos opérations automatiquement." %}
                     {% elif not bank_ready %}
-                        Importez d'abord vos 12 derniers mois pour activer la synchronisation.
+                        {% translate "Importez d'abord vos 12 derniers mois pour activer la synchronisation." %}
                     {% elif not is_bank_syncable %}
-                        La banque ne donne accès qu'aux 12 derniers mois.
+                        {% translate "La banque ne donne accès qu'aux 12 derniers mois." %}
                     {% else %}
-                        Importe les opérations de {{ month_label|lower }} depuis le Crédit Agricole.
+                        {% translate "Importe les opérations de" %} {{ month_label|lower_fr }} {% translate "depuis le Crédit Agricole." %}
                     {% endif %}
                 </p>
             </div>
             {% if not has_bank_connection %}
-            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_connect' %}">Connecter ma banque</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_connect' %}">{% translate "Connecter ma banque" %}</a>
             {% elif not bank_ready %}
-            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_initial_sync' %}">Importer l'historique</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'finance:bank_initial_sync' %}">{% translate "Importer l'historique" %}</a>
             {% else %}
             <button type="button" class="btn btn-primary btn-sm js-bank-sync" {% if not is_bank_syncable %}disabled{% endif %}
                     data-start-url="{% url 'finance:bank_sync_start' year month %}"
                     data-status-url="{% url 'finance:bank_sync_status' 0 %}">
-                Synchroniser avec la banque
+                {% translate "Synchroniser avec la banque" %}
             </button>
             {% endif %}
         </div>
@@ -81,16 +82,16 @@
         {% if not budget %}
         <div class="mt-4">
             <p class="text-muted mb-3">
-                Ce mois n'a pas encore été démarré.
+                {% translate "Ce mois n'a pas encore été démarré." %}
                 {% if has_recurring_items %}
-                    Démarrez-le pour générer automatiquement vos postes fixes (loyer, salaire...).
+                    {% translate "Démarrez-le pour générer automatiquement vos postes fixes (loyer, salaire...)." %}
                 {% else %}
-                    Vous n'avez pas encore de poste fixe : vous pouvez tout de même démarrer le mois et ajouter vos dépenses au fur et à mesure.
+                    {% translate "Vous n'avez pas encore de poste fixe : vous pouvez tout de même démarrer le mois et ajouter vos dépenses au fur et à mesure." %}
                 {% endif %}
             </p>
             <form method="post" action="{% url 'finance:start_month' year month %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary">Démarrer ce mois</button>
+                <button type="submit" class="btn btn-primary">{% translate "Démarrer ce mois" %}</button>
             </form>
         </div>
         {% endif %}
@@ -100,20 +101,20 @@
 
     <div class="content-panel mb-4 js-tx-panel">
         <div class="tx-panel-header">
-            <h2 class="h5 mb-0">Opérations du mois</h2>
-            <span class="tx-count js-tx-count">{{ transaction_count }} opération{{ transaction_count|pluralize }}</span>
+            <h2 class="h5 mb-0">{% translate "Opérations du mois" %}</h2>
+            <span class="tx-count js-tx-count">{{ transaction_count }} {% translate "opération" %}{{ transaction_count|pluralize }}</span>
         </div>
 
-        <div class="tx-filters" role="tablist" aria-label="Filtrer les opérations">
-            <button type="button" class="tx-filter is-active" data-filter="all">Tout</button>
+        <div class="tx-filters" role="tablist" aria-label="{% translate "Filtrer les opérations" %}">
+            <button type="button" class="tx-filter is-active" data-filter="all">{% translate "Tout" %}</button>
             <button type="button" class="tx-filter is-income" data-filter="income">
-                Revenus <span class="js-filter-total" data-kind="income">+{{ kind_totals.income.total|floatformat:"2g" }} €</span>
+                {% translate "Revenus" %} <span class="js-filter-total" data-kind="income">+{{ kind_totals.income.total|floatformat:"2g" }} €</span>
             </button>
             <button type="button" class="tx-filter is-expense" data-filter="expense">
-                Charges <span class="js-filter-total" data-kind="expense">−{{ kind_totals.expense.total|floatformat:"2g" }} €</span>
+                {% translate "Charges" %} <span class="js-filter-total" data-kind="expense">−{{ kind_totals.expense.total|floatformat:"2g" }} €</span>
             </button>
             <button type="button" class="tx-filter is-savings" data-filter="savings">
-                Épargne <span class="js-filter-total" data-kind="savings">{{ kind_totals.savings.total|floatformat:"2g" }} €</span>
+                {% translate "Épargne" %} <span class="js-filter-total" data-kind="savings">{{ kind_totals.savings.total|floatformat:"2g" }} €</span>
             </button>
         </div>
 
@@ -132,53 +133,53 @@
             </section>
             {% endfor %}
         </div>
-        <p class="text-muted mb-0 js-tx-empty" hidden>Aucune opération de ce type ce mois-ci.</p>
+        <p class="text-muted mb-0 js-tx-empty" hidden>{% translate "Aucune opération de ce type ce mois-ci." %}</p>
         {% else %}
-        <p class="text-muted mb-0">Aucune dépense ou revenu enregistré pour ce mois pour l'instant.</p>
+        <p class="text-muted mb-0">{% translate "Aucune dépense ou revenu enregistré pour ce mois pour l'instant." %}</p>
         {% endif %}
     </div>
 
     {% if recurring_rows %}
     <div class="content-panel mb-4">
         <div class="tx-panel-header">
-            <h2 class="h5 mb-0">Postes fixes de ce mois</h2>
-            <span class="tx-count">{{ recurring_rows|length }} ligne{{ recurring_rows|length|pluralize }}</span>
+            <h2 class="h5 mb-0">{% translate "Postes fixes de ce mois" %}</h2>
+            <span class="tx-count">{{ recurring_rows|length }} {% translate "ligne" %}{{ recurring_rows|length|pluralize }}</span>
         </div>
         <ul class="tx-list">
             {% for row in recurring_rows %}
                 {% include "finance/_transaction_row.html" with show_date=True %}
             {% endfor %}
         </ul>
-        <p class="form-text mt-3 mb-0">Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant.</p>
+        <p class="form-text mt-3 mb-0">{% translate "Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant." %}</p>
     </div>
     {% endif %}
 
     <div class="content-panel mb-4">
-        <h2 class="h5 mb-3">Ajouter une ligne</h2>
+        <h2 class="h5 mb-3">{% translate "Ajouter une ligne" %}</h2>
         <form method="post" action="{% url 'finance:add_transaction' year month %}" class="row g-3 js-transaction-form">
             {% csrf_token %}
             <div class="col-12 col-md-3">
-                <label class="form-label" for="id_transaction_type">Type</label>
+                <label class="form-label" for="id_transaction_type">{% translate "Type" %}</label>
                 {{ transaction_form.transaction_type }}
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="id_amount">Montant</label>
+                <label class="form-label" for="id_amount">{% translate "Montant" %}</label>
                 {{ transaction_form.amount }}
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="id_category">Catégorie</label>
+                <label class="form-label" for="id_category">{% translate "Catégorie" %}</label>
                 {{ transaction_form.category }}
             </div>
             <div class="col-12 col-md-3 js-subcategory-field">
-                <label class="form-label" for="id_subcategory">Sous-catégorie</label>
+                <label class="form-label" for="id_subcategory">{% translate "Sous-catégorie" %}</label>
                 {{ transaction_form.subcategory }}
             </div>
             <div class="col-12 col-md-6">
-                <label class="form-label" for="id_description">Description</label>
+                <label class="form-label" for="id_description">{% translate "Description" %}</label>
                 {{ transaction_form.description }}
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="id_transaction_date">Date</label>
+                <label class="form-label" for="id_transaction_date">{% translate "Date" %}</label>
                 {{ transaction_form.transaction_date }}
             </div>
             {% include "finance/_transaction_extras.html" with form=transaction_form %}
@@ -186,32 +187,32 @@
                 <div class="finance-recurring-options">
                     <div class="form-check">
                         {{ transaction_form.create_recurring }}
-                        <label class="form-check-label" for="{{ transaction_form.create_recurring.id_for_label }}">Créer une récurrence ou un abonnement depuis cette ligne</label>
+                        <label class="form-check-label" for="{{ transaction_form.create_recurring.id_for_label }}">{% translate "Créer une récurrence ou un abonnement depuis cette ligne" %}</label>
                     </div>
                     <div class="row g-3 js-recurring-options-fields">
                         <div class="col-12 col-md-4">
-                            <label class="form-label">Type</label>
+                            <label class="form-label">{% translate "Type" %}</label>
                             {{ transaction_form.recurring_kind }}
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label">Tous les</label>
+                            <label class="form-label">{% translate "Tous les" %}</label>
                             {{ transaction_form.frequency_interval }}
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label">Période</label>
+                            <label class="form-label">{% translate "Période" %}</label>
                             {{ transaction_form.frequency_unit }}
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-12 col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+                <button type="submit" class="btn btn-primary w-100">{% translate "Ajouter" %}</button>
             </div>
         </form>
         <p class="form-text mt-3 mb-0">
-            Besoin d'une nouvelle catégorie ou d'un nouveau poste fixe ?
-            <a href="{% url 'finance:settings' %}?tab=categories">Gérer les catégories</a> ·
-            <a href="{% url 'finance:settings' %}?tab=postes-fixes">Gérer les postes fixes</a>
+            {% translate "Besoin d'une nouvelle catégorie ou d'un nouveau poste fixe ?" %}
+            <a href="{% url 'finance:settings' %}?tab=categories">{% translate "Gérer les catégories" %}</a> ·
+            <a href="{% url 'finance:settings' %}?tab=postes-fixes">{% translate "Gérer les postes fixes" %}</a>
         </p>
     </div>
 
@@ -230,24 +231,23 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bank-sync-modal">
             <div class="modal-body">
-                <h2 class="h5 mb-1" id="bankSyncTitle">Synchronisation avec la banque</h2>
+                <h2 class="h5 mb-1" id="bankSyncTitle">{% translate "Synchronisation avec la banque" %}</h2>
                 <p class="text-muted small mb-4">{{ month_label }}</p>
 
                 <ol class="bank-sync-steps">
-                    <li data-step="CONNECTING">Connexion au Crédit Agricole</li>
-                    <li data-step="WAITING_PASSWORD">Saisie de votre code personnel</li>
-                    <li data-step="DOWNLOADING">Téléchargement des opérations</li>
-                    <li data-step="IMPORTING">Import dans BudgWealth</li>
+                    <li data-step="CONNECTING">{% translate "Connexion au Crédit Agricole" %}</li>
+                    <li data-step="WAITING_PASSWORD">{% translate "Saisie de votre code personnel" %}</li>
+                    <li data-step="DOWNLOADING">{% translate "Téléchargement des opérations" %}</li>
+                    <li data-step="IMPORTING">{% translate "Import dans BudgWealth" %}</li>
                 </ol>
 
                 <div class="bank-sync-callout js-bank-sync-password" hidden>
-                    Une fenêtre Crédit Agricole vient de s'ouvrir : tapez votre code personnel sur le clavier du site.
-                    Elle se fermera toute seule ensuite.
+                    {% translate "Une fenêtre Crédit Agricole vient de s'ouvrir : tapez votre code personnel sur le clavier du site. Elle se fermera toute seule ensuite." %}
                 </div>
                 <div class="alert alert-danger mb-0 js-bank-sync-error" hidden></div>
             </div>
             <div class="modal-footer js-bank-sync-footer" hidden>
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Fermer" %}</button>
             </div>
         </div>
     </div>
@@ -291,7 +291,7 @@
                 .then(function (response) { return response.json(); })
                 .then(function (sync) {
                     if (sync.status === 'ERROR') {
-                        showError(sync.message || 'La synchronisation a échoué.');
+                        showError(sync.message || '{{ _("La synchronisation a échoué.")|escapejs }}');
                     } else if (sync.status === 'DONE') {
                         render('DONE');
                         // "final" enregistre le message de succès affiché après rechargement
@@ -320,12 +320,12 @@
                 })
                 .then(function (result) {
                     if (!result.ok) {
-                        showError(result.body.error || 'Impossible de lancer la synchronisation.');
+                        showError(result.body.error || '{{ _("Impossible de lancer la synchronisation.")|escapejs }}');
                         return;
                     }
                     poll(button.dataset.statusUrl.replace(/0\/$/, result.body.id + '/'));
                 })
-                .catch(function () { showError('Impossible de joindre le serveur.'); });
+                .catch(function () { showError('{{ _("Impossible de joindre le serveur.")|escapejs }}'); });
         });
     });
 </script>
@@ -334,5 +334,5 @@
 {{ category_tree_data|json_script:"category-tree-data" }}
 {{ daily_data|json_script:"daily-data" }}
 {{ editor_categories|json_script:"editor-categories-data" }}
-<script src="{% static 'js/bw-month.js' %}?v=3"></script>
+<script src="{% static 'js/bw-month.js' %}?v=4"></script>
 {% endblock %}

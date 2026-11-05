@@ -1,17 +1,132 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Objectifs - BudgWealth{% endblock %}
+{% block title %}{% translate "Objectifs - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="budget-page">
-    {% include "finance/_budget_tabs.html" with subtitle="Ce que tu veux mettre de côté, chaque mois et pour tes projets" %}
+    {% include "finance/_budget_tabs.html" with subtitle=_("Ce que tu veux mettre de côté, chaque mois et pour tes projets") %}
+
+    {# ---------- Objectif d'épargne global ---------- #}
+    <div class="content-panel budget-panel mb-4 goal-panel" id="objectif-global">
+        <div class="budget-panel-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "Objectif d'épargne global" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Le total que tu veux avoir de côté (livrets, PEA, assurance vie…) à une date donnée." %}</p>
+            </div>
+            {% if global_goal %}
+            <span class="budget-badge is-{{ global_goal.status }}">{{ global_goal.status_label }}</span>
+            {% endif %}
+        </div>
+
+        <form method="post" action="{% url 'finance:update_global_savings_goal' %}" class="row g-3 goal-form">
+            {% csrf_token %}
+            {% for field in global_goal_form %}
+            <div class="col-6 col-lg-3">
+                <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<div class="budget-error">{{ error }}</div>{% endfor %}
+                {% if field.help_text %}<small class="form-text text-muted d-block">{{ field.help_text }}</small>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">{% if global_goal %}{% translate "Recalculer" %}{% else %}{% translate "Calculer mon plan" %}{% endif %}</button>
+            </div>
+        </form>
+        {% if global_goal %}
+        <form method="post" action="{% url 'finance:delete_global_savings_goal' %}" class="goal-delete" onsubmit="return confirm('{{ _("Supprimer l'objectif global ?")|escapejs }}');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer l'objectif" %}</button>
+        </form>
+        {% endif %}
+
+        {% if global_goal %}
+        {% with g=global_goal %}
+        <div class="goal-progress mt-4">
+            <div class="budget-goal-meter-head">
+                <span>{% translate "Déjà de côté" %}{% if g.goal.extra_amount %} <small class="text-muted">({{ g.tracked|floatformat:"0g" }} € {% translate "suivis" %} + {{ g.goal.extra_amount|floatformat:"0g" }} € {% translate "hors app" %})</small>{% endif %}</span>
+                <strong>{{ g.start|floatformat:"0g" }} € <small>/ {{ g.goal.target_amount|floatformat:"0g" }} €</small></strong>
+            </div>
+            <div class="budget-progress is-savings"><span style="width: {{ g.percent }}%"></span></div>
+        </div>
+
+        <div class="dash-kpis goal-kpis mt-3">
+            <div class="dash-kpi is-savings">
+                <span>{% translate "À mettre de côté" %}</span>
+                <strong>{{ g.needed|floatformat:"0g" }} €</strong>
+                <small>{% translate "par mois" %}{% if g.needed_share_income is not None %} · {{ g.needed_share_income|floatformat:"0" }} {% translate "% de tes revenus" %}{% endif %}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Reste à réunir" %}</span>
+                <strong>{{ g.remaining|floatformat:"0g" }} €</strong>
+                <small>{% blocktranslate count months=g.months %}en {{ months }} mois{% plural %}en {{ months }} mois{% endblocktranslate %} · {% translate "jusqu'au" %} {{ g.goal.target_date|date:"j F Y" }}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Tes versements" %}</span>
+                <strong>{{ g.contributions|floatformat:"0g" }} €</strong>
+                <small>{% translate "au total, d'ici la date" %}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Intérêts gagnés" %}</span>
+                <strong class="dash-savings">+{{ g.interest|floatformat:"0g" }} €</strong>
+                <small>{% translate "à" %} {{ g.goal.expected_return|floatformat:"-1" }} {% translate "%/an" %}</small>
+            </div>
+        </div>
+
+        <div class="goal-feasibility goal-is-{{ g.status }} mt-4">
+            <div class="goal-feasibility-text">
+                <strong>{{ g.status_label }}</strong>
+                <span>{{ g.message }}</span>
+                {% if g.status == "off" and g.reachable_by_date %}
+                <span>{% translate "En épargnant tout ce qu'il te reste chaque mois, tu aurais environ" %} <strong>{{ g.reachable_by_date|floatformat:"0g" }} €</strong> {% translate "à la date visée" %}{% if g.capacity_reach %}, {% translate "et l'objectif complet en" %} <strong>{{ g.capacity_reach.label }}</strong>{% endif %}.</span>
+                {% endif %}
+                {% if g.pace_reach and g.status != "done" %}
+                <span>{% translate "À ton rythme actuel, tu l'atteindrais en" %} <strong>{{ g.pace_reach.label }}</strong>.</span>
+                {% elif g.status != "done" and g.habits.months %}
+                <span>{% translate "À ton rythme actuel, tu ne l'atteindrais pas dans les 60 prochaines années." %}</span>
+                {% endif %}
+            </div>
+
+            {% if g.status != "done" and g.habits.months %}
+            <div class="goal-bars">
+                <div class="goal-bar">
+                    <div class="goal-bar-head"><span>{% translate "Tu épargnes en moyenne" %}</span><strong>{{ g.habits.savings|floatformat:"0g" }} € / {% translate "mois" %}</strong></div>
+                    <div class="goal-bar-track"><span class="is-pace" style="width: {{ g.pace_percent }}%"></span></div>
+                </div>
+                <div class="goal-bar">
+                    <div class="goal-bar-head"><span>{% translate "Il te reste après tes charges" %}</span><strong>{{ g.habits.capacity|floatformat:"0g" }} € / {% translate "mois" %}</strong></div>
+                    <div class="goal-bar-track"><span class="is-capacity" style="width: {{ g.capacity_percent }}%"></span></div>
+                </div>
+                <small class="text-muted">{% blocktranslate with needed=g.needed|floatformat:"0g" count months=g.habits.months %}Barre pleine = les {{ needed }} € nécessaires · moyenne du dernier mois complet{% plural %}Barre pleine = les {{ needed }} € nécessaires · moyenne des {{ months }} derniers mois complets{% endblocktranslate %}</small>
+            </div>
+            {% elif g.status != "done" %}
+            <p class="text-muted small mb-0">{% translate "Pas encore assez d'opérations pour juger : importe ou saisis quelques mois de revenus et de dépenses." %}</p>
+            {% endif %}
+        </div>
+
+        {% if g.status != "done" and g.months %}
+        <div class="goal-apply mt-3">
+            <span class="text-muted small">{% translate "Ton objectif d'épargne mensuel du budget :" %} <strong>{{ g.monthly_target|default:0|floatformat:"0g" }} €</strong>{% if g.monthly_target >= g.needed %} · {% translate "il suffit pour cet objectif." %}{% endif %}</span>
+            {% if g.monthly_target < g.needed %}
+            <form method="post" action="{% url 'finance:apply_global_goal_monthly' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm">{% blocktranslate with amount=g.needed|floatformat:"0g" %}Passer à {{ amount }} € par mois{% endblocktranslate %}</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="dash-chart mt-4"><canvas id="goalChart" role="img" aria-label="{% translate "Projection de ton épargne jusqu'à la date visée" %}"></canvas></div>
+        {% endwith %}
+        {% endif %}
+    </div>
 
     {# ---------- Objectif mensuel ---------- #}
     <div class="content-panel budget-panel mb-4">
         <div class="budget-panel-head">
             <div>
-                <h2 class="h5 mb-1">Épargne mensuelle</h2>
-                <p class="text-muted small mb-0">{{ month_label }} · versements vers « Épargne & placements »</p>
+                <h2 class="h5 mb-1">{% translate "Épargne mensuelle" %}</h2>
+                <p class="text-muted small mb-0">{{ month_label }} {% translate "· versements vers « Épargne & placements »" %}</p>
             </div>
         </div>
 
@@ -23,19 +138,19 @@
                         <label class="form-label" for="{{ savings_goal_form.savings_target_monthly.id_for_label }}">{{ savings_goal_form.savings_target_monthly.label }}</label>
                         {{ savings_goal_form.savings_target_monthly }}
                     </div>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="submit" class="btn btn-primary">{% translate "Enregistrer" %}</button>
                 </form>
             </div>
             <div class="col-12 col-md-7">
                 <div class="budget-goal-meter">
                     <div class="budget-goal-meter-head">
-                        <span>Épargné ce mois</span>
+                        <span>{% translate "Épargné ce mois" %}</span>
                         <strong>{{ savings_month.total }} € <small>/ {{ savings_target }} €</small></strong>
                     </div>
                     <div class="budget-progress is-savings"><span style="width: {{ savings_percent }}%"></span></div>
                     <div class="budget-goal-split">
-                        <span>Projets : {{ savings_month.projects }} €</span>
-                        <span>Épargne libre : {{ savings_month.free }} €</span>
+                        <span>{% translate "Projets :" %} {{ savings_month.projects }} €</span>
+                        <span>{% translate "Épargne libre :" %} {{ savings_month.free }} €</span>
                     </div>
                 </div>
             </div>
@@ -44,11 +159,11 @@
         {% if projects.active_count %}
         <div class="budget-callout {% if projects_exceed_target %}is-warning{% endif %} mt-4 mb-0">
             {% if projects_exceed_target %}
-            <strong>Tes projets demandent {{ projects.monthly_needed }} € par mois</strong>
-            <span>C'est plus que ton objectif d'épargne ({{ savings_target }} €). Augmente ton objectif ou repousse une échéance.</span>
+            <strong>{% translate "Tes projets demandent" %} {{ projects.monthly_needed }} {% translate "€ par mois" %}</strong>
+            <span>{% translate "C'est plus que ton objectif d'épargne (" %}{{ savings_target }} {% translate "€). Augmente ton objectif ou repousse une échéance." %}</span>
             {% else %}
-            <strong>{{ projects.monthly_needed }} € par mois pour tes projets</strong>
-            <span>Il te reste {{ free_savings_target }} € d'épargne libre dans ton objectif.</span>
+            <strong>{{ projects.monthly_needed }} {% translate "€ par mois pour tes projets" %}</strong>
+            <span>{% translate "Il te reste" %} {{ free_savings_target }} {% translate "€ d'épargne libre dans ton objectif." %}</span>
             {% endif %}
         </div>
         {% endif %}
@@ -57,15 +172,15 @@
     {# ---------- Projets ---------- #}
     <div class="budget-panel-head mb-3">
         <div>
-            <h2 class="h5 mb-1">Projets</h2>
-            <p class="text-muted small mb-0">Affecte un versement d'épargne à un projet quand tu l'enregistres : la progression se met à jour toute seule.</p>
+            <h2 class="h5 mb-1">{% translate "Projets" %}</h2>
+            <p class="text-muted small mb-0">{% translate "Affecte un versement d'épargne à un projet quand tu l'enregistres : la progression se met à jour toute seule." %}</p>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newProject" aria-expanded="false">+ Nouveau projet</button>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newProject" aria-expanded="false">{% translate "+ Nouveau projet" %}</button>
     </div>
 
     <div class="collapse {% if not projects.projects %}show{% endif %}" id="newProject">
         <div class="content-panel budget-panel mb-4">
-            <h3 class="h6 mb-3">Nouveau projet</h3>
+            <h3 class="h6 mb-3">{% translate "Nouveau projet" %}</h3>
             <form method="post" action="{% url 'finance:add_savings_project' %}" class="row g-3 js-project-form">
                 {% csrf_token %}
                 <div class="col-12 col-md-4">
@@ -85,7 +200,7 @@
                     {{ project_form.initial_amount }}
                 </div>
                 <div class="col-12 d-flex flex-wrap align-items-center gap-3">
-                    <button type="submit" class="btn btn-primary">Créer le projet</button>
+                    <button type="submit" class="btn btn-primary">{% translate "Créer le projet" %}</button>
                     <span class="text-muted small js-project-preview"></span>
                 </div>
             </form>
@@ -100,26 +215,26 @@
             <header class="budget-project-head">
                 <div>
                     <h3 class="h5 mb-1">{{ project.name }}</h3>
-                    <p class="text-muted small mb-0">Pour le {{ project.target_date|date:"j F Y" }}</p>
+                    <p class="text-muted small mb-0">{% translate "Pour le" %} {{ project.target_date|date:"j F Y" }}</p>
                 </div>
                 <span class="budget-badge is-{{ item.status }}">{{ item.status_label }}</span>
             </header>
 
             <div class="budget-project-amounts">
                 <strong>{{ item.saved }} €</strong>
-                <span>sur {{ project.target_amount }} €</span>
+                <span>{% translate "sur" %} {{ project.target_amount }} €</span>
             </div>
             <div class="budget-progress is-savings"><span style="width: {{ item.percent }}%"></span></div>
 
             <dl class="budget-project-stats">
-                <div><dt>Reste à épargner</dt><dd>{{ item.remaining }} €</dd></div>
-                <div><dt>Mois restants</dt><dd>{{ item.months_left }}</dd></div>
-                <div class="is-highlight"><dt>À mettre de côté</dt><dd>{{ item.monthly_needed }} € / mois</dd></div>
-                <div><dt>Versé ce mois</dt><dd>{{ item.contributed_this_month }} €</dd></div>
+                <div><dt>{% translate "Reste à épargner" %}</dt><dd>{{ item.remaining }} €</dd></div>
+                <div><dt>{% translate "Mois restants" %}</dt><dd>{{ item.months_left }}</dd></div>
+                <div class="is-highlight"><dt>{% translate "À mettre de côté" %}</dt><dd>{{ item.monthly_needed }} {% translate "€ / mois" %}</dd></div>
+                <div><dt>{% translate "Versé ce mois" %}</dt><dd>{{ item.contributed_this_month }} €</dd></div>
             </dl>
 
             <details class="budget-project-edit">
-                <summary>Modifier</summary>
+                <summary>{% translate "Modifier" %}</summary>
                 {% with form=item.edit_form %}
                 <form method="post" action="{% url 'finance:edit_savings_project' project.pk %}" class="row g-2 mt-1">
                     {% csrf_token %}
@@ -143,12 +258,12 @@
                         </div>
                     </div>
                     <div class="col-12 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>
+                        <button type="submit" class="btn btn-primary btn-sm">{% translate "Enregistrer" %}</button>
                     </div>
                 </form>
-                <form method="post" action="{% url 'finance:delete_savings_project' project.pk %}" class="mt-2" onsubmit="return confirm('Supprimer ce projet ? Les versements restent dans ton historique.');">
+                <form method="post" action="{% url 'finance:delete_savings_project' project.pk %}" class="mt-2" onsubmit="return confirm('{{ _("Supprimer ce projet ? Les versements restent dans ton historique.")|escapejs }}');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">Supprimer le projet</button>
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">{% translate "Supprimer le projet" %}</button>
                 </form>
                 {% endwith %}
             </details>
@@ -161,13 +276,57 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if global_goal %}
+{% include "finance/_charts_js.html" %}
+{{ global_goal.chart|json_script:"goal-data" }}
+<script>
+    (function () {
+        var data = JSON.parse(document.getElementById('goal-data').textContent);
+        var charts = window.BW && window.BW.charts;
+        var canvas = document.getElementById('goalChart');
+        if (!charts || !canvas) return;
+        var lang = document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR';
+        var monthFormat = new Intl.DateTimeFormat(lang, { month: 'short', year: 'numeric' });
+        function labelDate(label) { var p = label.split('-'); return new Date(+p[0], +p[1] - 1, 1); }
+        charts.create(canvas, function (p) {
+            var scales = charts.scales(p);
+            scales.x.ticks.maxTicksLimit = 8;
+            scales.x.ticks.callback = function (value, index) { return monthFormat.format(labelDate(data.labels[index])); };
+            return {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: '{{ _("Avec le plan")|escapejs }}', data: data.plan, borderColor: p.savings, backgroundColor: charts.alpha(p.savings, 0.12), fill: 'origin', borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                        { label: '{{ _("À ton rythme actuel")|escapejs }}', data: data.pace, borderColor: p.muted, borderDash: [5, 4], borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 },
+                        { label: '{{ _("Objectif")|escapejs }}', data: data.labels.map(function () { return data.target; }), borderColor: p.budget, borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, fill: false }
+                    ]
+                },
+                options: {
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) { return monthFormat.format(labelDate(data.labels[items[0].dataIndex])); },
+                                label: charts.euroLabel
+                            }
+                        }
+                    },
+                    scales: scales
+                }
+            };
+        });
+    })();
+</script>
+{% endif %}
 <script>
     // Aperçu : combien mettre de côté par mois avant même de créer le projet
     document.addEventListener('DOMContentLoaded', function () {
         var form = document.querySelector('.js-project-form');
         if (!form) return;
         var preview = form.querySelector('.js-project-preview');
-        var money = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+        var money = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { maximumFractionDigits: 0 });
 
         function update() {
             var target = parseFloat(form.querySelector('[name="target_amount"]').value) || 0;
@@ -177,9 +336,9 @@
             var now = new Date();
             var end = new Date(dateValue);
             var months = (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth()) + 1;
-            if (months < 1) { preview.textContent = 'La date est déjà passée.'; return; }
+            if (months < 1) { preview.textContent = '{{ _("La date est déjà passée.")|escapejs }}'; return; }
             var monthly = Math.max(0, target - initial) / months;
-            preview.textContent = '≈ ' + money.format(Math.ceil(monthly)) + ' € à mettre de côté par mois pendant ' + months + ' mois';
+            preview.textContent = '≈ ' + money.format(Math.ceil(monthly)) + '{{ _(" € à mettre de côté par mois pendant ")|escapejs }}' + months + '{{ _(" mois")|escapejs }}';
         }
 
         form.addEventListener('input', update);

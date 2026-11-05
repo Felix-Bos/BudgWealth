@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.utils.formats import date_format
 
 from datetime import date
 
@@ -11,6 +12,7 @@ from .models import (
     BankConnection,
     BudgetPlan,
     BudgetSection,
+    SavingsGoal,
     Category,
     EntryType,
     IncomeMode,
@@ -28,15 +30,10 @@ from .models import (
     Transaction,
 )
 from .wealth import BALANCE_KIND_CHOICES, DEFAULT_CEILINGS, PORTFOLIO_KIND_CHOICES
-
-MONTH_NAMES = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-]
-
+from django.utils.translation import gettext as _, gettext_lazy
 
 def month_label(value):
-    return f"{MONTH_NAMES[value.month - 1]} {value.year}"
+    return date_format(value, "F Y")
 
 
 class BootstrapFormMixin:
@@ -116,25 +113,25 @@ class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelFo
     type_field_name = "transaction_type"
     create_recurring = forms.BooleanField(
         required=False,
-        label="Rendre cette ligne récurrente",
+        label=gettext_lazy("Rendre cette ligne récurrente"),
     )
     recurring_kind = forms.ChoiceField(
         choices=RecurrenceKind.choices,
         initial=RecurrenceKind.SUBSCRIPTION,
         required=False,
-        label="Type de récurrence",
+        label=gettext_lazy("Type de récurrence"),
     )
     frequency_interval = forms.IntegerField(
         min_value=1,
         initial=1,
         required=False,
-        label="Tous les",
+        label=gettext_lazy("Tous les"),
     )
     frequency_unit = forms.ChoiceField(
         choices=RecurrenceUnit.choices,
         initial=RecurrenceUnit.MONTH,
         required=False,
-        label="Période",
+        label=gettext_lazy("Période"),
     )
 
     class Meta:
@@ -150,8 +147,8 @@ class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelFo
             "savings_project",
         ]
         labels = {
-            "paid_with_meal_voucher": "Payé en tickets restaurant",
-            "savings_project": "Projet d'épargne",
+            "paid_with_meal_voucher": gettext_lazy("Payé en tickets restaurant"),
+            "savings_project": gettext_lazy("Projet d'épargne"),
         }
         widgets = {
             "transaction_date": forms.DateInput(attrs={"type": "date"}),
@@ -170,7 +167,7 @@ class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelFo
             user=user, is_done=False
         )
         self.fields["savings_project"].required = False
-        self.fields["savings_project"].empty_label = "Épargne libre (aucun projet)"
+        self.fields["savings_project"].empty_label = _("Épargne libre (aucun projet)")
         self._style_fields()
         self._setup_entry_type_awareness(user)
         self.fields["paid_with_meal_voucher"].widget.attrs["class"] += " js-meal-voucher"
@@ -197,7 +194,7 @@ class TransactionForm(BootstrapFormMixin, EntryTypeAwareFormMixin, forms.ModelFo
         ):
             self.add_error(
                 "paid_with_meal_voucher",
-                "Les tickets restaurant ne peuvent payer que des dépenses d'alimentation.",
+                _("Les tickets restaurant ne peuvent payer que des dépenses d'alimentation."),
             )
 
         # Un projet ne reçoit que des versements d'épargne
@@ -277,7 +274,9 @@ class MonthlyAmountForm(BootstrapFormMixin, forms.Form):
 class CategoryForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Category
-        fields = ["name", "entry_type"]
+        fields = ["name", "entry_type", "budget_section"]
+        labels = {"budget_section": gettext_lazy("Type dans le budget")}
+        help_texts = {"budget_section": gettext_lazy("Dépenses uniquement : type de la catégorie tant qu'elle n'a pas de sous-catégorie.")}
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -295,7 +294,8 @@ class CategoryForm(BootstrapFormMixin, forms.ModelForm):
 class SubcategoryForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Subcategory
-        fields = ["category", "name"]
+        fields = ["category", "name", "budget_section"]
+        labels = {"budget_section": gettext_lazy("Type dans le budget")}
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -306,17 +306,17 @@ class SubcategoryForm(BootstrapFormMixin, forms.ModelForm):
 class BankConnectionForm(BootstrapFormMixin, forms.ModelForm):
     # Plus long que le champ du modèle : on accepte "123 456 789 01", nettoyé ensuite
     login_id = forms.CharField(
-        label="Identifiant Crédit Agricole",
+        label=gettext_lazy("Identifiant Crédit Agricole"),
         max_length=20,
         widget=forms.TextInput(
-            attrs={"inputmode": "numeric", "autocomplete": "off", "placeholder": "11 chiffres"}
+            attrs={"inputmode": "numeric", "autocomplete": "off", "placeholder": gettext_lazy("11 chiffres")}
         ),
     )
 
     class Meta:
         model = BankConnection
         fields = ["postal_code", "login_id"]
-        labels = {"postal_code": "Code postal de l'agence"}
+        labels = {"postal_code": gettext_lazy("Code postal de l'agence")}
         widgets = {
             "postal_code": forms.TextInput(
                 attrs={"inputmode": "numeric", "autocomplete": "postal-code", "placeholder": "75001"}
@@ -330,13 +330,13 @@ class BankConnectionForm(BootstrapFormMixin, forms.ModelForm):
     def clean_postal_code(self):
         value = self.cleaned_data["postal_code"].strip()
         if not re.fullmatch(r"\d{5}", value):
-            raise forms.ValidationError("Le code postal doit contenir 5 chiffres.")
+            raise forms.ValidationError(_("Le code postal doit contenir 5 chiffres."))
         return value
 
     def clean_login_id(self):
         value = re.sub(r"\s", "", self.cleaned_data["login_id"])
         if not re.fullmatch(r"\d{11}", value):
-            raise forms.ValidationError("L'identifiant doit contenir 11 chiffres.")
+            raise forms.ValidationError(_("L'identifiant doit contenir 11 chiffres."))
         return value
 
 
@@ -355,22 +355,22 @@ def valid_from_choices(today=None):
         value = date(year, month, 1)
         label = month_label(value)
         if delta == 0:
-            label += " (ce mois-ci)"
+            label += _(" (ce mois-ci)")
         choices.append((value.isoformat(), label))
     return choices
 
 
 class BudgetPlanForm(BootstrapFormMixin, forms.ModelForm):
-    valid_from = forms.ChoiceField(label="Appliquer à partir de")
+    valid_from = forms.ChoiceField(label=gettext_lazy("Appliquer à partir de"))
 
     class Meta:
         model = BudgetPlan
         fields = ["income_mode", "manual_income", "income_average_months", "savings_target_monthly"]
         labels = {
-            "income_mode": "Revenu de référence",
-            "manual_income": "Montant (€)",
-            "income_average_months": "Moyenne sur (mois)",
-            "savings_target_monthly": "Épargne visée par mois (€)",
+            "income_mode": gettext_lazy("Revenu de référence"),
+            "manual_income": gettext_lazy("Montant (€)"),
+            "income_average_months": gettext_lazy("Moyenne sur (mois)"),
+            "savings_target_monthly": gettext_lazy("Épargne visée par mois (€)"),
         }
         widgets = {
             "manual_income": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
@@ -391,22 +391,22 @@ class BudgetPlanForm(BootstrapFormMixin, forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("income_mode") == IncomeMode.MANUAL and not cleaned_data.get("manual_income"):
-            self.add_error("manual_income", "Indique ton revenu mensuel.")
+            self.add_error("manual_income", _("Indique ton revenu mensuel."))
         return cleaned_data
 
 
 class BudgetLineForm(BootstrapFormMixin, forms.Form):
-    section = forms.ChoiceField(choices=BudgetSection.choices, label="Section")
-    category = forms.ModelChoiceField(queryset=Category.objects.none(), label="Catégorie")
+    section = forms.ChoiceField(choices=BudgetSection.choices, label=gettext_lazy("Section"))
+    category = forms.ModelChoiceField(queryset=Category.objects.none(), label=gettext_lazy("Catégorie"))
     subcategory = forms.ModelChoiceField(
         queryset=Subcategory.objects.none(), required=False, label="Sous-catégorie"
     )
-    label = forms.CharField(max_length=150, required=False, label="Libellé")
+    label = forms.CharField(max_length=150, required=False, label=gettext_lazy("Libellé"))
     amount = forms.DecimalField(
         max_digits=12,
         decimal_places=2,
         min_value=0,
-        label="Montant / mois",
+        label=gettext_lazy("Montant / mois"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
 
@@ -424,28 +424,57 @@ class BudgetLineForm(BootstrapFormMixin, forms.Form):
         self.fields["category"].widget.attrs["class"] += " js-category-select"
         self.fields["subcategory"].widget.attrs["class"] += " js-subcategory-select"
         self.fields["amount"].widget.attrs["class"] += " js-line-amount"
-        self.fields["label"].widget.attrs["placeholder"] = "Facultatif"
+        self.fields["label"].widget.attrs["placeholder"] = _("Facultatif")
 
-        category_by_subcategory = dict(
-            Subcategory.objects.filter(category__user=user).values_list("id", "category_id")
-        )
-        widget = self.fields["subcategory"].widget
-        original_create_option = widget.create_option
+        # Chaque section ne propose que les catégories / sous-catégories de son type
+        subcategories = {
+            sub_id: (category_id, section)
+            for sub_id, category_id, section in Subcategory.objects.filter(category__user=user)
+            .values_list("id", "category_id", "budget_section")
+        }
+        self.category_sections = {
+            category.id: category.budget_sections()
+            for category in self.fields["category"].queryset.prefetch_related("subcategories")
+        }
 
-        def create_option(name, value, label, selected, index, subindex=None, attrs=None):
-            option = original_create_option(name, value, label, selected, index, subindex, attrs)
-            if value:
-                option["attrs"]["data-category"] = category_by_subcategory.get(int(str(value)))
-            return option
+        def tag_options(widget, tag):
+            original_create_option = widget.create_option
 
-        widget.create_option = create_option
+            def create_option(name, value, label, selected, index, subindex=None, attrs=None):
+                option = original_create_option(name, value, label, selected, index, subindex, attrs)
+                if value:
+                    tag(option["attrs"], int(str(value)))
+                return option
+
+            widget.create_option = create_option
+
+        def tag_category(attrs, pk):
+            attrs["data-sections"] = " ".join(sorted(self.category_sections.get(pk, ())))
+
+        def tag_subcategory(attrs, pk):
+            category_id, section = subcategories.get(pk, (None, None))
+            attrs["data-category"] = category_id
+            attrs["data-section"] = section
+
+        tag_options(self.fields["category"].widget, tag_category)
+        tag_options(self.fields["subcategory"].widget, tag_subcategory)
 
     def clean(self):
         cleaned_data = super().clean()
+        section = cleaned_data.get("section")
         category = cleaned_data.get("category")
         subcategory = cleaned_data.get("subcategory")
         if category and subcategory and subcategory.category_id != category.id:
-            cleaned_data["subcategory"] = None
+            cleaned_data["subcategory"] = subcategory = None
+        label = dict(BudgetSection.choices).get(section, "")
+        if subcategory and section and subcategory.budget_section != section:
+            self.add_error("subcategory", _("« %(name)s » est classée en %(type)s, pas en %(section)s (modifiable dans Paramètres → Catégories).") % {
+                "name": subcategory, "type": subcategory.get_budget_section_display().lower(), "section": str(label).lower(),
+            })
+        elif category and not subcategory and section and section not in self.category_sections.get(category.id, ()):
+            self.add_error("category", _("« %(name)s » n'a rien à mettre en %(section)s : choisis une autre catégorie ou change le type de ses sous-catégories dans Paramètres.") % {
+                "name": category, "section": str(label).lower(),
+            })
         return cleaned_data
 
 
@@ -456,7 +485,7 @@ class SavingsGoalForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = BudgetPlan
         fields = ["savings_target_monthly"]
-        labels = {"savings_target_monthly": "Épargne visée chaque mois (€)"}
+        labels = {"savings_target_monthly": gettext_lazy("Épargne visée chaque mois (€)")}
         widgets = {
             "savings_target_monthly": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
         }
@@ -466,19 +495,83 @@ class SavingsGoalForm(BootstrapFormMixin, forms.ModelForm):
         self._style_fields()
 
 
+class CurrentBalanceForm(BootstrapFormMixin, forms.Form):
+    date = forms.DateField(
+        label=gettext_lazy("Date du solde"),
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
+    balance = forms.DecimalField(
+        label=gettext_lazy("Solde du compte courant (€)"), max_digits=12, decimal_places=2,
+        widget=forms.NumberInput(attrs={"step": "0.01"}),
+    )
+    safety_buffer = forms.DecimalField(
+        label=gettext_lazy("Marge de sécurité (€)"), max_digits=12, decimal_places=2, min_value=0,
+        help_text=gettext_lazy("Le solde sous lequel tu ne veux pas descendre."),
+        widget=forms.NumberInput(attrs={"step": "10", "min": "0"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style_fields()
+
+    def clean_date(self):
+        value = self.cleaned_data["date"]
+        if value > date.today():
+            raise forms.ValidationError(_("Le solde ne peut pas être daté dans le futur."))
+        return value
+
+
+class GlobalSavingsGoalForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = SavingsGoal
+        fields = ["target_amount", "target_date", "expected_return", "extra_amount"]
+        labels = {
+            "target_amount": gettext_lazy("Montant visé (€)"),
+            "target_date": gettext_lazy("Pour le"),
+            "expected_return": gettext_lazy("Rendement espéré (%/an)"),
+            "extra_amount": gettext_lazy("Épargne hors app (€)"),
+        }
+        help_texts = {
+            "expected_return": gettext_lazy("Livret A ≈ 2,4 %, fonds euros ≈ 2,5 %, actions ≈ 5–7 % sur longue durée. 0 = sans rendement."),
+            "extra_amount": gettext_lazy("Ce que tu as ailleurs : autre banque, espèces…"),
+        }
+        widgets = {
+            "target_amount": forms.NumberInput(attrs={"step": "100", "min": "0"}),
+            "target_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "expected_return": forms.NumberInput(attrs={"step": "0.1", "min": "0", "max": "20"}),
+            "extra_amount": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style_fields()
+
+    def clean_target_date(self):
+        value = self.cleaned_data["target_date"]
+        if value <= date.today():
+            raise forms.ValidationError(_("Choisis une date dans le futur."))
+        return value
+
+    def clean_expected_return(self):
+        value = self.cleaned_data["expected_return"]
+        if value < 0 or value > 20:
+            raise forms.ValidationError(_("Entre 0 et 20 %."))
+        return value
+
+
 class SavingsProjectForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = SavingsProject
         fields = ["name", "target_amount", "target_date", "initial_amount", "is_done"]
         labels = {
-            "name": "Projet",
-            "target_amount": "Montant à réunir (€)",
-            "target_date": "Pour quand ?",
-            "initial_amount": "Déjà de côté (€)",
-            "is_done": "Projet terminé",
+            "name": gettext_lazy("Projet"),
+            "target_amount": gettext_lazy("Montant à réunir (€)"),
+            "target_date": gettext_lazy("Pour quand ?"),
+            "initial_amount": gettext_lazy("Déjà de côté (€)"),
+            "is_done": gettext_lazy("Projet terminé"),
         }
         widgets = {
-            "name": forms.TextInput(attrs={"placeholder": "Ex. Vélo électrique"}),
+            "name": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. Vélo électrique")}),
             "target_amount": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "target_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "initial_amount": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
@@ -491,7 +584,7 @@ class SavingsProjectForm(BootstrapFormMixin, forms.ModelForm):
     def clean_target_amount(self):
         value = self.cleaned_data["target_amount"]
         if value <= 0:
-            raise forms.ValidationError("Le montant doit être positif.")
+            raise forms.ValidationError(_("Le montant doit être positif."))
         return value
 
 
@@ -500,19 +593,19 @@ class MealVoucherSettingsForm(BootstrapFormMixin, forms.ModelForm):
         model = MealVoucherSettings
         fields = ["enabled", "face_value", "employee_share_percent", "days_per_month"]
         labels = {
-            "enabled": "J'ai des tickets restaurant",
-            "face_value": "Valeur d'un ticket (€)",
-            "employee_share_percent": "Part payée par moi (%)",
-            "days_per_month": "Tickets par mois",
+            "enabled": gettext_lazy("J'ai des tickets restaurant"),
+            "face_value": gettext_lazy("Valeur d'un ticket (€)"),
+            "employee_share_percent": gettext_lazy("Part payée par moi (%)"),
+            "days_per_month": gettext_lazy("Tickets par mois"),
         }
         help_texts = {
-            "employee_share_percent": "Retenue sur ton salaire, souvent 40 à 50 %.",
-            "days_per_month": "Laisse vide pour compter les jours ouvrés du mois.",
+            "employee_share_percent": gettext_lazy("Retenue sur ton salaire, souvent 40 à 50 %."),
+            "days_per_month": gettext_lazy("Laisse vide pour compter les jours ouvrés du mois."),
         }
         widgets = {
             "face_value": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "employee_share_percent": forms.NumberInput(attrs={"step": "0.01", "min": "0", "max": "100"}),
-            "days_per_month": forms.NumberInput(attrs={"min": "0", "max": "31", "placeholder": "Auto"}),
+            "days_per_month": forms.NumberInput(attrs={"min": "0", "max": "31", "placeholder": gettext_lazy("Auto")}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -528,7 +621,7 @@ class BalanceAccountForm(BootstrapFormMixin, forms.ModelForm):
     """Livret, PEL, assurance vie... : un support suivi par son solde."""
 
     balance = forms.DecimalField(
-        label="Solde actuel (€)",
+        label=gettext_lazy("Solde actuel (€)"),
         min_value=0,
         max_digits=12,
         decimal_places=2,
@@ -540,20 +633,20 @@ class BalanceAccountForm(BootstrapFormMixin, forms.ModelForm):
         model = SavingsAccount
         fields = ["kind", "name", "institution", "interest_rate", "ceiling"]
         labels = {
-            "kind": "Type",
-            "name": "Nom",
-            "institution": "Banque",
-            "interest_rate": "Taux annuel (%)",
-            "ceiling": "Plafond (€)",
+            "kind": gettext_lazy("Type"),
+            "name": gettext_lazy("Nom"),
+            "institution": gettext_lazy("Banque"),
+            "interest_rate": gettext_lazy("Taux annuel (%)"),
+            "ceiling": gettext_lazy("Plafond (€)"),
         }
         help_texts = {
-            "ceiling": "Laisse vide pour le plafond réglementaire.",
+            "ceiling": gettext_lazy("Laisse vide pour le plafond réglementaire."),
         }
         widgets = {
-            "name": forms.TextInput(attrs={"placeholder": "Ex. Livret A"}),
-            "institution": forms.TextInput(attrs={"placeholder": "Ex. Crédit Agricole"}),
-            "interest_rate": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Ex. 1,70"}),
-            "ceiling": forms.NumberInput(attrs={"step": "1", "min": "0", "placeholder": "Auto"}),
+            "name": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. Livret A")}),
+            "institution": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. Crédit Agricole")}),
+            "interest_rate": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": gettext_lazy("Ex. 1,70")}),
+            "ceiling": forms.NumberInput(attrs={"step": "1", "min": "0", "placeholder": gettext_lazy("Auto")}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -563,7 +656,7 @@ class BalanceAccountForm(BootstrapFormMixin, forms.ModelForm):
         self.fields["name"].required = False
         if self.instance.pk:
             del self.fields["balance"]
-            self.fields["ceiling"].help_text = "Laisse vide s'il n'y a pas de plafond."
+            self.fields["ceiling"].help_text = _("Laisse vide s'il n'y a pas de plafond.")
         self._style_fields()
 
     def clean(self):
@@ -583,19 +676,19 @@ class PortfolioAccountForm(BootstrapFormMixin, forms.ModelForm):
         model = SavingsAccount
         fields = ["kind", "name", "institution", "opened_on", "cash_balance"]
         labels = {
-            "kind": "Type",
-            "name": "Nom",
-            "institution": "Courtier / banque",
-            "opened_on": "Date d'ouverture",
-            "cash_balance": "Liquidités (€)",
+            "kind": gettext_lazy("Type"),
+            "name": gettext_lazy("Nom"),
+            "institution": gettext_lazy("Courtier / banque"),
+            "opened_on": gettext_lazy("Date d'ouverture"),
+            "cash_balance": gettext_lazy("Liquidités (€)"),
         }
         help_texts = {
-            "opened_on": "Après 5 ans, le PEA garde son avantage fiscal.",
-            "cash_balance": "Espèces non investies sur le compte.",
+            "opened_on": gettext_lazy("Après 5 ans, le PEA garde son avantage fiscal."),
+            "cash_balance": gettext_lazy("Espèces non investies sur le compte."),
         }
         widgets = {
-            "name": forms.TextInput(attrs={"placeholder": "Ex. PEA Boursorama"}),
-            "institution": forms.TextInput(attrs={"placeholder": "Ex. Boursorama, Fortuneo, Trade Republic"}),
+            "name": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. PEA Boursorama")}),
+            "institution": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. Boursorama, Fortuneo, Trade Republic")}),
             "opened_on": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "cash_balance": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
         }
@@ -629,7 +722,7 @@ class BalanceSnapshotForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = BalanceSnapshot
         fields = ["date", "balance"]
-        labels = {"date": "Date du solde", "balance": "Nouveau solde (€)"}
+        labels = {"date": gettext_lazy("Date du solde"), "balance": gettext_lazy("Nouveau solde (€)")}
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "balance": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
@@ -642,7 +735,7 @@ class BalanceSnapshotForm(BootstrapFormMixin, forms.ModelForm):
     def clean_date(self):
         value = self.cleaned_data["date"]
         if value > date.today():
-            raise forms.ValidationError("La date ne peut pas être dans le futur.")
+            raise forms.ValidationError(_("La date ne peut pas être dans le futur."))
         return value
 
 
@@ -660,23 +753,23 @@ class PortfolioOperationForm(BootstrapFormMixin, forms.ModelForm):
         model = PortfolioOperation
         fields = ["account", "kind", "date", "quantity", "unit_price", "fees", "amount", "note"]
         labels = {
-            "account": "Compte",
-            "kind": "Opération",
-            "date": "Date",
-            "quantity": "Quantité",
-            "unit_price": "Prix unitaire (€)",
-            "fees": "Frais (€)",
-            "amount": "Montant (€)",
-            "note": "Libellé",
+            "account": gettext_lazy("Compte"),
+            "kind": gettext_lazy("Opération"),
+            "date": gettext_lazy("Date"),
+            "quantity": gettext_lazy("Quantité"),
+            "unit_price": gettext_lazy("Prix unitaire (€)"),
+            "fees": gettext_lazy("Frais (€)"),
+            "amount": gettext_lazy("Montant (€)"),
+            "note": gettext_lazy("Libellé"),
         }
         widgets = {
             "kind": forms.RadioSelect,
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "quantity": forms.NumberInput(attrs={"step": "any", "min": "0", "placeholder": "Ex. 10"}),
+            "quantity": forms.NumberInput(attrs={"step": "any", "min": "0", "placeholder": gettext_lazy("Ex. 10")}),
             "unit_price": forms.NumberInput(attrs={"step": "any", "min": "0", "placeholder": "0,00"}),
             "fees": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "0,00"}),
             "amount": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "0,00"}),
-            "note": forms.TextInput(attrs={"placeholder": "Ex. Droits de garde 2026"}),
+            "note": forms.TextInput(attrs={"placeholder": gettext_lazy("Ex. Droits de garde 2026")}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -689,10 +782,11 @@ class PortfolioOperationForm(BootstrapFormMixin, forms.ModelForm):
         )
         self.fields["account"].empty_label = None
         self.fields["kind"].choices = [
-            (OperationKind.BUY, "Achat"),
-            (OperationKind.SELL, "Vente"),
-            (OperationKind.DIVIDEND, "Dividende"),
-            (OperationKind.FEE, "Frais"),
+            (OperationKind.BUY, _("Achat")),
+            (OperationKind.POSITION, _("Déjà détenu")),
+            (OperationKind.SELL, _("Vente")),
+            (OperationKind.DIVIDEND, _("Dividende")),
+            (OperationKind.FEE, _("Frais")),
         ]
         self.fields["fees"].required = False
         for name, field in self.fields.items():
@@ -704,23 +798,26 @@ class PortfolioOperationForm(BootstrapFormMixin, forms.ModelForm):
         kind = cleaned_data.get("kind")
         day = cleaned_data.get("date")
         if day and day > date.today():
-            self.add_error("date", "La date ne peut pas être dans le futur.")
+            self.add_error("date", _("La date ne peut pas être dans le futur."))
         if cleaned_data.get("fees") is None:
             cleaned_data["fees"] = 0
 
-        if kind in {OperationKind.BUY, OperationKind.SELL, OperationKind.DIVIDEND} and not cleaned_data.get("symbol"):
-            raise forms.ValidationError("Choisis un titre dans la recherche (ISIN, nom ou ticker).")
+        if kind in {OperationKind.BUY, OperationKind.POSITION, OperationKind.SELL, OperationKind.DIVIDEND} and not cleaned_data.get("symbol"):
+            raise forms.ValidationError(_("Choisis un titre dans la recherche (ISIN, nom ou ticker)."))
 
-        if kind in {OperationKind.BUY, OperationKind.SELL}:
+        if kind in {OperationKind.BUY, OperationKind.POSITION, OperationKind.SELL}:
             for name in ("quantity", "unit_price"):
                 value = cleaned_data.get(name)
                 if value is None or value <= 0:
-                    self.add_error(name, "Indique un nombre positif.")
+                    self.add_error(name, _("Indique un nombre positif."))
             cleaned_data["amount"] = None
+            if kind == OperationKind.POSITION:
+                # Le PRU inclut déjà les frais payés à l'époque
+                cleaned_data["fees"] = 0
         elif kind in {OperationKind.DIVIDEND, OperationKind.FEE}:
             amount = cleaned_data.get("amount")
             if amount is None or amount <= 0:
-                self.add_error("amount", "Indique un montant positif.")
+                self.add_error("amount", _("Indique un montant positif."))
             cleaned_data["quantity"] = None
             cleaned_data["unit_price"] = None
             cleaned_data["fees"] = 0
@@ -746,6 +843,11 @@ class PortfolioOperationEditForm(BootstrapFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.kind in {OperationKind.BUY, OperationKind.SELL}:
             del self.fields["amount"]
+        elif self.instance.kind == OperationKind.POSITION:
+            del self.fields["amount"]
+            del self.fields["fees"]
+            self.fields["unit_price"].label = _("PRU (€)")
+            self.fields["date"].label = _("Détenu au")
         else:
             for name in ("quantity", "unit_price", "fees"):
                 del self.fields[name]
@@ -755,12 +857,12 @@ class PortfolioOperationEditForm(BootstrapFormMixin, forms.ModelForm):
         cleaned_data = super().clean()
         day = cleaned_data.get("date")
         if day and day > date.today():
-            self.add_error("date", "La date ne peut pas être dans le futur.")
+            self.add_error("date", _("La date ne peut pas être dans le futur."))
         for name in ("quantity", "unit_price", "amount"):
             if name in self.fields:
                 value = cleaned_data.get(name)
                 if value is None or value <= 0:
-                    self.add_error(name, "Indique un nombre positif.")
+                    self.add_error(name, _("Indique un nombre positif."))
         if "fees" in self.fields and cleaned_data.get("fees") is None:
             cleaned_data["fees"] = 0
         return cleaned_data
@@ -771,17 +873,17 @@ class InstrumentForm(BootstrapFormMixin, forms.ModelForm):
         model = Instrument
         fields = ["name", "isin", "asset_class", "zone", "ter"]
         labels = {
-            "name": "Nom",
+            "name": gettext_lazy("Nom"),
             "isin": "ISIN",
-            "asset_class": "Classe d'actifs",
-            "zone": "Zone géographique",
-            "ter": "Frais courants (% par an)",
+            "asset_class": gettext_lazy("Classe d'actifs"),
+            "zone": gettext_lazy("Zone géographique"),
+            "ter": gettext_lazy("Frais courants (% par an)"),
         }
         help_texts = {
-            "ter": "Le TER de l'ETF, indiqué sur sa fiche (ex. 0,38).",
+            "ter": gettext_lazy("Le TER de l'ETF, indiqué sur sa fiche (ex. 0,38)."),
         }
         widgets = {
-            "ter": forms.NumberInput(attrs={"step": "0.001", "min": "0", "max": "10", "placeholder": "Ex. 0,38"}),
+            "ter": forms.NumberInput(attrs={"step": "0.001", "min": "0", "max": "10", "placeholder": gettext_lazy("Ex. 0,38")}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -790,3 +892,32 @@ class InstrumentForm(BootstrapFormMixin, forms.ModelForm):
 
     def clean_isin(self):
         return (self.cleaned_data.get("isin") or "").strip().upper()
+
+
+class SimulationForm(forms.Form):
+    """Choix de la simulation ; rendements, volatilités, corrélations et
+    inflation sont calibrés sur l'historique."""
+
+    years = forms.IntegerField(label=gettext_lazy("Horizon (années)"), min_value=1, max_value=40, initial=10)
+    monthly_contribution = forms.DecimalField(
+        label=gettext_lazy("Versement mensuel (€)"), min_value=0, max_digits=10, decimal_places=2, initial=0, required=False,
+    )
+    seed = forms.IntegerField(label=gettext_lazy("Tirage n°"), min_value=0, max_value=10**9, initial=1)
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("auto_id", "sim_%s")
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({"class": "form-control", "step": "any"})
+
+    def assumptions(self):
+        from .simulation import Assumptions
+
+        data = self.cleaned_data if self.is_bound and self.is_valid() else {
+            name: field.initial for name, field in self.fields.items()
+        }
+        return Assumptions(
+            years=int(data.get("years") or 10),
+            monthly_contribution=float(data.get("monthly_contribution") or 0),
+            seed=int(data.get("seed") or 0),
+        )

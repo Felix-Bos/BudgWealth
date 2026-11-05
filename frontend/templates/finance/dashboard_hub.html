@@ -1,18 +1,19 @@
 {% extends "base.html" %}
+{% load i18n i18n_extras %}
 {% load static %}
 
-{% block title %}Accueil - BudgWealth{% endblock %}
+{% block title %}{% translate "Accueil - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="home">
     <header class="page-head">
         <div>
             <span class="page-eyebrow">{{ today|date:"l j F"|capfirst }}</span>
-            <h1>Bonjour {{ user.get_username }}</h1>
-            <p>Voici où en sont ton budget et ton patrimoine.</p>
+            <h1>{% translate "Bonjour" %} {{ user.get_username }}</h1>
+            <p>{% translate "Voici où en sont ton budget et ton patrimoine." %}</p>
         </div>
         <a class="btn btn-outline-secondary" href="{% url 'finance:index' %}">
-            Voir {{ month_label|lower }}
+            {% translate "Voir" %} {{ month_label|lower_fr }}
             {% include "_icon.html" with name="arrow-right" %}
         </a>
     </header>
@@ -22,61 +23,61 @@
         <article class="home-card home-wealth">
             <div class="home-wealth-top">
                 <div>
-                    <span class="home-wealth-label">Patrimoine financier</span>
+                    <span class="home-wealth-label">{% translate "Patrimoine financier" %}</span>
                     <strong class="home-wealth-total">{{ wealth.total|floatformat:"0g" }} €</strong>
                     {% if wealth.change %}
                     <span class="home-wealth-change">
-                        {% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.amount|floatformat:"0g" }} €{% if wealth.change.percent is not None %} ({% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.percent }} %){% endif %} sur un an
+                        {% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.amount|floatformat:"0g" }} €{% if wealth.change.percent is not None %} ({% if wealth.change.amount >= 0 %}+{% endif %}{{ wealth.change.percent }} %){% endif %} {% translate "sur un an" %}
                     </span>
                     {% elif wealth.has_accounts %}
-                    <span class="home-wealth-change">Livrets et placements réunis</span>
+                    <span class="home-wealth-change">{% translate "Livrets et placements réunis" %}</span>
                     {% else %}
-                    <span class="home-wealth-change">Ajoute tes livrets et ton PEA pour le suivre ici</span>
+                    <span class="home-wealth-change">{% translate "Ajoute tes livrets et ton PEA pour le suivre ici" %}</span>
                     {% endif %}
                 </div>
-                <a class="home-wealth-link" href="{% url 'finance:savings' %}" aria-label="Voir le détail de mon épargne">
+                <a class="home-wealth-link" href="{% url 'finance:savings' %}" aria-label="{% translate "Voir le détail de mon épargne" %}">
                     {% include "_icon.html" with name="arrow-right" %}
                 </a>
             </div>
 
             {% if wealth.history.dates|length > 1 %}
-            <div class="home-wealth-chart"><canvas id="wealthChart" role="img" aria-label="Évolution du patrimoine"></canvas></div>
+            <div class="home-wealth-chart"><canvas id="wealthChart" role="img" aria-label="{% translate "Évolution du patrimoine" %}"></canvas></div>
             {% elif wealth.has_accounts %}
             <div class="home-wealth-chart">
-                <span class="home-wealth-chart-label">Versé vers l'épargne, 6 derniers mois</span>
-                <canvas id="wealthFlowChart" role="img" aria-label="Versements vers l'épargne des 6 derniers mois"></canvas>
+                <span class="home-wealth-chart-label">{% translate "Versé vers l'épargne, 6 derniers mois" %}</span>
+                <canvas id="wealthFlowChart" role="img" aria-label="{% translate "Versements vers l'épargne des 6 derniers mois" %}"></canvas>
             </div>
             {% endif %}
 
             {% if wealth.has_accounts %}
-            <div class="home-wealth-split" role="img" aria-label="Livrets : {{ wealth.livrets_percent }} % du patrimoine">
+            <div class="home-wealth-split" role="img" aria-label="{% translate "Livrets :" %} {{ wealth.livrets_percent }} {% translate "% du patrimoine" %}">
                 <span class="is-livrets" style="width: {{ wealth.livrets_percent }}%"></span>
                 <span class="is-investments"></span>
             </div>
             <dl class="home-wealth-stats">
                 <div>
-                    <dt><i class="is-livrets"></i>Livrets</dt>
+                    <dt><i class="is-livrets"></i>{% translate "Livrets" %}</dt>
                     <dd>{{ wealth.livrets|floatformat:"0g" }} €</dd>
                 </div>
                 <div>
-                    <dt><i class="is-investments"></i>Placements</dt>
+                    <dt><i class="is-investments"></i>{% translate "Placements" %}</dt>
                     <dd>{{ wealth.investments|floatformat:"0g" }} €</dd>
                 </div>
                 <div>
-                    <dt>Versé sur 12 mois</dt>
+                    <dt>{% translate "Versé sur 12 mois" %}</dt>
                     <dd>{{ wealth.contributions|floatformat:"0g" }} €</dd>
                 </div>
                 {% if wealth.interest_year %}
                 <div>
-                    <dt>Intérêts / an</dt>
+                    <dt>{% translate "Intérêts / an" %}</dt>
                     <dd>≈ {{ wealth.interest_year|floatformat:"0g" }} €</dd>
                 </div>
                 {% endif %}
             </dl>
             {% else %}
             <div class="home-wealth-empty">
-                <a class="btn btn-light" href="{% url 'finance:savings_balances' %}">Ajouter un livret</a>
-                <a class="btn btn-ghost-light" href="{% url 'finance:savings_portfolio' %}">Ajouter un PEA / CTO</a>
+                <a class="btn btn-light" href="{% url 'finance:savings_balances' %}">{% translate "Ajouter un livret" %}</a>
+                <a class="btn btn-ghost-light" href="{% url 'finance:savings_portfolio' %}">{% translate "Ajouter un PEA / CTO" %}</a>
             </div>
             {% endif %}
         </article>
@@ -86,7 +87,7 @@
             <div class="home-card-head">
                 <div>
                     <h2>{{ month_label }}</h2>
-                    <p>{% if current.days_left > 1 %}Encore {{ current.days_left }} jours{% else %}Dernier jour du mois{% endif %}</p>
+                    <p>{% if current.days_left > 1 %}{% translate "Encore" %} {{ current.days_left }} {% translate "jours" %}{% else %}{% translate "Dernier jour du mois" %}{% endif %}</p>
                 </div>
                 {% if current.tracking %}
                 <span class="budget-badge is-{{ current.tracking.verdict }}">{{ current.tracking.verdict_label }}</span>
@@ -97,95 +98,122 @@
             <div class="home-month-body">
                 <div class="home-gauge {% if current.tracking.spent_percent > 100 %}is-over{% elif current.tracking.verdict == 'watch' %}is-watch{% endif %}"
                      style="--p: {{ current.spent_bar }}; --pace: {{ current.elapsed_percent }};"
-                     role="img" aria-label="{{ current.tracking.spent_percent }} % du budget dépensé">
+                     role="img" aria-label="{{ current.tracking.spent_percent }} {% translate "% du budget dépensé" %}">
                     <div class="home-gauge-inner">
-                        <span>Reste</span>
+                        <span>{% translate "Reste" %}</span>
                         <strong>{{ current.remaining|floatformat:"0g" }} €</strong>
-                        <small>sur {{ current.tracking.budget_total|floatformat:"0g" }} €</small>
+                        <small>{% translate "sur" %} {{ current.tracking.budget_total|floatformat:"0g" }} €</small>
                     </div>
                     <i class="home-gauge-pace" aria-hidden="true"></i>
                 </div>
                 <ul class="home-month-facts">
                     <li>
-                        <span>Dépensé</span>
+                        <span>{% translate "Dépensé" %}</span>
                         <strong>{{ current.tracking.spent_total|floatformat:"0g" }} €</strong>
-                        <small>{{ current.tracking.spent_percent }} % du budget · {{ current.elapsed_percent }} % du mois écoulé</small>
+                        <small>{{ current.tracking.spent_percent }} {% translate "% du budget ·" %} {{ current.elapsed_percent }} {% translate "% du mois écoulé" %}</small>
                     </li>
                     <li>
-                        <span>Par jour, d'ici la fin du mois</span>
+                        <span>{% translate "Par jour, d'ici la fin du mois" %}</span>
                         <strong class="text-accent">{{ current.daily_allowance|floatformat:"0g" }} €</strong>
-                        <small>pour tes dépenses variables</small>
+                        <small>{% translate "pour tes dépenses variables" %}</small>
                     </li>
                     <li>
-                        <span>Épargne</span>
+                        <span>{% translate "Épargne" %}</span>
                         <strong class="text-savings">{{ current.tracking.savings_actual|floatformat:"0g" }} €</strong>
-                        <small>objectif {{ current.tracking.savings_target|floatformat:"0g" }} €</small>
+                        <small>{% translate "objectif" %} {{ current.tracking.savings_target|floatformat:"0g" }} €</small>
                     </li>
                 </ul>
             </div>
             {% else %}
             <ul class="home-flow">
                 <li class="is-income">
-                    <span>Revenus</span>
+                    <span>{% translate "Revenus" %}</span>
                     <strong>+{{ current.row.income|floatformat:"0g" }} €</strong>
                 </li>
                 <li class="is-expense">
-                    <span>Charges</span>
+                    <span>{% translate "Charges" %}</span>
                     <strong>−{{ current.row.expense|floatformat:"0g" }} €</strong>
                 </li>
                 <li class="is-savings">
-                    <span>Épargne</span>
+                    <span>{% translate "Épargne" %}</span>
                     <strong>{{ current.row.savings|floatformat:"0g" }} €</strong>
                 </li>
             </ul>
             {% if current.expense_vs_avg is not None %}
             <div class="home-compare">
                 <div class="home-compare-label">
-                    <span>Charges vs ta moyenne</span>
+                    <span>{% translate "Charges vs ta moyenne" %}</span>
                     <strong class="{% if current.expense_vs_avg > 100 %}text-negative{% else %}text-positive{% endif %}">{{ current.expense_vs_avg }} %</strong>
                 </div>
                 <div class="budget-progress {% if current.expense_vs_avg > 100 %}is-over{% endif %}">
                     <span style="width: {% if current.expense_vs_avg > 100 %}100{% else %}{{ current.expense_vs_avg }}{% endif %}%"></span>
-                    <i style="left: {{ current.elapsed_percent }}%" title="Avancement du mois"></i>
+                    <i style="left: {{ current.elapsed_percent }}%" title="{% translate "Avancement du mois" %}"></i>
                 </div>
-                <small class="text-muted">{{ current.row.expense|floatformat:"0g" }} € dépensés pour {{ current.avg_expense|floatformat:"0g" }} € par mois en moyenne</small>
+                <small class="text-muted">{{ current.row.expense|floatformat:"0g" }} {% translate "€ dépensés pour" %} {{ current.avg_expense|floatformat:"0g" }} {% translate "€ par mois en moyenne" %}</small>
             </div>
             {% endif %}
             <a class="home-cta" href="{% url 'finance:budget_plan' %}">
                 <span class="home-cta-icon">{% include "_icon.html" with name="target" %}</span>
-                <span><strong>Crée ton budget</strong><small>Prérempli d'après tes dépenses, prêt en 2 minutes</small></span>
+                <span><strong>{% translate "Crée ton budget" %}</strong><small>{% translate "Prérempli d'après tes dépenses, prêt en 2 minutes" %}</small></span>
                 {% include "_icon.html" with name="chevron-right" %}
             </a>
             {% endif %}
 
-            <a class="home-card-link" href="{% url 'finance:index' %}">Voir toutes les opérations du mois {% include "_icon.html" with name="arrow-right" %}</a>
+            <a class="home-card-link" href="{% url 'finance:index' %}">{% translate "Voir toutes les opérations du mois" %} {% include "_icon.html" with name="arrow-right" %}</a>
         </article>
 
-        {# ---------- À retenir ---------- #}
-        <article class="home-card home-insights">
+        {# ---------- Trésorerie ---------- #}
+        <article class="home-card home-cash">
             <div class="home-card-head">
                 <div>
-                    <h2><span class="home-title-icon">{% include "_icon.html" with name="sparkles" %}</span>À retenir</h2>
-                    <p>Ce que disent tes chiffres, en un coup d'œil</p>
+                    <h2><span class="home-title-icon">{% include "_icon.html" with name="target" %}</span>{% translate "Trésorerie" %}</h2>
+                    <p>{% if cashflow.has_balance %}{% translate "Ton compte courant d'ici le" %} {{ cashflow.end|date:"j F" }}{% else %}{% translate "Ton compte courant dans les semaines qui viennent" %}{% endif %}</p>
                 </div>
+                {% if cashflow.has_balance %}<span class="budget-badge is-{{ cashflow.status }}">{{ cashflow.status_label }}</span>{% endif %}
             </div>
-            {% if insights %}
-            <ul class="insight-list">
-                {% for item in insights %}
-                <li class="insight is-{{ item.tone }}">
-                    <span class="insight-icon">{% include "_icon.html" with name=item.icon %}</span>
-                    <div class="insight-body">
-                        <strong>{{ item.title }}</strong>
-                        <p>{{ item.text }}</p>
-                    </div>
-                    {% if item.url %}
-                    <a class="insight-cta" href="{{ item.url }}">{{ item.cta }}</a>
-                    {% endif %}
-                </li>
-                {% endfor %}
-            </ul>
+            {% if cashflow.has_balance %}
+            <div class="home-cash-body">
+                <dl class="home-cash-figures">
+                    <div><dt>{% translate "Aujourd'hui" %}</dt><dd>{{ cashflow.current|floatformat:"0g" }} €</dd></div>
+                    <div><dt>{% translate "Fin du mois" %}</dt><dd class="{% if cashflow.month_end_balance < 0 %}text-negative{% endif %}">{% if cashflow.month_end_balance is not None %}{{ cashflow.month_end_balance|floatformat:"0g" }} €{% else %}—{% endif %}</dd></div>
+                    <div><dt>{% translate "Point bas" %}</dt><dd class="{% if cashflow.low.balance < 0 %}text-negative{% endif %}">{{ cashflow.low.balance|floatformat:"0g" }} €<small> · {{ cashflow.low.date|date:"j M" }}</small></dd></div>
+                    <div><dt>{% translate "À épargner sans risque" %}</dt><dd class="text-savings">{{ cashflow.safe_to_save|floatformat:"0g" }} €</dd></div>
+                </dl>
+                <div class="home-chart home-cash-chart"><canvas id="homeCashChart" role="img" aria-label="{% translate "Solde prévu du compte courant" %}"></canvas></div>
+                {% with next=cashflow.events|slice:":3" %}
+                {% if next %}
+                <ul class="home-cash-next">
+                    {% for event in next %}
+                    <li><span>{{ event.date|date:"j M" }}</span><strong>{{ event.label }}</strong><em class="{% if event.amount > 0 %}text-income{% endif %}">{% if event.amount > 0 %}+{% else %}−{% endif %}{{ event.amount|floatformat:"0g"|cut:"-" }} €</em></li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% endwith %}
+            </div>
+            {% if cashflow.stale %}<p class="text-muted small mb-0">{% translate "Dernier solde du" %} {{ cashflow.snapshot.date|date:"j F" }} : {% translate "synchronise ta banque pour l'actualiser." %}</p>{% endif %}
+            <a class="home-card-link" href="{% url 'finance:budget_cashflow' %}">{% translate "Voir la prévision" %} {% include "_icon.html" with name="arrow-right" %}</a>
             {% else %}
-            <p class="text-muted mb-0">Rien à signaler : tout est sous contrôle.</p>
+            <p class="text-muted">{% translate "Le solde de ton compte courant est relevé à la prochaine synchronisation bancaire, ou tu peux le saisir." %}</p>
+            <a class="home-card-link" href="{% url 'finance:budget_cashflow' %}">{% translate "Saisir mon solde" %} {% include "_icon.html" with name="arrow-right" %}</a>
+            {% endif %}
+
+            {% if global_goal %}
+            {% with g=global_goal %}
+            <div class="home-goal">
+                <div class="home-meter-head">
+                    <span>{% translate "Objectif d'épargne" %} · {{ g.goal.target_amount|floatformat:"0g" }} € {% translate "au" %} {{ g.goal.target_date|date:"F Y" }}</span>
+                    <span class="budget-badge is-{{ g.status }}">{{ g.status_label }}</span>
+                </div>
+                <div class="budget-progress is-savings"><span style="width: {{ g.percent }}%"></span></div>
+                <small class="text-muted">{{ g.start|floatformat:"0g" }} € {% translate "de côté" %}{% if g.status != "done" %} · {{ g.needed|floatformat:"0g" }} {% translate "€ / mois à mettre de côté" %}{% endif %}</small>
+            </div>
+            {% endwith %}
+            {% else %}
+            <a class="home-cta mt-3" href="{% url 'finance:budget_goals' %}#objectif-global">
+                <span class="home-cta-icon">{% include "_icon.html" with name="target" %}</span>
+                <span><strong>{% translate "Fixe un objectif d'épargne" %}</strong><small>{% translate "Un montant, une date : combien mettre de côté chaque mois" %}</small></span>
+                {% include "_icon.html" with name="chevron-right" %}
+            </a>
             {% endif %}
         </article>
 
@@ -193,72 +221,72 @@
         <article class="home-card home-indicators">
             <div class="home-card-head">
                 <div>
-                    <h2>Tes repères</h2>
-                    <p>{% if kpis.months %}Sur les {{ kpis.months }} derniers mois{% else %}Dès que tu auras un mois complet{% endif %}</p>
+                    <h2>{% translate "Tes repères" %}</h2>
+                    <p>{% if kpis.months %}{% translate "Sur les" %} {{ kpis.months }} {% translate "derniers mois" %}{% else %}{% translate "Dès que tu auras un mois complet" %}{% endif %}</p>
                 </div>
             </div>
             <div class="home-meters">
                 <div class="home-meter">
                     <div class="home-meter-head">
-                        <span>Taux d'épargne</span>
+                        <span>{% translate "Taux d'épargne" %}</span>
                         <strong class="text-savings">{{ kpis.savings_rate }} %</strong>
                     </div>
                     <div class="budget-progress is-savings">
                         <span style="width: {% if kpis.savings_rate > 100 %}100{% else %}{{ kpis.savings_rate }}{% endif %}%"></span>
-                        <i style="left: {% if kpis.target_rate %}{% if kpis.target_rate > 100 %}100{% else %}{{ kpis.target_rate }}{% endif %}{% else %}20{% endif %}%" title="Repère"></i>
+                        <i style="left: {% if kpis.target_rate %}{% if kpis.target_rate > 100 %}100{% else %}{{ kpis.target_rate }}{% endif %}{% else %}20{% endif %}%" title="{% translate "Repère" %}"></i>
                     </div>
-                    <small>{% if kpis.target_rate %}Ton objectif : {{ kpis.target_rate }} % de tes revenus{% else %}Repère conseillé : 20 % de tes revenus{% endif %}</small>
+                    <small>{% if kpis.target_rate %}{% translate "Ton objectif :" %} {{ kpis.target_rate }} {% translate "% de tes revenus" %}{% else %}{% translate "Repère conseillé : 20 % de tes revenus" %}{% endif %}</small>
                 </div>
 
                 {% if wealth.safety_months is not None %}
                 <div class="home-meter">
                     <div class="home-meter-head">
-                        <span>Matelas de sécurité</span>
-                        <strong>{{ wealth.safety_months|floatformat:"1" }} mois</strong>
+                        <span>{% translate "Matelas de sécurité" %}</span>
+                        <strong>{{ wealth.safety_months|floatformat:"1" }} {% translate "mois" %}</strong>
                     </div>
                     <div class="budget-progress {% if wealth.safety_months < 3 %}is-warning{% endif %}">
                         <span style="width: {{ wealth.safety_percent }}%"></span>
-                        <i style="left: 50%" title="3 mois"></i>
+                        <i style="left: 50%" title="{% translate "3 mois" %}"></i>
                     </div>
-                    <small>de dépenses couvertes par tes livrets · conseillé : 3 à 6 mois</small>
+                    <small>{% translate "de dépenses couvertes par tes livrets · conseillé : 3 à 6 mois" %}</small>
                 </div>
                 {% endif %}
 
                 <dl class="home-averages">
                     <div>
-                        <dt>Revenus moyens</dt>
+                        <dt>{% translate "Revenus moyens" %}</dt>
                         <dd class="text-income">{{ kpis.avg_income|floatformat:"0g" }} €</dd>
                     </div>
                     <div>
-                        <dt>Charges moyennes</dt>
+                        <dt>{% translate "Charges moyennes" %}</dt>
                         <dd class="text-expense">{{ kpis.avg_expense|floatformat:"0g" }} €</dd>
                     </div>
                     <div>
-                        <dt>Abonnements</dt>
-                        <dd>{{ subscriptions.monthly_total|floatformat:"0g" }} €<small> / mois · {{ subscriptions.active_count }} actif{{ subscriptions.active_count|pluralize }}</small></dd>
+                        <dt>{% translate "Abonnements" %}</dt>
+                        <dd>{{ subscriptions.monthly_total|floatformat:"0g" }} €<small> {% translate "/ mois ·" %} {{ subscriptions.active_count }} {% translate "actif" %}{{ subscriptions.active_count|pluralize }}</small></dd>
                     </div>
                 </dl>
             </div>
-            <a class="home-card-link" href="{% url 'finance:dashboard_budget' %}">Analyse complète {% include "_icon.html" with name="arrow-right" %}</a>
+            <a class="home-card-link" href="{% url 'finance:dashboard_budget' %}">{% translate "Analyse complète" %} {% include "_icon.html" with name="arrow-right" %}</a>
         </article>
 
         {# ---------- 6 derniers mois ---------- #}
         <article class="home-card home-history">
             <div class="home-card-head">
                 <div>
-                    <h2>Tes 6 derniers mois</h2>
-                    <p>Revenus, charges et épargne · clique sur un mois pour l'ouvrir</p>
+                    <h2>{% translate "Tes 6 derniers mois" %}</h2>
+                    <p>{% translate "Revenus, charges et épargne · clique sur un mois pour l'ouvrir" %}</p>
                 </div>
             </div>
-            <div class="home-chart"><canvas id="homeHistoryChart" role="img" aria-label="Revenus, charges et épargne des 6 derniers mois"></canvas></div>
+            <div class="home-chart"><canvas id="homeHistoryChart" role="img" aria-label="{% translate "Revenus, charges et épargne des 6 derniers mois" %}"></canvas></div>
         </article>
 
         {# ---------- Dépenses du mois ---------- #}
         <article class="home-card home-categories">
             <div class="home-card-head">
                 <div>
-                    <h2>Où part ton argent</h2>
-                    <p>{{ categories.total|floatformat:"0g" }} € de charges en {{ month_label|lower }}</p>
+                    <h2>{% translate "Où part ton argent" %}</h2>
+                    <p>{{ categories.total|floatformat:"0g" }} {% translate "€ de charges en" %} {{ month_label|lower_fr }}</p>
                 </div>
             </div>
             {% if categories.rows %}
@@ -274,7 +302,7 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="text-muted mb-0">Aucune charge ce mois-ci pour l'instant.</p>
+            <p class="text-muted mb-0">{% translate "Aucune charge ce mois-ci pour l'instant." %}</p>
             {% endif %}
         </article>
 
@@ -282,8 +310,8 @@
         <article class="home-card home-recent">
             <div class="home-card-head">
                 <div>
-                    <h2>Dernières opérations</h2>
-                    <p>Les plus récentes, tous comptes confondus</p>
+                    <h2>{% translate "Dernières opérations" %}</h2>
+                    <p>{% translate "Les plus récentes, tous comptes confondus" %}</p>
                 </div>
             </div>
             {% if recent_rows %}
@@ -294,7 +322,7 @@
                         <span class="tx-avatar tx-tone-{{ row.tone }}" aria-hidden="true">{{ row.initial }}</span>
                         <span class="home-tx-main">
                             <span class="home-tx-title">{{ row.description }}</span>
-                            <span class="home-tx-meta">{% if row.category %}{{ row.category }}{% else %}<span class="tx-unclassified">À classer</span>{% endif %} · {{ row.transaction_date|date:"j M" }}</span>
+                            <span class="home-tx-meta">{% if row.category %}{{ row.category }}{% else %}<span class="tx-unclassified">{% translate "À classer" %}</span>{% endif %} · {{ row.transaction_date|date:"j M" }}</span>
                         </span>
                         <span class="tx-amount is-{{ row.kind }}">{% if row.is_income %}+{% else %}−{% endif %}{{ row.amount|floatformat:"2g" }} €</span>
                     </a>
@@ -303,8 +331,8 @@
             </ul>
             {% else %}
             <div class="home-empty">
-                <p class="text-muted">Aucune opération pour l'instant.</p>
-                <a class="btn btn-primary" href="{% url 'finance:bank_connect' %}">Connecter ma banque</a>
+                <p class="text-muted">{% translate "Aucune opération pour l'instant." %}</p>
+                <a class="btn btn-primary" href="{% url 'finance:bank_connect' %}">{% translate "Connecter ma banque" %}</a>
             </div>
             {% endif %}
         </article>
@@ -314,10 +342,10 @@
         <article class="home-card home-projects">
             <div class="home-card-head">
                 <div>
-                    <h2>Projets d'épargne</h2>
-                    <p>{% if projects.active_count %}{{ projects.monthly_needed|floatformat:"0g" }} € par mois pour tout tenir{% else %}Un voyage, une voiture, un apport…{% endif %}</p>
+                    <h2>{% translate "Projets d'épargne" %}</h2>
+                    <p>{% if projects.active_count %}{{ projects.monthly_needed|floatformat:"0g" }} {% translate "€ par mois pour tout tenir" %}{% else %}{% translate "Un voyage, une voiture, un apport…" %}{% endif %}</p>
                 </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_goals' %}">{% if projects.active_count %}Gérer{% else %}Ajouter{% endif %}</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_goals' %}">{% if projects.active_count %}{% translate "Gérer" %}{% else %}{% translate "Ajouter" %}{% endif %}</a>
             </div>
             {% if projects.active_count %}
             <ul class="home-projects-list">
@@ -328,12 +356,12 @@
                         <span class="budget-badge is-{{ item.status }}">{{ item.status_label }}</span>
                     </div>
                     <div class="budget-progress is-savings"><span style="width: {{ item.percent }}%"></span></div>
-                    <small>{{ item.saved|floatformat:"0g" }} € sur {{ item.project.target_amount|floatformat:"0g" }} € · {{ item.project.target_date|date:"F Y" }}</small>
+                    <small>{{ item.saved|floatformat:"0g" }} {% translate "€ sur" %} {{ item.project.target_amount|floatformat:"0g" }} € · {{ item.project.target_date|date:"F Y" }}</small>
                 </li>
                 {% endif %}{% endfor %}
             </ul>
             {% else %}
-            <p class="text-muted mb-0">Donne un nom et une date à tes envies : on calcule ce qu'il faut mettre de côté chaque mois.</p>
+            <p class="text-muted mb-0">{% translate "Donne un nom et une date à tes envies : on calcule ce qu'il faut mettre de côté chaque mois." %}</p>
             {% endif %}
         </article>
 
@@ -341,10 +369,10 @@
         <article class="home-card home-upcoming">
             <div class="home-card-head">
                 <div>
-                    <h2>Prochains prélèvements</h2>
-                    <p>{% if month_subscriptions.remaining %}{{ month_subscriptions.remaining_total|floatformat:"2g" }} € d'abonnements d'ici la fin du mois{% else %}Abonnements de {{ month_label|lower }}{% endif %}</p>
+                    <h2>{% translate "Prochains prélèvements" %}</h2>
+                    <p>{% if month_subscriptions.remaining %}{{ month_subscriptions.remaining_total|floatformat:"2g" }} {% translate "€ d'abonnements d'ici la fin du mois" %}{% else %}{% translate "Abonnements de" %} {{ month_label|lower_fr }}{% endif %}</p>
                 </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">Gérer</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">{% translate "Gérer" %}</a>
             </div>
             {% if month_subscriptions.remaining or month_subscriptions.problems %}
             <ul class="home-upcoming-list">
@@ -364,9 +392,9 @@
                 {% endfor %}
             </ul>
             {% elif month_subscriptions.count %}
-            <p class="text-muted mb-0">Tous les abonnements du mois sont payés ({{ month_subscriptions.paid_total|floatformat:"2g" }} €).</p>
+            <p class="text-muted mb-0">{% translate "Tous les abonnements du mois sont payés (" %}{{ month_subscriptions.paid_total|floatformat:"2g" }} €).</p>
             {% else %}
-            <p class="text-muted mb-0">Aucun abonnement suivi pour l'instant : ils sont détectés automatiquement après l'import bancaire.</p>
+            <p class="text-muted mb-0">{% translate "Aucun abonnement suivi pour l'instant : ils sont détectés automatiquement après l'import bancaire." %}</p>
             {% endif %}
         </article>
         </div>
@@ -377,5 +405,5 @@
 {% block extra_js %}
 {% include "finance/_charts_js.html" %}
 {{ home_data|json_script:"home-data" }}
-<script src="{% static 'js/bw-home.js' %}?v=2"></script>
+<script src="{% static 'js/bw-home.js' %}?v=3"></script>
 {% endblock %}

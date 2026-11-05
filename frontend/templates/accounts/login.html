@@ -1,15 +1,16 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Connexion - BudgWealth{% endblock %}
+{% block title %}{% translate "Connexion - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="auth-layout">
     {% include "accounts/_auth_aside.html" %}
     <div class="auth-panel">
         <div class="mb-4">
-            <p class="section-label mb-2">Connexion</p>
-            <h1 class="h3 mb-2">Accéder à votre espace</h1>
-            <p class="text-muted mb-0">Connectez-vous pour continuer.</p>
+            <p class="section-label mb-2">{% translate "Connexion" %}</p>
+            <h1 class="h3 mb-2">{% translate "Accéder à votre espace" %}</h1>
+            <p class="text-muted mb-0">{% translate "Connectez-vous pour continuer." %}</p>
         </div>
 
         <form method="post" novalidate>
@@ -37,13 +38,9 @@
                 {% endfor %}
             </div>
 
-            <button class="btn btn-dark w-100" type="submit">Se connecter</button>
+            <button class="btn btn-dark w-100" type="submit">{% translate "Se connecter" %}</button>
         </form>
 
-        <p class="auth-switch text-muted">
-            Pas encore de compte ?
-            <a href="{% url 'accounts:signup' %}">Créer un compte</a>
-        </p>
     </div>
 </section>
 {% endblock %}

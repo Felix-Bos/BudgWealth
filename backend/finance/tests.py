@@ -228,6 +228,25 @@ class BankImportTests(TestCase):
             Transaction.objects.filter(user=self.user, description="Carrefour Market").count(), 2
         )
 
+    def test_card_purchase_keeps_its_purchase_date(self):
+        import_operations(self.user, self.operations)
+
+        # Achat du 31/08 débité le 01/09 : compté en août
+        boutique = Transaction.objects.get(user=self.user, description="BOUTIQUE INCONNUE")
+        self.assertEqual(boutique.transaction_date, date(2026, 8, 31))
+
+    def test_category_learned_from_previous_operation(self):
+        salary = Category.objects.get(user=self.user, name="Salaire")
+        Transaction.objects.create(
+            user=self.user, transaction_type=EntryType.INCOME, amount=Decimal("149.43"),
+            description="CAF DES HAUTS DE SEINE", category=salary, transaction_date=date(2026, 8, 4),
+        )
+
+        import_operations(self.user, self.operations)
+
+        caf = Transaction.objects.get(user=self.user, description="CAF DES HAUTS DE SEINE", transaction_date=date(2026, 9, 4))
+        self.assertEqual(caf.category, salary)
+
     def test_reimport_does_not_duplicate(self):
         import_operations(self.user, self.operations)
         result = import_operations(self.user, self.operations)
@@ -467,8 +486,23 @@ class OnboardingViewsTests(TestCase):
         self.user = get_user_model().objects.create_user("jean", password="x")
         self.client.force_login(self.user)
 
+    def test_signup_refused_once_an_account_exists(self):
+        self.client.logout()
+        self.assertRedirects(self.client.get(reverse("accounts:signup")), reverse("accounts:login"))
+        self.client.post(reverse("accounts:signup"), {
+            "username": "neo", "email": "neo@ex.fr",
+            "password1": "Tr3sL0ngMotDePasse2026", "password2": "Tr3sL0ngMotDePasse2026",
+        })
+        self.assertEqual(get_user_model().objects.count(), 1)
+
+    def test_first_launch_goes_to_signup(self):
+        self.client.logout()
+        get_user_model().objects.all().delete()
+        self.assertRedirects(self.client.get(reverse("accounts:login")), reverse("accounts:signup"))
+
     def test_signup_redirects_to_bank_connect(self):
         self.client.logout()
+        get_user_model().objects.all().delete()
         response = self.client.post(
             reverse("accounts:signup"),
             {"username": "neo", "email": "neo@ex.fr",
@@ -538,9 +572,13 @@ from .models import (  # noqa: E402
     Category,
     IncomeMode,
     MealVoucherSettings,
+    RecurrenceKind,
+    RecurrenceUnit,
+    RecurringItem,
     SavingsProject,
     Subcategory,
 )
+from . import views  # noqa: E402
 
 
 class BudgetTestMixin:
@@ -580,12 +618,72 @@ class BudgetTestMixin:
 
 class BudgetCalculationTests(BudgetTestMixin, TestCase):
     def test_average_salary_ignores_months_without_salary(self):
-        self.income("2800", date(2026, 7, 28))
-        self.income("3000", date(2026, 9, 28))
+        self.income("2800", date(2026, 6, 28))  # compté en juillet
+        self.income("3000", date(2026, 8, 28))  # compté en septembre
         self.income("9999", date(2026, 10, 1))  # mois en cours : exclu
         average, months = budget_calc.average_salary(self.user, 2026, 10, 6)
         self.assertEqual(months, 2)
         self.assertEqual(average, Decimal("2900.00"))
+
+    def test_end_of_month_salary_counts_for_next_month(self):
+        late = self.income("2800", date(2026, 10, 30))
+        early = self.income("2800", date(2026, 12, 1))  # versement décalé : reste en décembre
+        december = self.income("2800", date(2026, 12, 24))
+        other_income = self.income("50", date(2026, 10, 30), category=Category.objects.get(user=self.user, name="Remboursements"))
+
+        self.assertEqual(late.transaction_date, date(2026, 11, 1))
+        self.assertEqual(early.transaction_date, date(2026, 12, 1))
+        self.assertEqual(december.transaction_date, date(2027, 1, 1))
+        self.assertEqual(other_income.transaction_date, date(2026, 10, 30))
+
+    def test_savings_after_salary_follow_it_to_next_month(self):
+        before = self.expense("200", self.savings, day=date(2026, 10, 10))
+        end_of_month = self.expense("150", self.savings, day=date(2026, 10, 29))
+        salary = self.income("1961", date(2026, 10, 30))
+        same_day = self.expense("1000", self.savings, day=date(2026, 10, 30))
+        spending = self.expense("21.60", self.food, day=date(2026, 10, 30))
+
+        for transaction in (before, end_of_month, salary, same_day, spending):
+            transaction.refresh_from_db()
+        self.assertEqual((salary.transaction_date, salary.actual_date), (date(2026, 11, 1), date(2026, 10, 30)))
+        self.assertEqual((same_day.transaction_date, same_day.actual_date), (date(2026, 11, 1), date(2026, 10, 30)))
+        # Épargne versée avant le salaire et dépenses : restent en octobre
+        self.assertEqual(before.transaction_date, date(2026, 10, 10))
+        self.assertEqual(end_of_month.transaction_date, date(2026, 10, 29))
+        self.assertIsNone(end_of_month.actual_date)
+        self.assertEqual(spending.transaction_date, date(2026, 10, 30))
+
+        # Resauvegarder ne décale pas une deuxième fois
+        same_day.save()
+        self.assertEqual(same_day.transaction_date, date(2026, 11, 1))
+
+    def test_savings_imported_before_salary_follow_it(self):
+        saving = self.expense("500", self.savings, day=date(2026, 10, 31))
+        self.income("1961", date(2026, 10, 30))
+
+        saving.refresh_from_db()
+        self.assertEqual((saving.transaction_date, saving.actual_date), (date(2026, 11, 1), date(2026, 10, 31)))
+
+    def test_savings_date_edited_by_hand_is_kept(self):
+        self.income("1961", date(2026, 10, 30))
+        saving = self.expense("500", self.savings, day=date(2026, 10, 30))
+        saving.transaction_date = date(2026, 10, 20)
+        saving.save()
+
+        self.assertEqual((saving.transaction_date, saving.actual_date), (date(2026, 10, 20), None))
+
+    def test_recurring_salary_is_not_duplicated(self):
+        item = RecurringItem.objects.create(
+            user=self.user, name="Salaire", kind=RecurrenceKind.FIXED, entry_type=EntryType.INCOME,
+            default_amount=Decimal("2800"), category=self.salary, frequency_interval=1,
+            frequency_unit=RecurrenceUnit.MONTH, start_date=date(2026, 9, 28), is_active=True,
+        )
+        views._materialize_recurring_items(self.user, 2026, 10)
+        views._materialize_recurring_items(self.user, 2026, 10)
+
+        self.assertEqual(
+            list(item.transactions.values_list("transaction_date", flat=True)), [date(2026, 11, 1)]
+        )
 
     def test_plan_for_month_uses_version_in_force(self):
         first = self.plan(valid_from=date(2026, 6, 1))
@@ -872,7 +970,7 @@ class SubscriptionDetectionTests(BudgetTestMixin, TestCase):
 
 class SavingsTotalsTests(BudgetTestMixin, TestCase):
     def test_savings_transfer_is_not_a_charge(self):
-        self.income("1741.70", date(2026, 7, 28))
+        self.income("1741.70", date(2026, 6, 30))  # salaire de fin juin : compté en juillet
         self.expense("1146.43", self.housing, day=date(2026, 7, 3))
         self.expense("2700", self.savings, day=date(2026, 7, 9))
 
@@ -940,7 +1038,7 @@ class MonthLiveEditTests(BudgetTestMixin, TestCase):
             user=self.user, transaction_type=EntryType.EXPENSE, amount=Decimal("10.99"),
             category=leisure, transaction_date=date(2026, 7, 5), description="Spotify", recurring_item=item,
         )
-        self.income("1800", date(2026, 7, 28))
+        self.income("1800", date(2026, 6, 30))  # salaire de fin juin : compté en juillet
         self.expense("300", self.savings, day=date(2026, 7, 10))
         response = self.client.get(reverse("finance:month", args=[2026, 7]))
         self.assertContains(response, "tx-kind-income")
@@ -1075,6 +1173,50 @@ class WealthCalculationTests(SavingsTestMixin, TestCase):
         self.assertEqual(analysis["totals"]["gain"], Decimal("445.00"))
         self.assertEqual(analysis["fees"]["brokerage"], Decimal("5.00"))
         self.assertEqual(analysis["fees"]["orders"], 3)
+
+    def test_existing_holding_starts_at_pru_then_follows_price(self):
+        PortfolioOperation.objects.create(
+            account=self.pea, instrument=self.etf, kind=OperationKind.POSITION,
+            date=date(2026, 1, 5), quantity=Decimal("20"), unit_price=Decimal("80"),
+        )
+        self.buy(date(2026, 2, 5), "10", "110", fees="2")
+        self.sell(date(2026, 3, 5), "6", "120")
+        self.price(date(2026, 1, 5), "100")
+        self.price(date(2026, 1, 6), "101")
+        self.price(date(2026, 3, 10), "130")
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 3, 10))
+        row = analysis["positions"][0]
+        history = analysis["history"]
+
+        # t = 0 : valeur = 20 × 80 = 1 600 € (le PRU), puis le cours du lendemain
+        self.assertEqual(history["dates"][0], "2026-01-05")
+        self.assertEqual(history["value"][0], "1600.00")
+        self.assertEqual(history["invested"][0], "1600.00")
+        self.assertEqual(history["value"][1], "2020.00")
+        # (1600 + 1102) / 30 = 90,07 € de PRU ; 6 parts vendues
+        self.assertEqual(row["quantity"], Decimal("24"))
+        self.assertEqual(row["cost"], Decimal("2161.60"))
+        self.assertEqual(row["value"], Decimal("3120.00"))
+        self.assertEqual(analysis["totals"]["realized"], Decimal("179.60"))
+        # La reprise n'est ni un ordre ni des frais de courtage
+        self.assertEqual(analysis["fees"]["orders"], 2)
+        self.assertEqual(analysis["fees"]["brokerage"], Decimal("2.00"))
+        # Elle compte dans les versements du PEA
+        self.assertEqual(analysis["accounts"][0]["pea"]["deposits"], Decimal("1982.00"))
+
+    def test_existing_holding_entered_today_is_valued_at_market(self):
+        PortfolioOperation.objects.create(
+            account=self.pea, instrument=self.etf, kind=OperationKind.POSITION,
+            date=date(2026, 3, 10), quantity=Decimal("10"), unit_price=Decimal("80"),
+        )
+        self.price(date(2026, 3, 10), "100")
+
+        analysis = wealth.analyse_portfolio([self.pea], today=date(2026, 3, 10))
+
+        self.assertEqual(analysis["positions"][0]["value"], Decimal("1000.00"))
+        self.assertEqual(analysis["totals"]["latent"], Decimal("200.00"))
+        self.assertEqual(analysis["history"]["value"], ["1000.00"])
 
     def test_foreign_listing_is_converted_to_euros(self):
         apple = Instrument.objects.create(user=self.user, symbol="AAPL", name="Apple", currency="USD", quote_type="EQUITY")
@@ -1342,6 +1484,26 @@ class SavingsViewsTests(SavingsTestMixin, TestCase):
         operation = instrument.operations.get()
         self.assertEqual(operation.total, Decimal("302.49"))
 
+    def test_add_existing_holding_with_pru(self):
+        day = date.today() - timedelta(days=3)
+        with mock.patch(
+            "finance.market_data.fetch_history",
+            side_effect=fake_history([(day - timedelta(days=2), 98), (day, 100)]),
+        ):
+            response = self.client.post(reverse("finance:add_portfolio_operation"), {
+                "account": self.pea.pk, "kind": OperationKind.POSITION, "date": day.isoformat(),
+                "quantity": "12", "unit_price": "85.40", "fees": "5",
+                "symbol": "WPEA.PA", "instrument_name": "iShares MSCI World Swap PEA UCITS ETF",
+                "exchange": "Paris", "quote_type": "ETF",
+            })
+        self.assertRedirects(response, f"{reverse('finance:savings_portfolio')}?compte={self.pea.pk}")
+        operation = PortfolioOperation.objects.get(kind=OperationKind.POSITION)
+        # Pas de frais : le PRU les contient déjà
+        self.assertEqual((operation.fees, operation.total), (Decimal("0"), Decimal("1024.80")))
+        page = self.client.get(reverse("finance:savings_portfolio"))
+        self.assertContains(page, "Déjà détenu")
+        self.assertContains(page, "PRU (€)")
+
     def test_sale_cannot_exceed_holdings(self):
         self.buy(date(2026, 1, 5), "2", "100")
         response = self.client.post(reverse("finance:add_portfolio_operation"), {
@@ -1424,30 +1586,15 @@ class HomeTests(BudgetTestMixin, TestCase):
     def summary(self):
         return home.home_summary(self.user, self.today, _monthly_history(self.user, self.today))
 
-    def titles(self):
-        return [item["title"] for item in self.summary()["insights"]]
-
     def test_home_renders_without_data(self):
         response = self.client.get(reverse("finance:dashboard"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Bonjour budget")
         self.assertContains(response, "Crée ton budget")
-        self.assertContains(response, "Connecte ta banque")
-        self.assertContains(response, "Ajoute ton épargne")
-
-    def test_category_spike_against_recent_average(self):
-        for offset in (-3, -2, -1):
-            self.income("2000", self.month_day(offset))
-            self.expense("100", self.food, day=self.month_day(offset))
-        self.expense("250", self.food, day=self.month_day(0))
-        self.assertIn(f"{budget_calc.FOOD_CATEGORY_NAME} : +150 %", self.titles())
-
-    def test_small_categories_do_not_spike(self):
-        for offset in (-3, -2, -1):
-            self.income("2000", self.month_day(offset))
-            self.expense("5", self.food, day=self.month_day(offset))
-        self.expense("80", self.food, day=self.month_day(0))
-        self.assertFalse(any(title.startswith(budget_calc.FOOD_CATEGORY_NAME) for title in self.titles()))
+        self.assertContains(response, "Trésorerie")
+        self.assertContains(response, "Saisir mon solde")
+        self.assertContains(response, "Fixe un objectif d'épargne")
+        self.assertNotContains(response, "À retenir")
 
     def test_safety_cushion_in_months_of_expenses(self):
         for offset in (-2, -1):
@@ -1457,7 +1604,6 @@ class HomeTests(BudgetTestMixin, TestCase):
         BalanceSnapshot.objects.create(account=livret, date=self.today, balance=Decimal("2000"))
         summary = self.summary()
         self.assertEqual(summary["wealth"]["safety_months"], Decimal("2.0"))
-        self.assertIn("Matelas de sécurité à renforcer", [item["title"] for item in summary["insights"]])
 
     def test_daily_allowance_from_variable_budget(self):
         plan = self.plan(valid_from=date(self.today.year, self.today.month, 1))
@@ -1468,3 +1614,568 @@ class HomeTests(BudgetTestMixin, TestCase):
         self.assertEqual(current["daily_allowance"], budget_calc.money(Decimal("200") / current["days_left"]))
         response = self.client.get(reverse("finance:dashboard"))
         self.assertContains(response, "Par jour, d'ici la fin du mois")
+
+
+class LanguageTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("langue", password="x")
+        create_default_categories(self.user)
+        self.client.force_login(self.user)
+
+    def test_french_by_default_even_with_english_browser(self):
+        response = self.client.get(reverse("finance:settings"), HTTP_ACCEPT_LANGUAGE="en")
+        self.assertContains(response, "Paramètres")
+        self.assertContains(response, '<html lang="fr">')
+
+    def test_switch_to_english_from_settings(self):
+        response = self.client.post(reverse("set_language"), {"language": "en", "next": reverse("finance:settings")})
+        self.assertRedirects(response, reverse("finance:settings"), fetch_redirect_response=False)
+
+        page = self.client.get(reverse("finance:settings"))
+        self.assertContains(page, '<html lang="en">')
+        self.assertContains(page, "Settings")
+        self.assertNotContains(page, "Paramètres")
+        # Catégories par défaut traduites à l'affichage, inchangées en base
+        self.assertContains(self.client.get(reverse("finance:settings") + "?tab=categories"), "Food &amp; dining")
+        self.assertTrue(Category.objects.filter(user=self.user, name="Alimentation & restaurants").exists())
+
+
+import math  # noqa: E402
+
+import numpy as np  # noqa: E402
+
+from . import simulation  # noqa: E402
+
+
+def synthetic_returns(volatilities, correlation, months=120, seed=7):
+    """Rendements log mensuels corrélés, indexés (année, mois)."""
+    rng = np.random.default_rng(seed)
+    chol = np.linalg.cholesky(np.array(correlation))
+    shocks = rng.standard_normal((months, len(volatilities))) @ chol.T
+    keys = [(2016 + i // 12, i % 12 + 1) for i in range(months)]
+    return [
+        {key: float(shocks[t, k] * vol / math.sqrt(12)) for t, key in enumerate(keys)}
+        for k, vol in enumerate(volatilities)
+    ]
+
+
+def synthetic_vasicek(theta=0.02, kappa=1.0, vol=0.01, months=360, start=0.05, seed=11):
+    rng = np.random.default_rng(seed)
+    rates, pi, dt = {}, start, 1 / 12
+    for i in range(months):
+        rates[(1990 + i // 12, i % 12 + 1)] = pi
+        pi += kappa * (theta - pi) * dt + vol * math.sqrt(dt) * rng.standard_normal()
+    return rates
+
+
+class SimulationEngineTests(TestCase):
+    def lines(self):
+        return [
+            {"key": "A", "name": "ETF Monde", "value": 6000, "asset_class": AssetClass.EQUITY},
+            {"key": "B", "name": "Action", "value": 4000, "asset_class": AssetClass.EQUITY},
+        ]
+
+    def calibration(self, assets, correlation, inflation=None):
+        inflation = inflation or simulation.InflationCalibration(target=0.02, start=0.02, speed=0.5, volatility=0.01)
+        return simulation.Calibration(assets=assets, inflation=inflation, correlation=np.array(correlation, dtype=float))
+
+    def test_calibration_is_historical(self):
+        a, b, market = synthetic_returns([0.15, 0.30, 0.15], [[1, 0.7, 0.95], [0.7, 1, 0.6], [0.95, 0.6, 1]], months=600)
+        flat = simulation.calibrate(self.lines(), {"A": a, "B": b}, market, {}).assets[0]
+        a = {k: v + 0.005 for k, v in a.items()}  # +0,5 % par mois
+        calibration = simulation.calibrate(self.lines(), {"A": a, "B": b}, market, {})
+
+        etf, stock = calibration.assets
+        self.assertAlmostEqual(etf.volatility, 0.15, delta=0.015)
+        self.assertAlmostEqual(stock.volatility, 0.30, delta=0.03)
+        _mu, sigma = simulation.return_statistics(a)
+        self.assertAlmostEqual(etf.drift, np.mean(list(a.values())) * 12 + sigma ** 2 / 2, places=9)
+        # +0,5 % par mois = exactement +6 % par an sur la dérive, volatilité inchangée
+        self.assertAlmostEqual(etf.drift - flat.drift, 0.06, places=9)
+        self.assertAlmostEqual(etf.volatility, flat.volatility, places=9)
+        self.assertAlmostEqual(calibration.correlation[0, 1], 0.7, delta=0.06)
+        self.assertAlmostEqual(etf.beta, 0.95, delta=0.08)
+        self.assertEqual(etf.source, "history")
+        self.assertIsNotNone(calibration.market)
+        # Sans Eurostat : inflation par défaut, non corrélée
+        self.assertIn("inflation", calibration.notes)
+        self.assertEqual(calibration.correlation.shape, (3, 3))
+        self.assertAlmostEqual(calibration.correlation[0, 2], 0, places=6)
+
+    def test_short_history_uses_market_history(self):
+        _other, market = synthetic_returns([0.2, 0.15], [[1, 0], [0, 1]], months=120)
+        calibration = simulation.calibrate(self.lines(), {"A": {}, "B": {}}, market, {})
+        etf, _stock = calibration.assets
+        self.assertEqual(etf.source, "market")
+        self.assertEqual((etf.drift, etf.volatility), (calibration.market.drift, calibration.market.volatility))
+        # Deux lignes calquées sur le marché : parfaitement corrélées
+        self.assertAlmostEqual(calibration.correlation[0, 1], 1, places=3)
+
+    def test_no_data_at_all_uses_defaults(self):
+        calibration = simulation.calibrate(self.lines(), {}, {}, {})
+        self.assertEqual(calibration.assets[0].source, "default")
+        self.assertEqual(calibration.assets[0].drift, simulation.FALLBACK_DRIFT)
+        self.assertEqual(set(calibration.notes), {"market", "inflation"})
+
+    def test_vasicek_fit_recovers_parameters(self):
+        rates = synthetic_vasicek(theta=0.02, kappa=1.0, vol=0.01, months=600)
+        inflation, residuals = simulation.fit_vasicek(rates)
+        self.assertAlmostEqual(inflation.target, 0.02, delta=0.005)
+        self.assertAlmostEqual(inflation.speed, 1.0, delta=0.5)
+        self.assertAlmostEqual(inflation.volatility, 0.01, delta=0.0015)
+        self.assertEqual(len(residuals), 599)
+        self.assertTrue(inflation.estimated)
+
+    def test_inflation_shocks_correlate_with_assets(self):
+        rates = synthetic_vasicek(months=120, seed=3)
+        _infl, residuals = simulation.fit_vasicek(rates)
+        # Une ligne qui baisse quand l'inflation surprend à la hausse
+        asset = {k: -4 * e + 0.001 for k, e in residuals.items()}
+        calibration = simulation.calibrate(self.lines()[:1], {"A": asset}, {}, rates)
+        self.assertLess(calibration.correlation[0, 1], -0.95)
+
+    def test_parse_hicp(self):
+        payload = {"dimension": {"time": {"category": {"index": {"2025-11": 0, "2025-12": 1}}}}, "value": {"0": 0.8, "1": 0.7}}
+        rates = simulation.parse_hicp(payload)
+        self.assertEqual(sorted(rates), [(2025, 11), (2025, 12)])
+        self.assertAlmostEqual(rates[(2025, 12)], 0.007)
+
+    def test_nearest_correlation_is_valid(self):
+        broken = np.array([[1, 0.9, -0.9], [0.9, 1, 0.9], [-0.9, 0.9, 1]])
+        fixed = simulation.nearest_correlation(broken)
+        self.assertTrue(np.all(np.linalg.eigvalsh(fixed) > 0))
+        np.testing.assert_allclose(np.diag(fixed), 1)
+        np.linalg.cholesky(fixed)
+
+    def test_zero_volatility_grows_at_drift_and_inflation_deflates(self):
+        assets = [simulation.AssetCalibration(key="A", name="A", value=1000, volatility=1e-9, drift=0.05)]
+        inflation = simulation.InflationCalibration(target=0.02, start=0.02, speed=0.5, volatility=0)
+        assumptions = simulation.Assumptions(years=10)
+
+        result = simulation.simulate(self.calibration(assets, np.eye(2), inflation), assumptions, cash=100, invested=900)
+
+        self.assertEqual(result["nominal"].shape, (simulation.SCENARIOS, 121))
+        np.testing.assert_allclose(result["nominal"][:, -1], 1000 * math.exp(0.5) + 100, rtol=1e-6)
+        np.testing.assert_allclose(result["real"][:, -1], (1000 * math.exp(0.5) + 100) * math.exp(-0.2), rtol=1e-6)
+        summary = simulation.summarize(result, assumptions)
+        self.assertEqual(summary["nominal"]["loss_probability"], 0)
+        self.assertAlmostEqual(summary["inflation_median"], 2.0, places=6)
+
+    def test_scenarios_are_correlated_and_reproducible(self):
+        assets = [simulation.AssetCalibration(key=k, name=k, value=1000, volatility=0.2, drift=0.06) for k in "AB"]
+        calibration = self.calibration(assets, [[1, 0.8, 0], [0.8, 1, 0], [0, 0, 1]])
+        first = simulation.simulate(calibration, simulation.Assumptions(years=5, seed=42))
+        again = simulation.simulate(calibration, simulation.Assumptions(years=5, seed=42))
+        other = simulation.simulate(calibration, simulation.Assumptions(years=5, seed=43))
+
+        np.testing.assert_array_equal(first["nominal"], again["nominal"])
+        self.assertFalse(np.array_equal(first["nominal"], other["nominal"]))
+        self.assertGreater(np.std(first["nominal"][:, -1]), 100)
+
+    def test_contributions_stop_at_pea_ceiling(self):
+        assets = [simulation.AssetCalibration(key="A", name="A", value=1000, volatility=0.01, drift=0.02)]
+        assumptions = simulation.Assumptions(years=2, monthly_contribution=1000)
+
+        result = simulation.simulate(self.calibration(assets, np.eye(2)), assumptions, invested=1000, deposits=146_500, ceiling=150_000)
+
+        self.assertEqual(result["invested"][-1], 1000 + 3500)
+
+    def test_month_end_series_and_returns(self):
+        closes = [(date(2026, 1, 30), Decimal("100")), (date(2026, 1, 31), Decimal("101")), (date(2026, 2, 27), Decimal("110"))]
+        series = simulation.month_end_series(closes)
+        self.assertEqual(series, [(2026, 1, 101.0), (2026, 2, 110.0)])
+        self.assertAlmostEqual(simulation.log_returns(series)[(2026, 2)], math.log(110 / 101))
+
+
+class SimulationViewTests(SavingsTestMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+
+    def fake_prices(self, symbol, today=None):
+        returns = synthetic_returns([0.15], [[1]], months=60, seed=len(symbol))[0]
+        price, series = 100.0, []
+        for (year, month), r in returns.items():
+            price *= math.exp(r)
+            series.append((year, month, price))
+        return series
+
+    def test_page_without_pea(self):
+        SavingsAccount.objects.all().delete()
+        response = self.client.get(reverse("finance:savings_simulation"))
+        self.assertContains(response, "Pas encore de PEA")
+
+    def test_simulation_page_renders_scenarios(self):
+        self.buy(date(2026, 1, 5), "10", "100")
+        self.price(date(2026, 1, 5), "100")
+        with mock.patch("finance.simulation.monthly_eur_prices", side_effect=self.fake_prices), \
+                mock.patch("finance.simulation.inflation_history", return_value=synthetic_vasicek(months=120)):
+            response = self.client.get(reverse("finance:savings_simulation"), {"years": "5", "monthly_contribution": "100", "seed": "3"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "100 scénarios")
+        self.assertContains(response, "STOXX Europe 600")
+        data = response.context["simulation_data"]
+        self.assertEqual(len(data["nominal"]["paths"]), 100)
+        self.assertEqual(len(data["labels"]), 61)
+        self.assertEqual(len(data["inflation"]["p50"]), 61)
+        self.assertEqual(data["assets"][0]["weight"], 100)
+        self.assertContains(response, "simHistogramChart")
+        self.assertContains(response, "sim-heat-cell")
+        self.assertEqual(response.context["summary"]["invested"], 1000 + 60 * 100)
+        calibration = response.context["calibration"]
+        self.assertEqual(calibration.assets[0].source, "history")
+        self.assertTrue(calibration.inflation.estimated)
+        self.assertEqual(response.context["correlation_labels"][-1], "Inflation")
+
+    def test_simulation_follows_portfolio_changes(self):
+        """Nouvel actif, achat et vente : la simulation repart du portefeuille du jour."""
+
+        def simulate():
+            with mock.patch("finance.simulation.monthly_eur_prices", side_effect=self.fake_prices), \
+                    mock.patch("finance.simulation.inflation_history", return_value=synthetic_vasicek(months=120)):
+                response = self.client.get(reverse("finance:savings_simulation"), {"years": "5", "seed": "3"})
+            self.assertEqual(response.status_code, 200)
+            assets = {a["key"]: a for a in response.context["simulation_data"]["assets"]}
+            return response, assets
+
+        self.buy(date(2026, 1, 5), "10", "100")
+        self.price(date(2026, 1, 5), "100")
+        response, assets = simulate()
+        self.assertEqual(list(assets), ["CW8.PA"])
+        self.assertEqual(len(response.context["correlation_rows"]), 2)
+
+        # Nouvel actif : il entre dans la calibration et la matrice de corrélation
+        other = Instrument.objects.create(user=self.user, symbol="AI.PA", name="Air Liquide", quote_type="EQUITY")
+        self.buy(date(2026, 2, 5), "5", "200", instrument=other)
+        self.price(date(2026, 2, 5), "200", instrument=other)
+        response, assets = simulate()
+        self.assertEqual(set(assets), {"CW8.PA", "AI.PA"})
+        self.assertEqual(assets["CW8.PA"]["weight"], 50)
+        self.assertEqual(len(response.context["correlation_rows"]), 3)
+        self.assertEqual(response.context["start_value"], 2000)
+
+        # Vente partielle : poids et valeur de départ suivent
+        self.sell(date(2026, 3, 5), "5", "100")
+        response, assets = simulate()
+        self.assertAlmostEqual(assets["CW8.PA"]["weight"], 33.3, places=1)
+        self.assertEqual(response.context["start_value"], 1500)
+
+        # Vente totale : la ligne disparaît de la simulation
+        self.sell(date(2026, 4, 5), "5", "100")
+        response, assets = simulate()
+        self.assertEqual(list(assets), ["AI.PA"])
+        self.assertEqual([row["name"] for row in response.context["correlation_rows"]], ["Air Liquide", "Inflation (France)"])
+
+    def test_new_draw_without_market_data(self):
+        self.buy(date(2026, 1, 5), "10", "100")
+        with mock.patch("finance.simulation.monthly_eur_prices", return_value=None), \
+                mock.patch("finance.simulation.inflation_history", return_value={}):
+            response = self.client.get(reverse("finance:savings_simulation"), {"nouveau_tirage": "1", "years": "10", "seed": "1"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["calibration"].assets[0].source, "default")
+        self.assertContains(response, "Eurostat indisponible")
+
+
+# ============================================================
+# TYPES DE BUDGET DES CATÉGORIES (fixes / variables)
+# ============================================================
+
+from .forms import BudgetLineForm  # noqa: E402
+from .models import BudgetSection, Category, Subcategory  # noqa: E402
+
+
+class BudgetSectionTypeTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("typage", password="x")
+        create_default_categories(self.user)
+        self.client.force_login(self.user)
+        self.housing = Category.objects.get(user=self.user, name="Logement & charges")
+        self.rent = self.housing.subcategories.get(name="Loyer")
+        self.works = self.housing.subcategories.get(name="Travaux, entretien")
+
+    def form(self, section, category, subcategory=None):
+        return BudgetLineForm(
+            {"section": section, "category": category.pk, "subcategory": subcategory.pk if subcategory else "", "amount": "100"},
+            user=self.user,
+        )
+
+    def test_default_types(self):
+        self.assertEqual(self.rent.budget_section, BudgetSection.FIXED)
+        self.assertEqual(self.works.budget_section, BudgetSection.VARIABLE)
+        streaming = Subcategory.objects.get(category__user=self.user, name="Streaming vidéo")
+        self.assertEqual(streaming.budget_section, BudgetSection.SUBSCRIPTION)
+
+    def test_line_must_match_subcategory_type(self):
+        self.assertTrue(self.form(BudgetSection.FIXED, self.housing, self.rent).is_valid())
+        self.assertFalse(self.form(BudgetSection.VARIABLE, self.housing, self.rent).is_valid())
+        self.assertFalse(self.form(BudgetSection.FIXED, self.housing, self.works).is_valid())
+
+    def test_category_without_matching_subcategory_is_refused(self):
+        food = Category.objects.get(user=self.user, name="Alimentation & restaurants")
+        self.assertFalse(self.form(BudgetSection.FIXED, food).is_valid())
+        self.assertTrue(self.form(BudgetSection.VARIABLE, food).is_valid())
+
+    def test_options_carry_sections(self):
+        html = str(self.form(BudgetSection.FIXED, self.housing)["subcategory"])
+        self.assertIn(f'value="{self.rent.pk}" data-category="{self.housing.pk}" data-section="FIXED"', html)
+
+    def test_change_type_in_settings(self):
+        response = self.client.post(
+            reverse("finance:update_budget_section", args=["sous-categorie", self.works.pk]),
+            {"budget_section": BudgetSection.FIXED},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.works.refresh_from_db()
+        self.assertEqual(self.works.budget_section, BudgetSection.FIXED)
+        self.assertTrue(self.form(BudgetSection.FIXED, self.housing, self.works).is_valid())
+
+    def test_settings_split_in_two_groups(self):
+        response = self.client.get(reverse("finance:settings"), {"tab": "categories"})
+        fixed, variable = response.context["category_groups"]
+        fixed_subs = {sub.name for entry in fixed["categories"] for sub in entry["subcategories"]}
+        variable_subs = {sub.name for entry in variable["categories"] for sub in entry["subcategories"]}
+        self.assertIn("Loyer", fixed_subs)
+        self.assertIn("Streaming vidéo", fixed_subs)
+        self.assertIn("Supermarché, épicerie", variable_subs)
+        self.assertNotIn("Loyer", variable_subs)
+
+
+# ============================================================
+# OBJECTIF D'ÉPARGNE GLOBAL
+# ============================================================
+
+from . import savings_goal as goal_calc  # noqa: E402
+from .models import SavingsGoal  # noqa: E402
+
+
+class GlobalSavingsGoalTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("objectif", password="x")
+        create_default_categories(self.user)
+        self.client.force_login(self.user)
+        self.today = date(2026, 11, 5)
+        self.savings = Category.objects.get(user=self.user, name="Épargne & placements")
+        self.salary = Category.objects.get(user=self.user, name="Salaire")
+        self.food = Category.objects.get(user=self.user, name="Alimentation & restaurants")
+        # 6 mois : 2 500 € de revenus, 1 500 € de charges, 300 € d'épargne
+        for offset in range(1, 7):
+            year, month = budget_calc.add_months(2026, 11, -offset)
+            for category, kind, amount in (
+                (self.salary, EntryType.INCOME, "2500"),
+                (self.food, EntryType.EXPENSE, "1500"),
+                (self.savings, EntryType.EXPENSE, "300"),
+            ):
+                Transaction.objects.create(
+                    user=self.user, category=category, transaction_type=kind,
+                    amount=Decimal(amount), transaction_date=date(year, month, 10), description="x",
+                )
+
+    def overview(self, target, target_date, rate="0", extra="0", current=Decimal("1000")):
+        goal = SavingsGoal(user=self.user, target_amount=Decimal(target), target_date=target_date,
+                           expected_return=Decimal(rate), extra_amount=Decimal(extra))
+        return goal_calc.goal_overview(goal, self.user, current, self.today)
+
+    def test_formulas(self):
+        self.assertAlmostEqual(goal_calc.required_monthly(1000, 13000, 0, 12), 1000)
+        rate = goal_calc.monthly_rate(5)
+        monthly = goal_calc.required_monthly(0, 10000, rate, 60)
+        self.assertAlmostEqual(goal_calc.future_value(0, monthly, rate, 60), 10000, places=6)
+        self.assertLess(monthly, 10000 / 60)
+
+    def test_habits(self):
+        habits = goal_calc.saving_habits(self.user, self.today)
+        self.assertEqual(habits["months"], 6)
+        self.assertEqual(habits["savings"], Decimal("300"))
+        self.assertEqual(habits["capacity"], Decimal("1000"))
+
+    def test_feasibility_levels(self):
+        # 12 versements : 1 000 + 12 × 250 = 4 000 → au rythme actuel (300 €)
+        on = self.overview("4000", date(2027, 11, 15))
+        self.assertEqual(on["months"], 12)
+        self.assertEqual(on["needed"], Decimal("250.00"))
+        self.assertEqual(on["status"], "on")
+        # 1 000 + 12 × 800 → plus que l'épargne actuelle, moins que le reste après charges
+        self.assertEqual(self.overview("10600", date(2027, 11, 15))["status"], "watch")
+        off = self.overview("50000", date(2027, 11, 15))
+        self.assertEqual(off["status"], "off")
+        self.assertEqual(off["reachable_by_date"], Decimal("13000.00"))
+        self.assertIsNotNone(off["capacity_reach"])
+        self.assertEqual(self.overview("900", date(2027, 11, 15))["status"], "done")
+
+    def test_extra_amount_counts(self):
+        self.assertEqual(self.overview("4000", date(2027, 11, 15), extra="3000")["status"], "done")
+
+    def test_page_and_apply_monthly(self):
+        response = self.client.post(reverse("finance:update_global_savings_goal"), {
+            "target_amount": "20000", "target_date": "2030-01-01", "expected_return": "3", "extra_amount": "0",
+        })
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("finance:budget_goals"))
+        self.assertContains(response, "goalChart")
+        needed = response.context["global_goal"]["needed"]
+        self.assertGreater(needed, 0)
+        self.client.post(reverse("finance:apply_global_goal_monthly"))
+        plan = budget_calc.plan_for_month(self.user, date.today().year, date.today().month)
+        self.assertGreaterEqual(plan.savings_target_monthly, needed.quantize(Decimal("1")) - 1)
+
+    def test_invalid_goal_shows_errors_inline(self):
+        response = self.client.post(reverse("finance:update_global_savings_goal"), {
+            "target_amount": "20000", "target_date": "2020-01-01", "expected_return": "3", "extra_amount": "0",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Choisis une date dans le futur.")
+        self.assertFalse(SavingsGoal.objects.exists())
+
+
+# ============================================================
+# SAUVEGARDES, EXPORT, TRÉSORERIE
+# ============================================================
+
+from datetime import datetime  # noqa: E402
+
+from . import backups as backup_calc  # noqa: E402
+from . import forecast as forecast_calc  # noqa: E402
+from .ca_csv import AccountBalance as CaBalance  # noqa: E402
+from .models import CurrentAccount, CurrentAccountBalance, RecurrenceKind, RecurringItem  # noqa: E402
+
+
+class BackupTests(TransactionTestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.enterContext(override_settings(BACKUP_DIR=self.tmp / "backups", AUTO_BACKUP_KEEP=2))
+        self.user = get_user_model().objects.create_user("sauve", password="x")
+        self.client.force_login(self.user)
+
+    def test_create_list_and_prune(self):
+        for day in (1, 2, 3):
+            backup_calc.create_backup(backup_calc.AUTO, now=datetime(2026, 11, day, 8, 0))
+        backup_calc.create_backup(backup_calc.MANUAL, now=datetime(2026, 11, 1, 9, 0))
+        rows = backup_calc.list_backups()
+        self.assertEqual([r["label"] for r in rows].count("auto"), 2)
+        self.assertEqual([r["label"] for r in rows].count("manuelle"), 1)
+        backup_calc.check_backup_file(rows[0]["path"])
+
+    def test_daily_backup_only_once(self):
+        today = date(2026, 11, 5)
+        with mock.patch.object(backup_calc, "datetime") as fake:
+            fake.now.return_value = datetime(2026, 11, 5, 10, 0)
+            fake.strptime = datetime.strptime
+            self.assertIsNotNone(backup_calc.backup_if_due(today))
+            self.assertIsNone(backup_calc.backup_if_due(today))
+
+    def test_restore_brings_back_old_data(self):
+        path = backup_calc.create_backup(backup_calc.MANUAL)
+        get_user_model().objects.create_user("apres", password="x")
+        backup_calc.restore_backup(path)
+        self.assertFalse(get_user_model().objects.filter(username="apres").exists())
+        labels = [r["label"] for r in backup_calc.list_backups()]
+        self.assertIn("avant-restauration", labels)
+
+    def test_rejects_other_files(self):
+        bad = self.tmp / "pas-une-base.sqlite3"
+        bad.write_bytes(b"bonjour")
+        with self.assertRaises(backup_calc.BackupError):
+            backup_calc.check_backup_file(bad)
+        with self.assertRaises(backup_calc.BackupError):
+            backup_calc.backup_path("../db.sqlite3")
+
+    def test_settings_tab_and_download(self):
+        self.client.post(reverse("finance:backup_now"))
+        name = backup_calc.list_backups()[0]["name"]
+        page = self.client.get(reverse("finance:settings"), {"tab": "sauvegarde", "etat": "sauvegarde"})
+        self.assertContains(page, "Sauvegarde enregistrée.")
+        self.assertContains(page, name.split("-")[1][:4])
+        response = self.client.get(reverse("finance:download_backup", args=[name]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Disposition"], f'attachment; filename="{name}"')
+
+
+class ExportTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("export", password="x")
+        create_default_categories(self.user)
+        self.client.force_login(self.user)
+        food = Category.objects.get(user=self.user, name="Alimentation & restaurants")
+        Transaction.objects.create(user=self.user, category=food, transaction_type=EntryType.EXPENSE,
+                                   amount=Decimal("12.50"), transaction_date=date(2026, 10, 3), description="Boulangerie")
+
+    def test_csv(self):
+        response = self.client.get(reverse("finance:export_transactions_csv"))
+        content = response.content.decode("utf-8-sig")
+        self.assertIn("Boulangerie", content)
+        self.assertIn("-12,50", content)
+
+    def test_workbook(self):
+        from openpyxl import load_workbook
+        import io as _io
+
+        response = self.client.get(reverse("finance:export_workbook"))
+        book = load_workbook(_io.BytesIO(response.content))
+        self.assertIn("Opérations", book.sheetnames)
+        self.assertIn("Catégories", book.sheetnames)
+        self.assertEqual(book["Opérations"]["F2"].value, "Boulangerie")
+        self.assertEqual(book["Opérations"]["H2"].value, -12.5)
+
+
+class ForecastTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("treso", password="x")
+        create_default_categories(self.user)
+        self.client.force_login(self.user)
+        self.today = date(2026, 11, 5)
+        self.salary = Category.objects.get(user=self.user, name="Salaire")
+        self.food = Category.objects.get(user=self.user, name="Alimentation & restaurants")
+        self.housing = Category.objects.get(user=self.user, name="Logement & charges")
+
+    def tx(self, category, kind, amount, day, **extra):
+        return Transaction.objects.create(user=self.user, category=category, transaction_type=kind,
+                                          amount=Decimal(amount), transaction_date=day, description="x", **extra)
+
+    def test_current_balance_imported_from_bank(self):
+        snapshot = forecast_calc.import_current_balance(self.user, [
+            CaBalance("Livret A", "111", date(2026, 11, 4), Decimal("5000")),
+            CaBalance("Compte de Dépôt", "222", date(2026, 11, 4), Decimal("1234.56")),
+        ])
+        self.assertEqual(snapshot.balance, Decimal("1234.56"))
+        self.assertEqual(CurrentAccount.objects.get(user=self.user).bank_account_number, "222")
+
+    def test_forecast_events_and_low_point(self):
+        forecast_calc.set_manual_balance(self.user, date(2026, 11, 3), Decimal("800"))
+        # Dépense saisie après le relevé : elle compte déjà
+        self.tx(self.food, EntryType.EXPENSE, "50", date(2026, 11, 4))
+        # Loyer le 10 de chaque mois
+        RecurringItem.objects.create(user=self.user, name="Loyer", entry_type=EntryType.EXPENSE, category=self.housing,
+                                     default_amount=Decimal("700"), start_date=date(2026, 1, 10))
+        # Salaire reçu le 28 des mois précédents
+        for month in (8, 9, 10):
+            self.tx(self.salary, EntryType.INCOME, "2000", date(2026, month, 28), actual_date=date(2026, month, 28))
+        result = forecast_calc.forecast(self.user, self.today, "30")
+        self.assertEqual(result["current"], Decimal("750.00"))
+        labels = [(e["date"], e["label"]) for e in result["events"]]
+        self.assertIn((date(2026, 11, 10), "Loyer"), labels)
+        self.assertTrue(any(label.startswith("Salaire") and day == date(2026, 11, 28) for day, label in labels))
+        # Point bas juste après le loyer, avant le salaire
+        self.assertTrue(date(2026, 11, 10) <= result["low"]["date"] < date(2026, 11, 28))
+        self.assertLess(result["low"]["balance"], Decimal("100"))
+        self.assertIn(result["status"], {"watch", "off"})
+
+    def test_subscription_expected_after_last_payment(self):
+        item = RecurringItem.objects.create(user=self.user, name="Netflix", kind=RecurrenceKind.SUBSCRIPTION,
+                                            entry_type=EntryType.EXPENSE, default_amount=Decimal("13.49"),
+                                            match_key="netflix", start_date=date(2026, 1, 12))
+        self.tx(None, EntryType.EXPENSE, "13.49", date(2026, 10, 12), recurring_item=item)
+        forecast_calc.set_manual_balance(self.user, self.today, Decimal("500"))
+        result = forecast_calc.forecast(self.user, self.today, "30")
+        self.assertIn((date(2026, 11, 12), "Netflix"), [(e["date"], e["label"]) for e in result["events"]])
+
+    def test_page(self):
+        response = self.client.get(reverse("finance:budget_cashflow"))
+        self.assertContains(response, "Quel est le solde de ton compte courant")
+        response = self.client.post(reverse("finance:update_current_balance"),
+                                    {"date": date.today().isoformat(), "balance": "1500", "safety_buffer": "300"})
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("finance:budget_cashflow"))
+        self.assertContains(response, "cashChart")
+        self.assertEqual(CurrentAccount.objects.get(user=self.user).safety_buffer, Decimal("300"))
+        self.assertEqual(CurrentAccountBalance.objects.count(), 1)

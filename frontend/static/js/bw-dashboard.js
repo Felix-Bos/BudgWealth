@@ -33,9 +33,9 @@
                 data: {
                     labels: history.labels,
                     datasets: [
-                        bar('Revenus', num(history.income), p.income),
-                        bar('Charges', num(history.expense), p.expense),
-                        bar('Épargne', num(history.savings), p.savings),
+                        bar(gettext('Revenus'), num(history.income), p.income),
+                        bar(gettext('Charges'), num(history.expense), p.expense),
+                        bar(gettext('Épargne'), num(history.savings), p.savings),
                         {
                             type: 'line',
                             label: 'Solde (revenus − charges)',
@@ -76,7 +76,7 @@
         charts.create(rateCanvas, function (p) {
             var datasets = [
                 {
-                    label: "Taux d'épargne",
+                    label: gettext("Taux d'épargne"),
                     data: history.savingsRate,
                     borderColor: p.savings,
                     backgroundColor: charts.alpha(p.savings, 0.15),
@@ -90,7 +90,7 @@
             ];
             if (data.savingsTargetRate !== null && data.savingsTargetRate !== undefined) {
                 datasets.push({
-                    label: 'Objectif',
+                    label: gettext('Objectif'),
                     data: history.labels.map(function () { return data.savingsTargetRate; }),
                     borderColor: p.budget,
                     borderDash: [6, 5],
@@ -130,13 +130,13 @@
                 data: {
                     labels: trend.labels,
                     datasets: [
-                        bar('Dépensé', spent, spent.map(function (value, i) {
+                        bar(gettext('Dépensé'), spent, spent.map(function (value, i) {
                             return value > budget[i] ? p.expense : charts.alpha(p.balance, 0.85);
                         }), { order: 2 }),
-                        bar('Épargné', num(trend.savings), p.savings, { order: 2 }),
+                        bar(gettext('Épargné'), num(trend.savings), p.savings, { order: 2 }),
                         {
                             type: 'line',
-                            label: 'Budget',
+                            label: gettext('Budget'),
                             data: budget,
                             borderColor: p.text,
                             borderDash: [6, 4],
@@ -147,7 +147,7 @@
                         },
                         {
                             type: 'line',
-                            label: 'Objectif épargne',
+                            label: gettext('Objectif épargne'),
                             data: num(trend.savingsTarget),
                             borderColor: p.savings,
                             borderDash: [2, 3],
@@ -196,7 +196,7 @@
                                 label: charts.euroLabel,
                                 footer: function (items) {
                                     var total = items.reduce(function (sum, item) { return sum + item.parsed.y; }, 0);
-                                    return 'Total : ' + charts.money2.format(total) + ' €';
+                                    return gettext('Total : ') + charts.money2.format(total) + ' €';
                                 }
                             }
                         }
@@ -216,7 +216,7 @@
                 data: {
                     labels: data.subscriptions.labels,
                     datasets: [{
-                        label: 'Abonnements',
+                        label: gettext('Abonnements'),
                         data: num(data.subscriptions.totals),
                         borderColor: p.cats[4],
                         backgroundColor: charts.alpha(p.cats[4], 0.15),
@@ -235,7 +235,7 @@
                             callbacks: {
                                 label: function (ctx) {
                                     var count = data.subscriptions.counts[ctx.dataIndex];
-                                    return ' ' + charts.money2.format(ctx.parsed.y) + ' € · ' + count + ' abonnement' + (count > 1 ? 's' : '');
+                                    return ' ' + charts.money2.format(ctx.parsed.y) + ' € · ' + count + gettext(' abonnement') + (count > 1 ? 's' : '');
                                 }
                             }
                         }

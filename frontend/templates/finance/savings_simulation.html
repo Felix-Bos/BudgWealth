@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% translate "Simulation du PEA - BudgWealth" %}{% endblock %}
+
+{% block content %}
+<section class="finance-dashboard budget-page savings-page">
+    {% include "finance/_savings_tabs.html" with subtitle=_("100 scénarios économiques pour ton PEA, calibrés sur l'historique, avec et sans inflation") %}
+
+    {% if not accounts %}
+    <div class="content-panel savings-empty">
+        <h2 class="h5 mb-2">{% translate "Pas encore de PEA" %}</h2>
+        <p class="text-muted mb-3">{% translate "La simulation part des lignes de ton PEA : crée-le et ajoute tes titres d'abord." %}</p>
+        <a class="btn btn-primary" href="{% url 'finance:savings_portfolio' %}">{% translate "Créer mon portefeuille" %}</a>
+    </div>
+    {% elif not summary %}
+    <div class="content-panel savings-empty">
+        <h2 class="h5 mb-2">{% translate "Ton PEA n'a pas encore de ligne" %}</h2>
+        <p class="text-muted mb-3">{% translate "Ajoute tes titres (ou « Déjà détenu » pour un portefeuille existant) pour lancer la simulation." %}</p>
+        <a class="btn btn-primary" href="{% url 'finance:savings_portfolio' %}#ajouter">{% translate "Ajouter une ligne" %}</a>
+    </div>
+    {% else %}
+
+    {# ---------- Hypothèses ---------- #}
+    <form method="get" class="content-panel budget-panel mb-4 sim-form">
+        <div class="budget-panel-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "Simulation" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Rendements, volatilités, corrélations et inflation sont calibrés sur les 10 dernières années : tu choisis seulement l'horizon et tes versements." %}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" name="nouveau_tirage" value="1" class="btn btn-outline-secondary btn-sm">{% translate "↻ Nouveau tirage" %}</button>
+                <button type="submit" class="btn btn-primary btn-sm">{% translate "Simuler" %}</button>
+            </div>
+        </div>
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-6 col-md-4">
+                <label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    {# ---------- Chiffres clés à l'horizon ---------- #}
+    <div class="dash-kpis mb-4">
+        <div class="dash-kpi">
+            <span>{% translate "Valeur aujourd'hui" %}</span>
+            <strong>{{ start_value|floatformat:"0g" }} €</strong>
+            <small>{% translate "titres et liquidités du PEA" %}</small>
+        </div>
+        <div class="dash-kpi is-savings">
+            <span>{% blocktranslate count years=assumptions.years %}Médiane dans {{ years }} an{% plural %}Médiane dans {{ years }} ans{% endblocktranslate %}</span>
+            <strong>{{ summary.nominal.median|floatformat:"0g" }} €</strong>
+            <small>{% translate "sans inflation" %}{% if summary.nominal.annualized is not None %} · {{ summary.nominal.annualized|floatformat:"1" }} {% translate "%/an" %}{% endif %}</small>
+        </div>
+        <div class="dash-kpi">
+            <span>{% translate "En euros d'aujourd'hui" %}</span>
+            <strong>{{ summary.real.median|floatformat:"0g" }} €</strong>
+            <small>{% translate "avec inflation" %}{% if summary.real.annualized is not None %} · {{ summary.real.annualized|floatformat:"1" }} {% translate "%/an" %}{% endif %}</small>
+        </div>
+        <div class="dash-kpi">
+            <span>{% translate "Fourchette 90 %" %}</span>
+            <strong class="sim-range">{{ summary.nominal.p5|floatformat:"0g" }} – {{ summary.nominal.p95|floatformat:"0g" }} €</strong>
+            <small>{% translate "5 % des scénarios font moins, 5 % font plus" %}</small>
+        </div>
+        <div class="dash-kpi {% if summary.real.loss_probability > 20 %}is-bad{% else %}is-good{% endif %}">
+            <span>{% translate "Risque de perte" %}</span>
+            <strong>{{ summary.nominal.loss_probability|floatformat:"0" }} %</strong>
+            <small>{% translate "des scénarios finissent sous le capital investi ·" %} {{ summary.real.loss_probability|floatformat:"0" }} {% translate "% en pouvoir d'achat" %}</small>
+        </div>
+    </div>
+
+    {# ---------- Éventail des scénarios ---------- #}
+    <div class="content-panel dash-card mb-4">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "100 scénarios" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Chaque fine ligne est un futur possible ; la zone foncée contient la moitié des scénarios, la claire 90 %." %} {% translate "Les scénarios les plus extrêmes sortent du cadre." %}</p>
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="{% translate "Affichage" %}">
+                <button type="button" class="btn btn-primary js-sim-mode" data-mode="nominal" aria-pressed="true">{% translate "Sans inflation" %}</button>
+                <button type="button" class="btn btn-outline-secondary js-sim-mode" data-mode="real" aria-pressed="false">{% translate "Avec inflation" %}</button>
+            </div>
+        </div>
+        <div class="dash-chart sim-chart"><canvas id="simulationChart" role="img" aria-label="{% translate "Valeur du PEA dans les 100 scénarios" %}"></canvas></div>
+    </div>
+
+    {# ---------- Résultats à l'horizon : en images ---------- #}
+    <div class="dash-grid mb-4">
+        <div class="content-panel dash-card">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">{% blocktranslate count years=assumptions.years %}Où finit ton PEA dans {{ years }} an{% plural %}Où finit ton PEA dans {{ years }} ans{% endblocktranslate %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Répartition des 100 scénarios à l'horizon : en rouge ceux qui finissent sous le capital investi." %}</p>
+                </div>
+            </div>
+            <div class="dash-chart"><canvas id="simHistogramChart" role="img" aria-label="{% translate "Répartition des valeurs finales des 100 scénarios" %}"></canvas></div>
+            <div class="sim-odds">
+                <div class="sim-odds-bar" style="--loss: {{ summary.nominal.loss_probability|stringformat:'.1f' }}%">
+                    <span class="sim-odds-loss"></span><span class="sim-odds-gain"></span>
+                </div>
+                <div class="sim-odds-legend">
+                    <span><i class="is-loss"></i>{{ summary.nominal.loss_probability|floatformat:"0" }} % {% translate "de scénarios en perte" %}</span>
+                    <span><i class="is-gain"></i>{{ gain_probability|floatformat:"0" }} % {% translate "en gain" %}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-panel dash-card">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">{% translate "Du pire au meilleur" %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Capital investi à l'horizon :" %} {{ summary.invested|floatformat:"0g" }} €{% if assumptions.monthly_contribution %} {% translate "(versements compris)" %}{% endif %} · {% translate "ligne pointillée" %}</p>
+                </div>
+            </div>
+            <div class="dash-chart"><canvas id="simPercentileChart" role="img" aria-label="{% translate "Valeur finale selon le scénario, sans et avec inflation" %}"></canvas></div>
+            <div class="sim-facts">
+                <div><span>{% translate "Pire baisse en route" %}</span><strong class="dash-negative">−{{ summary.nominal.drawdown|floatformat:"0" }} %</strong><small>{% translate "médiane des scénarios" %}</small></div>
+                <div><span>{% translate "Après prélèvements" %}</span><strong>{{ summary.nominal.net_median|floatformat:"0g" }} €</strong><small>{% translate "médiane, 17,2 % des gains" %}</small></div>
+                <div><span>{% translate "Inflation moyenne" %}</span><strong>{{ summary.inflation_median|floatformat:"1" }} %</strong><small>{% translate "par an (médiane)" %}</small></div>
+            </div>
+        </div>
+    </div>
+
+    <details class="content-panel dash-card mb-4 sim-details">
+        <summary>
+            <span class="h6 mb-0">{% translate "Tous les chiffres à l'horizon" %}</span>
+            <small class="text-muted">{% translate "percentiles, moyenne, probabilité de perte" %}</small>
+        </summary>
+        <div class="table-responsive mt-3">
+            <table class="table finance-table align-middle savings-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th class="text-end">{% translate "Sans inflation" %}</th>
+                        <th class="text-end">{% translate "Avec inflation" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>{% translate "Scénario défavorable (5 %)" %}</td><td class="text-end savings-num">{{ summary.nominal.p5|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.p5|floatformat:"0g" }} €</td></tr>
+                    <tr><td>{% translate "Prudent (25 %)" %}</td><td class="text-end savings-num">{{ summary.nominal.p25|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.p25|floatformat:"0g" }} €</td></tr>
+                    <tr><td><strong>{% translate "Médian" %}</strong></td><td class="text-end savings-num"><strong>{{ summary.nominal.median|floatformat:"0g" }} €</strong></td><td class="text-end savings-num"><strong>{{ summary.real.median|floatformat:"0g" }} €</strong></td></tr>
+                    <tr><td>{% translate "Favorable (75 %)" %}</td><td class="text-end savings-num">{{ summary.nominal.p75|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.p75|floatformat:"0g" }} €</td></tr>
+                    <tr><td>{% translate "Très favorable (95 %)" %}</td><td class="text-end savings-num">{{ summary.nominal.p95|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.p95|floatformat:"0g" }} €</td></tr>
+                    <tr><td>{% translate "Moyenne" %}</td><td class="text-end savings-num">{{ summary.nominal.mean|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.mean|floatformat:"0g" }} €</td></tr>
+                    <tr><td>{% translate "Probabilité de perte" %}</td><td class="text-end savings-num">{{ summary.nominal.loss_probability|floatformat:"0" }} %</td><td class="text-end savings-num">{{ summary.real.loss_probability|floatformat:"0" }} %</td></tr>
+                    <tr><td>{% translate "Pire baisse en cours de route (médiane)" %}</td><td class="text-end savings-num">−{{ summary.nominal.drawdown|floatformat:"0" }} %</td><td class="text-end savings-num">−{{ summary.real.drawdown|floatformat:"0" }} %</td></tr>
+                    <tr><td>{% translate "Médiane après prélèvements sociaux (17,2 % des gains)" %}</td><td class="text-end savings-num">{{ summary.nominal.net_median|floatformat:"0g" }} €</td><td class="text-end savings-num">{{ summary.real.net_median|floatformat:"0g" }} €</td></tr>
+                </tbody>
+            </table>
+        </div>
+        {% if summary.pea_mature is False %}<p class="text-muted small mb-0">{% translate "Attention : ton PEA aura moins de 5 ans à l'horizon, un retrait le clôturerait et les gains seraient imposés à 30 %." %}</p>{% endif %}
+    </details>
+
+    {# ---------- Corrélations ---------- #}
+    {% if correlation_rows|length > 1 %}
+    <div class="content-panel dash-card mb-4">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "Corrélations" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Rendements mensuels et chocs d'inflation sur 10 ans : plus la case est foncée, plus les deux bougent ensemble" %}</p>
+            </div>
+        </div>
+        <div class="sim-heatmap-wrap">
+            <table class="sim-heatmap">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for label in correlation_labels %}<th scope="col" title="{{ label }}"><span>{{ label }}</span></th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in correlation_rows %}
+                    <tr>
+                        <th scope="row" title="{{ row.name }}">{{ row.name }}</th>
+                        {% for value in row.values %}
+                        {% if forloop.counter == forloop.parentloop.counter %}
+                        <td class="sim-heat-cell is-diag">1</td>
+                        {% else %}
+                        <td class="sim-heat-cell{% if value >= 0.5 or value <= -0.5 %} is-strong{% endif %}" style="--corr: {{ value|stringformat:'.2f' }}" title="{{ row.name }} · {{ value|floatformat:'2' }}">{{ value|floatformat:"2" }}</td>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="sim-heat-legend" aria-hidden="true">
+            <span>−1 · {% translate "sens opposés" %}</span>
+            <div class="sim-heat-scale"></div>
+            <span>+1 · {% translate "ensemble" %}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ---------- Calibration ---------- #}
+    <div class="content-panel dash-card mb-4">
+            <div class="month-card-head">
+                <div>
+                    <h2 class="h5 mb-1">{% translate "Calibration historique" %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Cours mensuels ajustés des dividendes, 10 ans au plus · bêta face au" %} STOXX Europe 600</p>
+                </div>
+            </div>
+            <div class="sim-calibration">
+            <div class="dash-chart is-tall"><canvas id="simRiskChart" role="img" aria-label="{% translate "Rendement et volatilité de chaque ligne" %}"></canvas></div>
+            <div class="table-responsive">
+                <table class="table finance-table align-middle savings-table">
+                    <thead>
+                        <tr>
+                            <th>{% translate "Ligne" %}</th>
+                            <th class="text-end">{% translate "Poids" %}</th>
+                            <th class="text-end">{% translate "Rendement" %}</th>
+                            <th class="text-end">{% translate "Volatilité" %}</th>
+                            <th class="text-end">{% translate "Bêta" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in calibration_rows %}
+                        <tr>
+                            <td>
+                                <div class="savings-cell-name">
+                                    <strong>{{ row.asset.name }}</strong>
+                                    <small>{{ row.asset.key }} · {% if row.asset.source == "history" %}{% blocktranslate with years=row.years|floatformat:"1" %}{{ years }} ans d'historique{% endblocktranslate %}{% elif row.asset.source == "market" %}{% translate "historique trop court : celui du STOXX Europe 600" %}{% else %}{% translate "aucune donnée : valeurs par défaut" %}{% endif %}</small>
+                                </div>
+                            </td>
+                            <td class="text-end savings-num">{{ row.weight|floatformat:"1" }} %</td>
+                            <td class="text-end savings-num">{{ row.drift|floatformat:"1" }} %</td>
+                            <td class="text-end savings-num">{{ row.volatility|floatformat:"1" }} %</td>
+                            <td class="text-end savings-num">{% if row.asset.beta is not None %}{{ row.asset.beta|floatformat:"2" }}{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if market_row %}
+                        <tr class="sim-market-row">
+                            <td>
+                                <div class="savings-cell-name">
+                                    <strong>{{ market_row.asset.name }}</strong>
+                                    <small>{% translate "Marché de référence" %} · {% blocktranslate with years=market_row.years|floatformat:"1" %}{{ years }} ans d'historique{% endblocktranslate %}</small>
+                                </div>
+                            </td>
+                            <td class="text-end savings-num">—</td>
+                            <td class="text-end savings-num">{{ market_row.drift|floatformat:"1" }} %</td>
+                            <td class="text-end savings-num">{{ market_row.volatility|floatformat:"1" }} %</td>
+                            <td class="text-end savings-num">{{ 1|floatformat:"2" }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            </div>
+            <p class="text-muted small mb-0">{% translate "Rendement = dérive annuelle du mouvement brownien, estimée sur la moyenne historique. Sur 10 ans, l'incertitude sur cette moyenne reste large (± 2 × volatilité ÷ √10) : un titre qui a beaucoup monté est projeté sur la même pente." %}</p>
+            {% if "market" in calibration.notes %}
+            <p class="text-muted small mb-0">{% translate "STOXX Europe 600 indisponible : pas de bêta ni de repli sur le marché." %}</p>
+            {% endif %}
+            {% if cash %}<p class="text-muted small mb-0">{{ cash|floatformat:"2g" }} {% translate "€ de liquidités, supposées non rémunérées." %}</p>{% endif %}
+    </div>
+
+    {# ---------- Inflation ---------- #}
+    <div class="content-panel dash-card mb-4">
+        <div class="month-card-head">
+            <div>
+                <h2 class="h5 mb-1">{% translate "Inflation" %}</h2>
+                <p class="text-muted small mb-0">
+                    {% if inflation.calibration.estimated %}
+                    {% translate "Modèle de Vasicek estimé sur l'IPCH France (Eurostat)," %} {{ inflation.calibration.first }} – {{ inflation.calibration.last }}
+                    {% else %}
+                    {% translate "Eurostat indisponible : hypothèses par défaut (cible 2 %)." %}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="dash-chart is-small mb-3"><canvas id="simInflationChart" role="img" aria-label="{% translate "Éventail des scénarios d'inflation" %}"></canvas></div>
+        <div class="dash-kpis">
+            <div class="dash-kpi">
+                <span>{% translate "Dernière inflation connue" %}</span>
+                <strong>{{ inflation.start|floatformat:"1" }} %</strong>
+                <small>{% translate "point de départ des scénarios" %}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Moyenne de long terme (θ)" %}</span>
+                <strong>{{ inflation.target|floatformat:"1" }} %</strong>
+                <small>{% translate "niveau vers lequel elle revient" %}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Vitesse de retour (κ)" %}</span>
+                <strong>{{ inflation.speed|floatformat:"2" }}</strong>
+                <small>{% if inflation.half_life %}{% blocktranslate with years=inflation.half_life|floatformat:"1" %}l'écart se réduit de moitié en {{ years }} ans{% endblocktranslate %}{% endif %}</small>
+            </div>
+            <div class="dash-kpi">
+                <span>{% translate "Volatilité" %}</span>
+                <strong>{{ inflation.volatility|floatformat:"1" }} %</strong>
+                <small>{% translate "par an" %}</small>
+            </div>
+        </div>
+    </div>
+
+    {# ---------- Méthode ---------- #}
+    <div class="budget-callout mb-4">
+        <strong>{% translate "Comment sont construits les scénarios" %}</strong>
+        <span>{% translate "Chaque ligne suit un mouvement brownien géométrique au pas mensuel, avec le rendement et la volatilité observés sur son historique (dividendes réinvestis). L'inflation suit un modèle de Vasicek estimé sur l'inflation française. Les chocs des lignes et de l'inflation sont tirés ensemble avec la matrice de corrélation historique (décomposition de Cholesky). Les montants « avec inflation » sont en euros d'aujourd'hui. Pas de frais ni de rééquilibrage : les versements suivent les poids actuels et s'arrêtent au plafond du PEA. Une simulation n'est pas une prévision." %}</span>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if summary %}
+{% include "finance/_charts_js.html" %}
+{{ simulation_data|json_script:"simulation-data" }}
+<script src="{% static 'js/bw-simulation.js' %}?v=5"></script>
+{% endif %}
+{% endblock %}

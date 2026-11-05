@@ -1,3 +1,4 @@
+{% load i18n %}
 <li class="sub-row is-{{ row.status.status|default:'active' }}">
     <span class="sub-avatar" aria-hidden="true">{{ row.item.name|slice:":1"|upper }}</span>
     <div class="sub-row-main">
@@ -5,26 +6,26 @@
         <small>
             {{ row.item.default_amount }} € · {{ row.item.frequency_label|lower }}
             {% if row.status %}
-                · dernier paiement le {{ row.status.last_paid|date:"j M Y" }}
+                {% translate "· dernier paiement le" %} {{ row.status.last_paid|date:"j M Y" }}
                 {% if row.status.status == "stopped" %}
-                · attendu le {{ row.status.next_due|date:"j M" }}, jamais arrivé
+                {% translate "· attendu le" %} {{ row.status.next_due|date:"j M" }}{% translate ", jamais arrivé" %}
                 {% else %}
-                · prochain vers le {{ row.status.next_due|date:"j M" }}
+                {% translate "· prochain vers le" %} {{ row.status.next_due|date:"j M" }}
                 {% endif %}
             {% endif %}
         </small>
     </div>
     {% if row.status.status == "stopped" %}
-    <span class="budget-badge is-off">Arrêté</span>
+    <span class="budget-badge is-off">{% translate "Arrêté" %}</span>
     {% elif row.status.status == "due" %}
-    <span class="budget-badge is-watch">{% if row.status.days_late %}En retard de {{ row.status.days_late }} j{% else %}Paiement attendu{% endif %}</span>
+    <span class="budget-badge is-watch">{% if row.status.days_late %}{% translate "En retard de" %} {{ row.status.days_late }} j{% else %}{% translate "Paiement attendu" %}{% endif %}</span>
     {% else %}
-    <span class="budget-badge is-on">Actif</span>
+    <span class="budget-badge is-on">{% translate "Actif" %}</span>
     {% endif %}
     <div class="sub-row-actions">
-        <form method="post" action="{% url 'finance:untrack_subscription' row.item.pk %}" onsubmit="return confirm('Ne plus suivre cet abonnement ? Les paiements restent dans ton historique.');">
+        <form method="post" action="{% url 'finance:untrack_subscription' row.item.pk %}" onsubmit="return confirm('{{ _("Ne plus suivre cet abonnement ? Les paiements restent dans ton historique.")|escapejs }}');">
             {% csrf_token %}
-            <button type="submit" class="btn btn-link btn-sm p-0 text-muted">Ne plus suivre</button>
+            <button type="submit" class="btn btn-link btn-sm p-0 text-muted">{% translate "Ne plus suivre" %}</button>
         </form>
     </div>
 </li>

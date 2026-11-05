@@ -1,6 +1,7 @@
-<div class="savings-range" role="group" aria-label="Période affichée" data-range-for="{{ chart }}">
+{% load i18n %}
+<div class="savings-range" role="group" aria-label="{% translate "Période affichée" %}" data-range-for="{{ chart }}">
     <button type="button" data-range="1M">1 M</button>
     <button type="button" data-range="6M">6 M</button>
-    <button type="button" data-range="1Y">1 an</button>
-    <button type="button" data-range="ALL" class="is-active">Tout</button>
+    <button type="button" data-range="1Y">{% translate "1 an" %}</button>
+    <button type="button" data-range="ALL" class="is-active">{% translate "Tout" %}</button>
 </div>

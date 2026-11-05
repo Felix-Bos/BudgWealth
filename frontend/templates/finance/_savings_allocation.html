@@ -1,3 +1,4 @@
+{% load i18n %}
 {# Anneau d'allocation + légende ; les couleurs suivent l'ordre des parts #}
 <div class="content-panel dash-card">
     <div class="month-card-head">
@@ -22,6 +23,6 @@
         </ul>
     </div>
     {% else %}
-    <p class="text-muted mb-0">{{ empty|default:"Rien à afficher pour l'instant." }}</p>
+    <p class="text-muted mb-0">{{ empty|default:_("Rien à afficher pour l'instant.") }}</p>
     {% endif %}
 </div>

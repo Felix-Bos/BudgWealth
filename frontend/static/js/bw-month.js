@@ -9,8 +9,8 @@
     }
 
     var charts = window.BW && window.BW.charts;
-    var money2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    var plain = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var money2 = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var plain = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // ============================================================
     // ANNEAU : CATÉGORIES -> SOUS-CATÉGORIES
@@ -22,7 +22,7 @@
 
         var tree = readJson('category-tree-data') || [];
         var state = { index: null };
-        var centerLabel = 'Charges';
+        var centerLabel = gettext('Charges');
         var legend = document.querySelector('.js-donut-legend');
         var back = document.querySelector('.js-donut-back');
         var title = document.querySelector('.js-donut-title');
@@ -32,7 +32,7 @@
             if (state.index === null || !tree[state.index]) {
                 state.index = null;
                 return {
-                    label: 'Charges',
+                    label: gettext('Charges'),
                     items: tree.map(function (node, i) {
                         return { name: node.name, value: Number(node.total), color: p.cats[i % p.cats.length] };
                     })
@@ -96,10 +96,10 @@
             });
 
             back.hidden = state.index === null;
-            title.textContent = state.index === null ? 'Charges par catégorie' : data.label;
+            title.textContent = state.index === null ? gettext('Charges par catégorie') : data.label;
             subtitle.textContent = state.index === null
-                ? 'Clique sur une catégorie pour voir ses sous-catégories'
-                : 'Détail par sous-catégorie';
+                ? gettext('Clique sur une catégorie pour voir ses sous-catégories')
+                : gettext('Détail par sous-catégorie');
         }
 
         var handle = charts.create(canvas, function (p) {
@@ -190,7 +190,7 @@
         var handle = charts.create(canvas, function (p) {
             var datasets = [
                 {
-                    label: 'Charges',
+                    label: gettext('Charges'),
                     data: series(data.expense),
                     borderColor: p.expense,
                     backgroundColor: charts.alpha(p.expense, 0.12),
@@ -201,7 +201,7 @@
                     pointHoverRadius: 5
                 },
                 {
-                    label: 'Revenus',
+                    label: gettext('Revenus'),
                     data: series(data.income),
                     borderColor: p.income,
                     tension: 0.25,
@@ -211,7 +211,7 @@
                     stepped: false
                 },
                 {
-                    label: 'Épargne',
+                    label: gettext('Épargne'),
                     data: series(data.savings),
                     borderColor: p.savings,
                     tension: 0.25,
@@ -222,7 +222,7 @@
             ];
             if (data.pace && data.pace.length) {
                 datasets.push({
-                    label: 'Rythme du budget',
+                    label: gettext('Rythme du budget'),
                     data: series(data.pace),
                     borderColor: p.budget,
                     borderDash: [6, 5],
@@ -240,7 +240,7 @@
                         legend: { position: 'bottom' },
                         tooltip: {
                             callbacks: {
-                                title: function (items) { return 'Au ' + items[0].label; },
+                                title: function (items) { return gettext('Au ') + items[0].label; },
                                 label: charts.euroLabel
                             }
                         }
@@ -314,7 +314,7 @@
         });
         var count = month.counts.income + month.counts.expense + month.counts.savings;
         var countEl = document.querySelector('.js-tx-count');
-        if (countEl) countEl.textContent = count + ' opération' + (count > 1 ? 's' : '');
+        if (countEl) countEl.textContent = count + gettext(' opération') + (count > 1 ? 's' : '');
         donut.update(month.categoryTree);
         daily.update(month.daily);
     }
@@ -332,23 +332,14 @@
             credentials: 'same-origin'
         }).then(function (response) {
             return response.json().then(function (json) {
-                if (!response.ok || !json.ok) throw new Error(json.error || 'Erreur');
+                if (!response.ok || !json.ok) throw new Error(json.error || gettext('Erreur'));
                 return json;
             });
         });
     }
 
-    function toast(message, isError) {
-        var el = document.createElement('div');
-        el.className = 'bw-toast' + (isError ? ' is-error' : '');
-        el.textContent = message;
-        document.body.appendChild(el);
-        requestAnimationFrame(function () { el.classList.add('is-visible'); });
-        setTimeout(function () {
-            el.classList.remove('is-visible');
-            setTimeout(function () { el.remove(); }, 300);
-        }, 2200);
-    }
+    // Pas de notifications
+    function toast() {}
 
     // ---------- Suppression ----------
 
@@ -370,10 +361,10 @@
             }, { once: true });
             row.classList.add('is-removed');
             refreshMonth(json.month);
-            toast('Opération supprimée');
+            toast(gettext('Opération supprimée'));
         }).catch(function () {
             row.classList.remove('is-removing');
-            toast('Impossible de supprimer cette opération', true);
+            toast(gettext('Impossible de supprimer cette opération'), true);
         });
     });
 
@@ -412,21 +403,21 @@
         editor.className = 'tx-editor';
         editor.innerHTML =
             '<form class="tx-editor-form">' +
-            '  <label class="tx-editor-field tx-editor-wide"><span>Intitulé</span><input type="text" name="description" class="form-control" maxlength="255"></label>' +
-            '  <label class="tx-editor-field"><span>Catégorie</span><select name="category" class="form-control"></select></label>' +
-            '  <label class="tx-editor-field"><span>Sous-catégorie</span><select name="subcategory" class="form-control"></select></label>' +
+            '  <label class="tx-editor-field tx-editor-wide"><span>' + gettext('Intitulé') + '</span><input type="text" name="description" class="form-control" maxlength="255"></label>' +
+            '  <label class="tx-editor-field"><span>' + gettext('Catégorie') + '</span><select name="category" class="form-control"></select></label>' +
+            '  <label class="tx-editor-field"><span>' + gettext('Sous-catégorie') + '</span><select name="subcategory" class="form-control"></select></label>' +
             '  <div class="tx-editor-sub js-editor-sub" hidden>' +
             '    <span class="js-editor-sub-text"></span>' +
             '    <span class="tx-editor-sub-controls js-editor-sub-controls">' +
-            '      <select class="form-control form-control-sm js-editor-sub-unit" aria-label="Fréquence">' +
-            '        <option value="MONTH">Tous les mois</option><option value="YEAR">Tous les ans</option>' +
+            '      <select class="form-control form-control-sm js-editor-sub-unit" aria-label="' + gettext('Fréquence') + '">' +
+            '        <option value="MONTH">' + gettext('Tous les mois') + '</option><option value="YEAR">' + gettext('Tous les ans') + '</option>' +
             '      </select>' +
-            '      <button type="button" class="btn btn-outline-secondary btn-sm js-editor-track">↻ Suivre comme abonnement</button>' +
+            '      <button type="button" class="btn btn-outline-secondary btn-sm js-editor-track">' + gettext('↻ Suivre comme abonnement') + '</button>' +
             '    </span>' +
             '  </div>' +
             '  <div class="tx-editor-actions">' +
-            '    <button type="button" class="btn btn-outline-secondary btn-sm js-editor-cancel">Annuler</button>' +
-            '    <button type="submit" class="btn btn-primary btn-sm">Enregistrer</button>' +
+            '    <button type="button" class="btn btn-outline-secondary btn-sm js-editor-cancel">' + gettext('Annuler') + '</button>' +
+            '    <button type="submit" class="btn btn-primary btn-sm">' + gettext('Enregistrer') + '</button>' +
             '  </div>' +
             '</form>';
 
@@ -438,7 +429,7 @@
         description.value = row.getAttribute('data-description') || '';
         description.placeholder = row.querySelector('.js-tx-title').textContent.trim();
 
-        categorySelect.innerHTML = '<option value="">À classer</option>';
+        categorySelect.innerHTML = '<option value="">' + gettext('À classer') + '</option>';
         categories.filter(function (c) { return c.type === type; }).forEach(function (c) {
             var option = document.createElement('option');
             option.value = c.id;
@@ -460,8 +451,8 @@
             subBox.hidden = type !== 'EXPENSE';
             subControls.hidden = !!name;
             subText.textContent = name
-                ? '↻ Suivi comme abonnement : ' + name
-                : 'Paiement récurrent ? Suis-le pour être alerté s\u2019il s\u2019arrête.';
+                ? gettext('↻ Suivi comme abonnement : ') + name
+                : gettext('Paiement récurrent ? Suis-le pour être alerté s\u2019il s\u2019arrête.');
         }
         renderSubscription();
 
@@ -475,14 +466,14 @@
                 if (!row.querySelector('.js-tx-sub-flag')) {
                     var flag = document.createElement('span');
                     flag.className = 'tx-flag js-tx-sub-flag';
-                    flag.textContent = '↻ Abonnement';
+                    flag.textContent = gettext('↻ Abonnement');
                     row.querySelector('.js-tx-category').after(flag);
                 }
                 renderSubscription();
                 toast(json.message);
             }).catch(function () {
                 button.disabled = false;
-                toast('Impossible de suivre cet abonnement', true);
+                toast(gettext('Impossible de suivre cet abonnement'), true);
             });
         });
 
@@ -504,7 +495,7 @@
                 setTimeout(function () { row.classList.remove('is-flash'); }, 900);
             }).catch(function (error) {
                 submit.disabled = false;
-                toast(error.message || 'Impossible d’enregistrer', true);
+                toast(error.message || gettext('Impossible d’enregistrer'), true);
             });
         });
 
@@ -528,13 +519,13 @@
 
         var kind = row.querySelector('.js-tx-kind');
         kind.className = 'tx-kind tx-kind-' + data.kind + ' js-tx-kind';
-        kind.textContent = { income: 'Revenu', savings: 'Épargne', expense: 'Charge' }[data.kind];
+        kind.textContent = { income: gettext('Revenu'), savings: gettext('Épargne'), expense: gettext('Charge') }[data.kind];
 
         var category = row.querySelector('.js-tx-category');
         if (data.category) {
             category.textContent = data.category + (data.subcategory ? ' › ' + data.subcategory : '');
         } else {
-            category.innerHTML = '<span class="tx-unclassified">À classer</span>';
+            category.innerHTML = '<span class="tx-unclassified">' + gettext('À classer') + '</span>';
         }
 
         var amount = row.querySelector('.js-tx-amount');

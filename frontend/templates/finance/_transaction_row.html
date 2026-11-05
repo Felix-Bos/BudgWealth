@@ -1,3 +1,4 @@
+{% load i18n %}
 <li class="tx-row is-{{ row.kind }} js-tx-row"
     data-kind="{{ row.kind }}"
     {% if row.pk %}
@@ -14,21 +15,22 @@
     {% if row.bank_label %}title="{{ row.bank_label }}"{% endif %}>
     <span class="tx-avatar tx-tone-{{ row.tone }} js-tx-avatar" aria-hidden="true">{{ row.initial }}</span>
 
-    <button type="button" class="tx-main js-tx-edit" {% if not row.pk %}disabled{% endif %} aria-label="Modifier « {{ row.description }} »">
+    <button type="button" class="tx-main js-tx-edit" {% if not row.pk %}disabled{% endif %} aria-label="{% blocktranslate with name=row.description %}Modifier « {{ name }} »{% endblocktranslate %}">
         <span class="tx-title js-tx-title">{{ row.description }}</span>
         <span class="tx-meta">
-            <span class="tx-kind tx-kind-{{ row.kind }} js-tx-kind">{% if row.kind == "income" %}Revenu{% elif row.kind == "savings" %}Épargne{% else %}Charge{% endif %}</span>
+            <span class="tx-kind tx-kind-{{ row.kind }} js-tx-kind">{% if row.kind == "income" %}{% translate "Revenu" %}{% elif row.kind == "savings" %}{% translate "Épargne" %}{% else %}{% translate "Charge" %}{% endif %}</span>
             <span class="js-tx-category">
-                {% if row.category %}{{ row.category }}{% if row.subcategory %} › {{ row.subcategory }}{% endif %}{% else %}<span class="tx-unclassified">À classer</span>{% endif %}
+                {% if row.category %}{{ row.category }}{% if row.subcategory %} › {{ row.subcategory }}{% endif %}{% else %}<span class="tx-unclassified">{% translate "À classer" %}</span>{% endif %}
             </span>
-            {% if row.subscription %}<span class="tx-flag js-tx-sub-flag">↻ Abonnement</span>{% endif %}
-            {% if row.meal_voucher %}<span class="tx-flag">Tickets resto</span>{% endif %}
+            {% if row.subscription %}<span class="tx-flag js-tx-sub-flag">{% translate "↻ Abonnement" %}</span>{% endif %}
+            {% if row.meal_voucher %}<span class="tx-flag">{% translate "Tickets resto" %}</span>{% endif %}
             {% if row.project %}<span class="tx-flag">{{ row.project }}</span>{% endif %}
             {% if show_date %}<span>{{ row.transaction_date|date:"j F" }}</span>{% endif %}
+            {% if row.actual_date %}<span class="tx-flag" title="{% translate "Compté le" %} {{ row.transaction_date|date:"j F" }} {% translate ": salaire de fin de mois et épargne qui le suit" %}">{% if row.is_income %}{% translate "Reçu" %}{% else %}{% translate "Versé" %}{% endif %} {% translate "le" %} {{ row.actual_date|date:"j F" }}</span>{% endif %}
             {% if row.is_bank %}
-                <span class="tx-source" title="Importée depuis la banque">
+                <span class="tx-source" title="{% translate "Importée depuis la banque" %}">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18M12 3l9 5H3z"></path></svg>
-                    <span class="tx-source-label">Banque</span>
+                    <span class="tx-source-label">{% translate "Banque" %}</span>
                 </span>
             {% endif %}
         </span>
@@ -42,7 +44,7 @@
         {% if row.pk %}
         <form method="post" action="{% url 'finance:delete_transaction' year month row.pk %}" class="js-tx-delete-form">
             {% csrf_token %}
-            <button type="submit" class="tx-delete" aria-label="Supprimer « {{ row.description }} »" title="Supprimer">
+            <button type="submit" class="tx-delete" aria-label="{% blocktranslate with name=row.description %}Supprimer « {{ name }} »{% endblocktranslate %}" title="{% translate "Supprimer" %}">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></svg>
             </button>
         </form>

@@ -8,10 +8,10 @@
     var data = dataEl ? JSON.parse(dataEl.textContent) : {};
     var charts = window.BW && window.BW.charts;
     var urls = data.urls || {};
-    var money2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    var dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    var monthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: '2-digit' });
-    var shortDay = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+    var money2 = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var dayFormat = new Intl.DateTimeFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { day: 'numeric', month: 'short', year: 'numeric' });
+    var monthFormat = new Intl.DateTimeFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { month: 'short', year: '2-digit' });
+    var shortDay = new Intl.DateTimeFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { day: 'numeric', month: 'short' });
 
     function num(values) { return (values || []).map(Number); }
 
@@ -86,7 +86,7 @@
                                 label: charts.euroLabel,
                                 footer: options.stacked ? function (items) {
                                     var total = items.reduce(function (sum, item) { return sum + item.parsed.y; }, 0);
-                                    return 'Total : ' + money2.format(total) + ' €';
+                                    return gettext('Total : ') + money2.format(total) + ' €';
                                 } : undefined
                             }
                         }
@@ -125,8 +125,8 @@
         // Vue d'ensemble : livrets + titres, empilés
         timeChart('savingsHistoryChart', data.history, function (p, slice) {
             return [
-                area('Livrets & comptes', slice(data.history.balances), p.cats[0]),
-                area('Titres (PEA, CTO)', slice(data.history.securities), p.savings, { fill: '-1' })
+                area(gettext('Livrets & comptes'), slice(data.history.balances), p.cats[0]),
+                area(gettext('Titres (PEA, CTO)'), slice(data.history.securities), p.savings, { fill: '-1' })
             ];
         }, { stacked: true });
 
@@ -134,7 +134,7 @@
         timeChart('portfolioHistoryChart', data.history, function (p, slice) {
             return [
                 {
-                    label: 'Valeur',
+                    label: gettext('Valeur'),
                     data: slice(data.history.value),
                     borderColor: p.savings,
                     fill: {
@@ -144,7 +144,7 @@
                     }
                 },
                 {
-                    label: 'Investi',
+                    label: gettext('Investi'),
                     data: slice(data.history.invested),
                     borderColor: p.budget,
                     borderDash: [6, 4],
@@ -158,9 +158,9 @@
         // Frais cumulés
         timeChart('feesHistoryChart', data.fees, function (p, slice) {
             return [
-                area('Courtage', slice(data.fees.brokerage), p.cats[1]),
-                area('Frais de compte', slice(data.fees.accountFees), p.cats[3], { fill: '-1' }),
-                area('Frais des ETF (estimés)', slice(data.fees.ter), p.cats[5], { fill: '-1' })
+                area(gettext('Courtage'), slice(data.fees.brokerage), p.cats[1]),
+                area(gettext('Frais de compte'), slice(data.fees.accountFees), p.cats[3], { fill: '-1' }),
+                area(gettext('Frais des ETF (estimés)'), slice(data.fees.ter), p.cats[5], { fill: '-1' })
             ];
         }, { stacked: true });
     }
@@ -298,7 +298,7 @@
         function refresh(force) {
             box.classList.add('is-loading');
             button.disabled = true;
-            label.textContent = 'Mise à jour des cours…';
+            label.textContent = gettext('Mise à jour des cours…');
             var body = new FormData();
             if (force) body.append('force', '1');
             fetch(urls.refresh, {
@@ -314,12 +314,12 @@
                         return;
                     }
                     if (result.errors && result.errors.length) {
-                        done('Cours non actualisés : ' + result.errors[0], true);
+                        done(gettext('Cours non actualisés : ') + result.errors[0], true);
                     } else {
                         done(original, false);
                     }
                 })
-                .catch(function () { done('Yahoo Finance est injoignable', true); });
+                .catch(function () { done(gettext('Yahoo Finance est injoignable'), true); });
         }
 
         button.addEventListener('click', function () { refresh(true); });
@@ -331,10 +331,11 @@
     // ============================================================
 
     var KIND_LABELS = {
-        BUY: "Ajouter l'achat",
-        SELL: 'Ajouter la vente',
-        DIVIDEND: 'Ajouter le dividende',
-        FEE: 'Ajouter les frais'
+        BUY: gettext("Ajouter l'achat"),
+        POSITION: gettext('Ajouter la position'),
+        SELL: gettext('Ajouter la vente'),
+        DIVIDEND: gettext('Ajouter le dividende'),
+        FEE: gettext('Ajouter les frais')
     };
 
     function setupOperationForm(form) {
@@ -389,6 +390,15 @@
             kindInputs.forEach(function (input) {
                 input.closest('label').classList.toggle('is-active', input.checked);
             });
+            // Libellés propres aux titres déjà détenus (PRU, nombre de parts)
+            form.querySelectorAll('[data-label-position]').forEach(function (label) {
+                if (!label.hasAttribute('data-label-default')) {
+                    label.setAttribute('data-label-default', label.textContent);
+                }
+                label.textContent = current === 'POSITION'
+                    ? label.getAttribute('data-label-position')
+                    : label.getAttribute('data-label-default');
+            });
             submit.textContent = KIND_LABELS[current];
             updateTotal();
             suggestPrice();
@@ -437,7 +447,7 @@
 
         function runSearch(text) {
             lastQuery = text;
-            setStatus('Recherche sur Yahoo Finance…');
+            setStatus(gettext('Recherche sur Yahoo Finance…'));
             getJson(urls.search + '?q=' + encodeURIComponent(text))
                 .then(function (payload) {
                     if (text !== lastQuery) return;
@@ -448,7 +458,7 @@
                     }
                     items = payload.results || [];
                     if (!items.length) {
-                        setStatus('Aucun titre trouvé pour « ' + text + ' ». Essaie l\'ISIN ou le ticker Yahoo (ex. CW8.PA).', true);
+                        setStatus(interpolate(gettext('Aucun titre trouvé pour « %s ». Essaie l’ISIN ou le ticker Yahoo (ex. CW8.PA).'), [text]), true);
                         closeResults();
                         return;
                     }
@@ -456,7 +466,7 @@
                     renderResults();
                 })
                 .catch(function () {
-                    if (text === lastQuery) setStatus('Yahoo Finance ne répond pas. Réessaie dans un instant.', true);
+                    if (text === lastQuery) setStatus(gettext('Yahoo Finance ne répond pas. Réessaie dans un instant.'), true);
                 });
         }
 
@@ -554,23 +564,23 @@
             clearTimeout(priceTimer);
             priceTimer = setTimeout(function () {
                 hint.hidden = false;
-                hint.textContent = 'Recherche du cours…';
+                hint.textContent = gettext('Recherche du cours…');
                 getJson(urls.price + '?symbol=' + encodeURIComponent(symbol) + '&date=' + day)
                     .then(function (result) {
                         if (key !== priceKey) return;
                         if (!result.ok) {
-                            hint.textContent = result.error || 'Cours indisponible à cette date.';
+                            hint.textContent = result.error || gettext('Cours indisponible à cette date.');
                             return;
                         }
                         hint.textContent = '';
                         var text = document.createElement('span');
-                        text.textContent = 'Clôture du ' + dayFormat.format(parseDay(result.date)) + ' : ' +
+                        text.textContent = gettext('Clôture du ') + dayFormat.format(parseDay(result.date)) + ' : ' +
                             money2.format(Number(result.eur)) + ' €' +
                             (result.currency !== 'EUR' ? ' (' + money2.format(Number(result.close)) + ' ' + result.currency + ')' : '');
                         var use = document.createElement('button');
                         use.type = 'button';
                         use.className = 'btn btn-link btn-sm p-0';
-                        use.textContent = 'Utiliser ce prix';
+                        use.textContent = gettext('Utiliser ce prix');
                         use.addEventListener('click', function () {
                             priceInput.value = result.eur;
                             updateTotal();
@@ -581,7 +591,7 @@
                         hint.appendChild(use);
                     })
                     .catch(function () {
-                        if (key === priceKey) hint.textContent = 'Cours indisponible.';
+                        if (key === priceKey) hint.textContent = gettext('Cours indisponible.');
                     });
             }, 250);
         }
@@ -592,13 +602,16 @@
             var quantity = parseFloat(quantityInput.value);
             var price = parseFloat(priceInput.value);
             var fees = parseFloat(feesInput.value) || 0;
-            if ((current === 'BUY' || current === 'SELL') && quantity > 0 && price > 0) {
+            if (current === 'POSITION' && quantity > 0 && price > 0) {
+                total.hidden = false;
+                total.textContent = gettext('Montant investi : ') + money2.format(quantity * price) + ' €';
+            } else if ((current === 'BUY' || current === 'SELL') && quantity > 0 && price > 0) {
                 var gross = quantity * price;
                 var amount = current === 'BUY' ? gross + fees : gross - fees;
                 total.hidden = false;
-                total.textContent = (current === 'BUY' ? 'Total débité : ' : 'Total crédité : ') +
+                total.textContent = (current === 'BUY' ? gettext('Total débité : ') : gettext('Total crédité : ')) +
                     money2.format(amount) + ' €' +
-                    (fees > 0 ? ' · frais ' + (fees / gross * 100).toFixed(2).replace('.', ',') + ' %' : '');
+                    (fees > 0 ? gettext(' · frais ') + money2.format(fees / gross * 100) + ' %' : '');
             } else {
                 total.hidden = true;
             }
@@ -615,12 +628,12 @@
             var current = kind();
             if (current !== 'FEE' && !fields.symbol.value) {
                 event.preventDefault();
-                setStatus('Choisis d\'abord un titre dans la liste des résultats.', true);
+                setStatus(gettext('Choisis d\'abord un titre dans la liste des résultats.'), true);
                 query.focus();
                 return;
             }
             var ok = true;
-            if (current === 'BUY' || current === 'SELL') {
+            if (current === 'BUY' || current === 'SELL' || current === 'POSITION') {
                 ok = requirePositive(quantityInput) & requirePositive(priceInput);
             } else {
                 ok = requirePositive(amountInput);

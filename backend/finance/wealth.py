@@ -38,6 +38,7 @@ from .models import (
     Transaction,
     Zone,
 )
+from django.utils.translation import gettext_lazy
 
 
 ZERO = Decimal("0")
@@ -71,9 +72,9 @@ BALANCE_KIND_CHOICES = [(k, label) for k, label in SavingsKind.choices if k not 
 PORTFOLIO_KIND_CHOICES = [(k, label) for k, label in SavingsKind.choices if k in PORTFOLIO_KINDS]
 
 # Pseudo-classes d'actifs de la vue d'ensemble
-CASH_LABEL = "Liquidités"
-LIVRETS_LABEL = "Livrets & épargne réglementée"
-INSURANCE_LABEL = "Assurance vie & PER"
+CASH_LABEL = gettext_lazy("Liquidités")
+LIVRETS_LABEL = gettext_lazy("Livrets & épargne réglementée")
+INSURANCE_LABEL = gettext_lazy("Assurance vie & PER")
 
 
 # ============================================================
@@ -342,9 +343,16 @@ class Position:
         self.orders = 0
         self.bought = ZERO
         self.volume = ZERO
+        # Jour de reprise de titres déjà détenus : valorisés au PRU ce jour-là
+        self.book_value_day = None
 
     def apply(self, op):
-        if op.kind == OperationKind.BUY:
+        if op.kind == OperationKind.POSITION:
+            self.quantity += op.quantity
+            self.cost += op.total
+            self.bought += op.total
+            self.book_value_day = op.date
+        elif op.kind == OperationKind.BUY:
             self.quantity += op.quantity
             self.cost += op.total
             self.bought += op.total
@@ -406,7 +414,7 @@ def xirr(flows):
     if f_low * f_high > 0:
         return None
     mid = low
-    for _ in range(200):
+    for _step in range(200):
         mid = (low + high) / 2
         f_mid = npv(mid)
         if abs(f_mid) < 1e-7:
@@ -470,6 +478,9 @@ def analyse_portfolio(accounts, today=None):
     history = {"dates": [], "value": [], "invested": [], "brokerage": [], "accountFees": [], "ter": []}
 
     def price_of(position, day):
+        # Titres déjà détenus : la courbe part de leur PRU, puis suit le cours
+        if position.book_value_day == day and day < today:
+            return position.pru
         series = prices.get(position.instrument.pk)
         price = series.at(day) if series else None
         return price if price is not None else position.pru
@@ -513,7 +524,10 @@ def analyse_portfolio(accounts, today=None):
             if key not in positions:
                 positions[key] = Position(op.account, op.instrument)
             positions[key].apply(op)
-            if op.kind == OperationKind.BUY:
+            if op.kind == OperationKind.POSITION:
+                account_flow["buys"] += op.total
+                cash_flows.append((op.date, -op.total))
+            elif op.kind == OperationKind.BUY:
                 brokerage += op.fees
                 account_flow["buys"] += op.total
                 cash_flows.append((op.date, -op.total))

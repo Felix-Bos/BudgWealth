@@ -1,15 +1,16 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Création de compte - BudgWealth{% endblock %}
+{% block title %}{% translate "Création de compte - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="auth-layout">
     {% include "accounts/_auth_aside.html" %}
     <div class="auth-panel">
         <div class="mb-4">
-            <p class="section-label mb-2">Création de compte</p>
-            <h1 class="h3 mb-2">Démarrer votre espace</h1>
-            <p class="text-muted mb-0">Renseignez les informations de base de votre compte.</p>
+            <p class="section-label mb-2">{% translate "Création de compte" %}</p>
+            <h1 class="h3 mb-2">{% translate "Démarrer votre espace" %}</h1>
+            <p class="text-muted mb-0">{% translate "Renseignez les informations de base de votre compte." %}</p>
         </div>
 
         <form method="post" novalidate>
@@ -34,12 +35,11 @@
                 </div>
             {% endfor %}
 
-            <button class="btn btn-dark w-100 mt-2" type="submit">Créer mon compte</button>
+            <button class="btn btn-dark w-100 mt-2" type="submit">{% translate "Créer mon compte" %}</button>
         </form>
 
         <p class="auth-switch text-muted">
-            Déjà un compte ?
-            <a href="{% url 'accounts:login' %}">Se connecter</a>
+            {% translate "Tes données restent sur cet ordinateur : un seul compte par installation." %}
         </p>
     </div>
 </section>

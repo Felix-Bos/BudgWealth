@@ -1,8 +1,9 @@
+{% load i18n %}
 {# Choix du compte (PEA, compte-titres) et date des cours #}
 <div class="savings-toolbar mb-4">
     {% if accounts|length > 1 %}
-    <nav class="savings-scope" aria-label="Compte affiché">
-        <a class="savings-scope-item {% if not selected %}is-active{% endif %}" href="?compte=tous">Tous les comptes</a>
+    <nav class="savings-scope" aria-label="{% translate "Compte affiché" %}">
+        <a class="savings-scope-item {% if not selected %}is-active{% endif %}" href="?compte=tous">{% translate "Tous les comptes" %}</a>
         {% for account in accounts %}
         <a class="savings-scope-item {% if selected.pk == account.pk %}is-active{% endif %}" href="?compte={{ account.pk }}">{{ account.name }}</a>
         {% endfor %}

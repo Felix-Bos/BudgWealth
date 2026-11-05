@@ -11,6 +11,7 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Q, Sum
+from django.utils.formats import date_format
 
 from .models import (
     BudgetPlan,
@@ -18,21 +19,21 @@ from .models import (
     EntryType,
     IncomeMode,
     MealVoucherSettings,
+    SALARY_CATEGORY_NAME,
+    SAVINGS_CATEGORY_NAME,
     SavingsProject,
     Transaction,
 )
+from django.utils.translation import gettext as _
 
-SAVINGS_CATEGORY_NAME = "Épargne & placements"
 FOOD_CATEGORY_NAME = "Alimentation & restaurants"
-SALARY_CATEGORY_NAME = "Salaire"
 HOUSING_CATEGORY_NAME = "Logement & charges"
 
 ZERO = Decimal("0")
 
-SHORT_MONTHS = [
-    "Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin",
-    "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc.",
-]
+def short_month_label(year, month):
+    """« Nov 2026 » / « Nov 2026 » : mois abrégé dans la langue de l'interface."""
+    return date_format(date(year, month, 1), "M Y").capitalize()
 CENT = Decimal("0.01")
 
 # Sections dont le montant tombe quoi qu'il arrive dans le mois
@@ -63,7 +64,7 @@ def months_between(start, end):
 
 
 def working_days(year, month):
-    _, last_day = calendar.monthrange(year, month)
+    _ignored, last_day = calendar.monthrange(year, month)
     return sum(
         1 for day in range(1, last_day + 1)
         if date(year, month, day).weekday() < 5
@@ -133,16 +134,16 @@ def plan_income(plan, user, year, month):
     Renvoie (montant, explication)."""
 
     if plan is None:
-        return ZERO, "Aucun budget"
+        return ZERO, _("Aucun budget")
 
     if plan.income_mode == IncomeMode.MANUAL:
-        return money(plan.manual_income), "Montant fixe"
+        return money(plan.manual_income), _("Montant fixe")
 
     value, count = average_salary(user, year, month, plan.income_average_months)
     if count == 0:
-        return money(plan.manual_income), "Pas encore d'historique de salaire"
+        return money(plan.manual_income), _("Pas encore d'historique de salaire")
 
-    return value, f"Moyenne sur {count} mois"
+    return value, _('Moyenne sur %(count)s mois') % {"count": count}
 
 
 # ============================================================
@@ -232,16 +233,16 @@ def plan_summary(plan, user, year, month):
         variable_rate = percent(totals[BudgetSection.VARIABLE], income)
         free_rate = percent(left_to_live, income)
         indicators = [
-            indicator("Taux d'effort logement", housing_rate, "≤ 33 %", housing_rate <= 33,
-                      "Logement soutenable", "Logement trop lourd"),
-            indicator("Taux d'épargne", savings_rate, "≥ 10 %", savings_rate >= 10,
-                      "Épargne satisfaisante", "Épargne faible"),
-            indicator("Charges fixes", fixed_rate, "≤ 55 %", fixed_rate <= 55,
-                      "Charges fixes maîtrisées", "Charges fixes élevées"),
-            indicator("Charges variables", variable_rate, "≤ 25 %", variable_rate <= 25,
-                      "Variables sous contrôle", "Variables élevées"),
-            indicator("Reste à vivre", free_rate, "≥ 5 %", free_rate >= 5,
-                      "Marge confortable", "Marge très faible"),
+            indicator(_("Taux d'effort logement"), housing_rate, "≤ 33 %", housing_rate <= 33,
+                      _("Logement soutenable"), _("Logement trop lourd")),
+            indicator(_("Taux d'épargne"), savings_rate, "≥ 10 %", savings_rate >= 10,
+                      _("Épargne satisfaisante"), _("Épargne faible")),
+            indicator(_("Charges fixes"), fixed_rate, "≤ 55 %", fixed_rate <= 55,
+                      _("Charges fixes maîtrisées"), _("Charges fixes élevées")),
+            indicator(_("Charges variables"), variable_rate, "≤ 25 %", variable_rate <= 25,
+                      _("Variables sous contrôle"), _("Variables élevées")),
+            indicator(_("Reste à vivre"), free_rate, "≥ 5 %", free_rate >= 5,
+                      _("Marge confortable"), _("Marge très faible")),
         ]
 
     return {
@@ -305,7 +306,7 @@ def month_tracking(user, year, month, today=None):
     if plan is None:
         return None
 
-    _, days_in_month = calendar.monthrange(year, month)
+    _ignored, days_in_month = calendar.monthrange(year, month)
     if (year, month) < (today.year, today.month):
         elapsed = Decimal("1")
         day = days_in_month
@@ -331,7 +332,7 @@ def month_tracking(user, year, month, today=None):
         if line:
             actual[line.id] += transaction.amount
         else:
-            key = category_name or "Sans catégorie"
+            key = str(transaction.category) if transaction.category else _("Sans catégorie")
             unbudgeted[key] = unbudgeted.get(key, ZERO) + transaction.amount
 
     rows = []
@@ -384,11 +385,11 @@ def month_tracking(user, year, month, today=None):
     over_count = sum(1 for row in rows if row["status"] == "over")
     warning_count = sum(1 for row in rows if row["status"] == "warning")
     if projected_total > budget_total * Decimal("1.05") or over_count >= 2:
-        verdict = ("off", "Budget en danger")
+        verdict = ("off", _("Budget en danger"))
     elif over_count or warning_count or unbudgeted_total > 0:
-        verdict = ("watch", "À surveiller")
+        verdict = ("watch", _("À surveiller"))
     else:
-        verdict = ("on", "Sur la bonne voie")
+        verdict = ("on", _("Sur la bonne voie"))
 
     return {
         "plan": plan,
@@ -454,7 +455,7 @@ def budget_trend(user, today=None, months=6):
         history.append({
             "year": year,
             "month": month,
-            "label": f"{SHORT_MONTHS[month - 1]} {year}",
+            "label": short_month_label(year, month),
             "is_current": is_current,
             "budget": tracking["budget_total"],
             "spent": tracking["spent_total"],
@@ -529,13 +530,13 @@ def project_progress(project, today=None):
     )
 
     if remaining == 0:
-        status, status_label = "done", "Objectif atteint"
+        status, status_label = "done", _("Objectif atteint")
     elif is_late:
-        status, status_label = "off", "Échéance dépassée"
+        status, status_label = "off", _("Échéance dépassée")
     elif saved >= expected:
-        status, status_label = "on", "Dans les temps"
+        status, status_label = "on", _("Dans les temps")
     else:
-        status, status_label = "watch", f"En retard de {money(expected - saved)} €"
+        status, status_label = "watch", _('En retard de %(money)s €') % {"money": money(expected - saved)}
 
     contributed_this_month = project.contributions.filter(
         transaction_type=EntryType.EXPENSE,
@@ -638,8 +639,8 @@ def category_tree(transactions):
     for transaction in transactions:
         if transaction.transaction_type != EntryType.EXPENSE or is_savings_transaction(transaction):
             continue
-        category = transaction.category.name if transaction.category else "À classer"
-        subcategory = transaction.subcategory.name if transaction.subcategory else "Non précisé"
+        category = str(transaction.category) if transaction.category else _("À classer")
+        subcategory = str(transaction.subcategory) if transaction.subcategory else _("Non précisé")
         node = tree.setdefault(category, {"name": category, "total": ZERO, "children": {}})
         node["total"] += transaction.amount
         node["children"][subcategory] = node["children"].get(subcategory, ZERO) + transaction.amount
@@ -659,7 +660,7 @@ def daily_cumulative(transactions, year, month, today=None, budget_total=None):
     """Cumuls jour par jour : revenus, charges, épargne, et rythme du budget."""
 
     today = today or date.today()
-    _, last_day = calendar.monthrange(year, month)
+    _ignored, last_day = calendar.monthrange(year, month)
     if (year, month) == (today.year, today.month):
         visible_days = today.day
     elif (year, month) > (today.year, today.month):

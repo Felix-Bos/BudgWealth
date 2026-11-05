@@ -1,0 +1,395 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-05 23:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: frontend/static/js/bw-dashboard.js:36 frontend/static/js/bw-home.js:123 frontend/static/js/bw-month.js:204
+msgid "Revenus"
+msgstr "Income"
+
+#: frontend/static/js/bw-dashboard.js:37 frontend/static/js/bw-home.js:124 frontend/static/js/bw-month.js:25 frontend/static/js/bw-month.js:35 frontend/static/js/bw-month.js:193
+msgid "Charges"
+msgstr "Expenses"
+
+#: frontend/static/js/bw-dashboard.js:38 frontend/static/js/bw-home.js:125 frontend/static/js/bw-month.js:214 frontend/static/js/bw-month.js:522
+msgid "Épargne"
+msgstr "Savings"
+
+#: frontend/static/js/bw-dashboard.js:79
+msgid "Taux d'épargne"
+msgstr "Savings rate"
+
+#: frontend/static/js/bw-dashboard.js:93
+msgid "Objectif"
+msgstr "Goal"
+
+#: frontend/static/js/bw-dashboard.js:133
+msgid "Dépensé"
+msgstr "Spent"
+
+#: frontend/static/js/bw-dashboard.js:136
+msgid "Épargné"
+msgstr "Saved"
+
+#: frontend/static/js/bw-dashboard.js:139
+msgid "Budget"
+msgstr "Budget"
+
+#: frontend/static/js/bw-dashboard.js:150
+msgid "Objectif épargne"
+msgstr "Savings goal"
+
+#: frontend/static/js/bw-dashboard.js:199 frontend/static/js/bw-savings.js:89
+msgid "Total : "
+msgstr "Total: "
+
+#: frontend/static/js/bw-dashboard.js:219
+msgid "Abonnements"
+msgstr "Subscriptions"
+
+#: frontend/static/js/bw-dashboard.js:238
+msgid " abonnement"
+msgstr " subscription"
+
+#: frontend/static/js/bw-home.js:29
+msgid "Patrimoine"
+msgstr "Wealth"
+
+#: frontend/static/js/bw-home.js:72
+msgid "Versé"
+msgstr "Paid in"
+
+#: frontend/static/js/bw-home.js:166
+msgid "Solde prévu"
+msgstr "Expected balance"
+
+#: frontend/static/js/bw-home.js:175
+msgid "Marge de sécurité"
+msgstr "Safety margin"
+
+#: frontend/static/js/bw-month.js:99
+msgid "Charges par catégorie"
+msgstr "Expenses by category"
+
+#: frontend/static/js/bw-month.js:101
+msgid "Clique sur une catégorie pour voir ses sous-catégories"
+msgstr "Click a category to see its subcategories"
+
+#: frontend/static/js/bw-month.js:102
+msgid "Détail par sous-catégorie"
+msgstr "Breakdown by subcategory"
+
+#: frontend/static/js/bw-month.js:225
+msgid "Rythme du budget"
+msgstr "Budget pace"
+
+#: frontend/static/js/bw-month.js:243
+msgid "Au "
+msgstr "As of "
+
+#: frontend/static/js/bw-month.js:317
+msgid " opération"
+msgstr " transaction"
+
+#: frontend/static/js/bw-month.js:335
+msgid "Erreur"
+msgstr "Error"
+
+#: frontend/static/js/bw-month.js:364
+msgid "Opération supprimée"
+msgstr "Transaction deleted"
+
+#: frontend/static/js/bw-month.js:367
+msgid "Impossible de supprimer cette opération"
+msgstr "Could not delete this transaction"
+
+#: frontend/static/js/bw-month.js:406
+msgid "Intitulé"
+msgstr "Label"
+
+#: frontend/static/js/bw-month.js:407
+msgid "Catégorie"
+msgstr "Category"
+
+#: frontend/static/js/bw-month.js:408
+msgid "Sous-catégorie"
+msgstr "Subcategory"
+
+#: frontend/static/js/bw-month.js:412
+msgid "Fréquence"
+msgstr "Frequency"
+
+#: frontend/static/js/bw-month.js:413
+msgid "Tous les mois"
+msgstr "Every month"
+
+#: frontend/static/js/bw-month.js:413
+msgid "Tous les ans"
+msgstr "Every year"
+
+#: frontend/static/js/bw-month.js:415
+msgid "↻ Suivre comme abonnement"
+msgstr "↻ Track as a subscription"
+
+#: frontend/static/js/bw-month.js:419
+msgid "Annuler"
+msgstr "Cancel"
+
+#: frontend/static/js/bw-month.js:420
+msgid "Enregistrer"
+msgstr "Save"
+
+#: frontend/static/js/bw-month.js:432 frontend/static/js/bw-month.js:528
+msgid "À classer"
+msgstr "To categorize"
+
+#: frontend/static/js/bw-month.js:454
+msgid "↻ Suivi comme abonnement : "
+msgstr "↻ Tracked as a subscription: "
+
+#: frontend/static/js/bw-month.js:455
+msgid "Paiement récurrent ? Suis-le pour être alerté s’il s’arrête."
+msgstr "Recurring payment? Track it to be alerted if it stops."
+
+#: frontend/static/js/bw-month.js:469
+msgid "↻ Abonnement"
+msgstr "↻ Subscription"
+
+#: frontend/static/js/bw-month.js:476
+msgid "Impossible de suivre cet abonnement"
+msgstr "Could not track this subscription"
+
+#: frontend/static/js/bw-month.js:498
+msgid "Impossible d’enregistrer"
+msgstr "Could not save"
+
+#: frontend/static/js/bw-month.js:522
+msgid "Revenu"
+msgstr "Income"
+
+#: frontend/static/js/bw-month.js:522
+msgid "Charge"
+msgstr "Expense"
+
+#: frontend/static/js/bw-savings.js:128
+msgid "Livrets & comptes"
+msgstr "Savings & accounts"
+
+#: frontend/static/js/bw-savings.js:129
+msgid "Titres (PEA, CTO)"
+msgstr "Securities (PEA, brokerage)"
+
+#: frontend/static/js/bw-savings.js:137
+msgid "Valeur"
+msgstr "Value"
+
+#: frontend/static/js/bw-savings.js:147 frontend/static/js/bw-simulation.js:218 frontend/static/js/bw-simulation.js:280
+msgid "Investi"
+msgstr "Invested"
+
+#: frontend/static/js/bw-savings.js:161
+msgid "Courtage"
+msgstr "Brokerage"
+
+#: frontend/static/js/bw-savings.js:162
+msgid "Frais de compte"
+msgstr "Account fees"
+
+#: frontend/static/js/bw-savings.js:163
+msgid "Frais des ETF (estimés)"
+msgstr "ETF fees (estimated)"
+
+#: frontend/static/js/bw-savings.js:301
+msgid "Mise à jour des cours…"
+msgstr "Updating prices…"
+
+#: frontend/static/js/bw-savings.js:317
+msgid "Cours non actualisés : "
+msgstr "Prices not updated: "
+
+#: frontend/static/js/bw-savings.js:322
+msgid "Yahoo Finance est injoignable"
+msgstr "Yahoo Finance cannot be reached"
+
+#: frontend/static/js/bw-savings.js:334
+msgid "Ajouter l'achat"
+msgstr "Add the purchase"
+
+#: frontend/static/js/bw-savings.js:335
+msgid "Ajouter la position"
+msgstr "Add the holding"
+
+#: frontend/static/js/bw-savings.js:336
+msgid "Ajouter la vente"
+msgstr "Add the sale"
+
+#: frontend/static/js/bw-savings.js:337
+msgid "Ajouter le dividende"
+msgstr "Add the dividend"
+
+#: frontend/static/js/bw-savings.js:338
+msgid "Ajouter les frais"
+msgstr "Add the fees"
+
+#: frontend/static/js/bw-savings.js:450
+msgid "Recherche sur Yahoo Finance…"
+msgstr "Searching Yahoo Finance…"
+
+#: frontend/static/js/bw-savings.js:461
+#, javascript-format
+msgid "Aucun titre trouvé pour « %s ». Essaie l’ISIN ou le ticker Yahoo (ex. CW8.PA)."
+msgstr "No security found for “%s”. Try the ISIN or the Yahoo ticker (e.g. CW8.PA)."
+
+#: frontend/static/js/bw-savings.js:469
+msgid "Yahoo Finance ne répond pas. Réessaie dans un instant."
+msgstr "Yahoo Finance is not responding. Try again in a moment."
+
+#: frontend/static/js/bw-savings.js:567
+msgid "Recherche du cours…"
+msgstr "Looking up the price…"
+
+#: frontend/static/js/bw-savings.js:572
+msgid "Cours indisponible à cette date."
+msgstr "Price unavailable on this date."
+
+#: frontend/static/js/bw-savings.js:577
+msgid "Clôture du "
+msgstr "Close on "
+
+#: frontend/static/js/bw-savings.js:583
+msgid "Utiliser ce prix"
+msgstr "Use this price"
+
+#: frontend/static/js/bw-savings.js:594
+msgid "Cours indisponible."
+msgstr "Price unavailable."
+
+#: frontend/static/js/bw-savings.js:607
+msgid "Montant investi : "
+msgstr "Amount invested: "
+
+#: frontend/static/js/bw-savings.js:612
+msgid "Total débité : "
+msgstr "Total debited: "
+
+#: frontend/static/js/bw-savings.js:612
+msgid "Total crédité : "
+msgstr "Total credited: "
+
+#: frontend/static/js/bw-savings.js:614
+msgid " · frais "
+msgstr " · fees "
+
+#: frontend/static/js/bw-savings.js:631
+msgid "Choisis d'abord un titre dans la liste des résultats."
+msgstr "First pick a security from the results list."
+
+#: frontend/static/js/bw-simulation.js:51 frontend/static/js/bw-simulation.js:259
+msgid "Très favorable (95 %)"
+msgstr "Very favourable (95%)"
+
+#: frontend/static/js/bw-simulation.js:52 frontend/static/js/bw-simulation.js:259
+msgid "Défavorable (5 %)"
+msgstr "Unfavourable (5%)"
+
+#: frontend/static/js/bw-simulation.js:53 frontend/static/js/bw-simulation.js:259
+msgid "Favorable (75 %)"
+msgstr "Favourable (75%)"
+
+#: frontend/static/js/bw-simulation.js:54 frontend/static/js/bw-simulation.js:259
+msgid "Prudent (25 %)"
+msgstr "Cautious (25%)"
+
+#: frontend/static/js/bw-simulation.js:56 frontend/static/js/bw-simulation.js:219 frontend/static/js/bw-simulation.js:400
+msgid "Médiane"
+msgstr "Median"
+
+#: frontend/static/js/bw-simulation.js:66
+msgid "Capital investi"
+msgstr "Capital invested"
+
+#: frontend/static/js/bw-simulation.js:201
+msgid "Scénarios"
+msgstr "Scenarios"
+
+#: frontend/static/js/bw-simulation.js:229 frontend/static/js/bw-simulation.js:249
+msgid "scénarios"
+msgstr "scenarios"
+
+#: frontend/static/js/bw-simulation.js:229
+msgid "scénario"
+msgstr "scenario"
+
+#: frontend/static/js/bw-simulation.js:259
+msgid "Médian"
+msgstr "Median"
+
+#: frontend/static/js/bw-simulation.js:271
+msgid "Sans inflation"
+msgstr "Without inflation"
+
+#: frontend/static/js/bw-simulation.js:272
+msgid "Avec inflation"
+msgstr "With inflation"
+
+#: frontend/static/js/bw-simulation.js:288
+msgid "vs investi"
+msgstr "vs invested"
+
+#: frontend/static/js/bw-simulation.js:345
+msgid "Rendement"
+msgstr "Return"
+
+#: frontend/static/js/bw-simulation.js:345
+msgid "/an"
+msgstr "/yr"
+
+#: frontend/static/js/bw-simulation.js:346
+msgid "Volatilité"
+msgstr "Volatility"
+
+#: frontend/static/js/bw-simulation.js:348
+msgid "Poids"
+msgstr "Weight"
+
+#: frontend/static/js/bw-simulation.js:361
+msgid "Volatilité (risque)"
+msgstr "Volatility (risk)"
+
+#: frontend/static/js/bw-simulation.js:368
+msgid "Rendement annuel"
+msgstr "Annual return"
+
+#: frontend/static/js/bw-simulation.js:396
+msgid "Très haute (95 %)"
+msgstr "Very high (95%)"
+
+#: frontend/static/js/bw-simulation.js:397
+msgid "Très basse (5 %)"
+msgstr "Very low (5%)"
+
+#: frontend/static/js/bw-simulation.js:398
+msgid "Haute (75 %)"
+msgstr "High (75%)"
+
+#: frontend/static/js/bw-simulation.js:399
+msgid "Basse (25 %)"
+msgstr "Low (25%)"
+
+#: frontend/static/js/bw-simulation.js:401
+msgid "Moyenne de long terme"
+msgstr "Long-term average"

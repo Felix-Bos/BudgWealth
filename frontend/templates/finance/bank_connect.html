@@ -1,16 +1,16 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Connecter ma banque - BudgWealth{% endblock %}
+{% block title %}{% translate "Connecter ma banque - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="auth-layout">
     <div class="auth-panel">
         <div class="mb-4">
-            <p class="section-label mb-2">Dernière étape</p>
-            <h1 class="h3 mb-2">Connecter votre banque</h1>
+            <p class="section-label mb-2">{% translate "Dernière étape" %}</p>
+            <h1 class="h3 mb-2">{% translate "Connecter votre banque" %}</h1>
             <p class="text-muted mb-0">
-                BudgWealth peut récupérer vos opérations automatiquement depuis le Crédit Agricole.
-                Votre code personnel n'est jamais enregistré : vous le taperez vous-même sur le site de la banque.
+                {% translate "BudgWealth peut récupérer vos opérations automatiquement depuis le Crédit Agricole. Votre code personnel n'est jamais enregistré : vous le taperez vous-même sur le site de la banque." %}
             </p>
         </div>
 
@@ -34,13 +34,12 @@
             </div>
 
             <div class="bank-connect-note mb-4">
-                Juste après, nous importerons vos <strong>12 derniers mois</strong> d'opérations
-                pour que votre espace soit prêt tout de suite.
+                {% translate "Juste après, nous importerons vos" %} <strong>{% translate "12 derniers mois" %}</strong> {% translate "d'opérations pour que votre espace soit prêt tout de suite." %}
             </div>
 
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Connecter et importer l'historique</button>
-                <a class="btn btn-link text-muted" href="{% url 'finance:dashboard' %}">Plus tard</a>
+                <button type="submit" class="btn btn-primary">{% translate "Connecter et importer l'historique" %}</button>
+                <a class="btn btn-link text-muted" href="{% url 'finance:dashboard' %}">{% translate "Plus tard" %}</a>
             </div>
         </form>
     </div>

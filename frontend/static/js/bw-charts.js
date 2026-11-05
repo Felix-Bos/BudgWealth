@@ -27,8 +27,8 @@
         };
     }
 
-    var money = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
-    var money2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var money = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { maximumFractionDigits: 0 });
+    var money2 = new Intl.NumberFormat((document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // Couleur avec transparence, à partir d'un #rrggbb
     function alpha(hex, value) {

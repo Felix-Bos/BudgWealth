@@ -4,11 +4,12 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.conf import settings
+from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.formats import date_format
@@ -17,7 +18,12 @@ from django.views.decorators.http import require_GET, require_POST
 from accounts.forms import AccountForm, AccountPasswordChangeForm
 
 from . import budget as budget_calc
+from . import backups
+from . import export as data_export
+from . import forecast as forecast_calc
 from . import home
+from . import savings_goal as savings_goal_calc
+from . import wealth
 from . import subscriptions as subscription_detection
 from .bank_sync import is_month_syncable, start_bank_sync
 from .models import BankSyncKind
@@ -26,6 +32,8 @@ from .forms import (
     BudgetLineFormSet,
     BudgetPlanForm,
     CategoryForm,
+    CurrentBalanceForm,
+    GlobalSavingsGoalForm,
     MealVoucherSettingsForm,
     RecurringItemForm,
     SavingsGoalForm,
@@ -35,6 +43,7 @@ from .forms import (
     month_label,
 )
 from .models import (
+    FIXED_GROUP_SECTIONS,
     BankConnection,
     BankSync,
     BankSyncStatus,
@@ -45,6 +54,7 @@ from .models import (
     EntryType,
     MealVoucherSettings,
     MonthlyBudget,
+    SavingsGoal,
     SavingsProject,
     RecurrenceKind,
     RecurrenceUnit,
@@ -53,6 +63,7 @@ from .models import (
     Transaction,
     TransactionSource,
 )
+from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 
 def _month_context(year, month):
@@ -121,10 +132,12 @@ def _materialize_recurring_items(user, year, month, kinds=None):
         items = items.filter(kind__in=kinds)
     for item in items:
         for scheduled_date in _scheduled_dates_for_item(item, period_start, period_end):
+            # Un salaire de fin de mois est enregistré au 1er du mois suivant
+            stored_date = Transaction.budget_date(item.entry_type, item.category, scheduled_date)
             if Transaction.objects.filter(
                 user=user,
                 recurring_item=item,
-                transaction_date=scheduled_date,
+                transaction_date__in={scheduled_date, stored_date},
             ).exists():
                 continue
             Transaction.objects.create(
@@ -159,14 +172,14 @@ def _subscription_history(user, today):
     totals_by_month = {row["month"]: row for row in monthly_totals}
     rows = []
     cursor_year, cursor_month = history_start_year, history_start_month
-    for _ in range(HISTORY_MONTHS):
+    for _step in range(HISTORY_MONTHS):
         key = date(cursor_year, cursor_month, 1)
         row = totals_by_month.get(key)
         rows.append(
             {
                 "year": cursor_year,
                 "month": cursor_month,
-                "label": f"{budget_calc.SHORT_MONTHS[cursor_month - 1]} {cursor_year}",
+                "label": budget_calc.short_month_label(cursor_year, cursor_month),
                 "total": budget_calc.money(row["total"] if row else None),
                 "count": (row["count"] if row else None) or 0,
             }
@@ -194,13 +207,13 @@ def _subscription_roster(user):
             {
                 "name": subscription.name,
                 "amount": subscription.default_amount,
-                "category": subscription.category.name
+                "category": str(subscription.category)
                 if subscription.category
-                else "Sans catégorie",
+                else _("Sans catégorie"),
                 "frequency": subscription.frequency_label,
                 "start_date": subscription.start_date,
                 "end_date": subscription.end_date,
-                "status": "Annulé" if is_cancelled else "Actif",
+                "status": _("Annulé") if is_cancelled else _("Actif"),
                 "is_cancelled": is_cancelled,
             }
         )
@@ -229,8 +242,8 @@ def _transaction_row(transaction):
     else:
         is_income = transaction.transaction_type == EntryType.INCOME
         is_savings = budget_calc.is_savings_transaction(transaction)
-        category = transaction.category.name if transaction.category else ""
-        subcategory = transaction.subcategory.name if transaction.subcategory else ""
+        category = str(transaction.category) if transaction.category else ""
+        subcategory = str(transaction.subcategory) if transaction.subcategory else ""
         row = {
             "pk": transaction.pk,
             "description": transaction.description,
@@ -239,6 +252,7 @@ def _transaction_row(transaction):
             "is_preview": False,
             "is_bank": transaction.source == TransactionSource.BANK,
             "bank_label": transaction.bank_label,
+            "actual_date": transaction.actual_date,
             "is_savings": is_savings,
             "raw_description": transaction.description,
             "subscription": transaction.recurring_item.name
@@ -250,7 +264,8 @@ def _transaction_row(transaction):
             "project": transaction.savings_project.name if transaction.savings_project_id else "",
         }
 
-    description = row["description"] or category or "Sans description"
+    # Libellés créés par l'application (« Virement vers l'épargne ») traduits à l'affichage
+    description = (_(row["description"]) if row["description"] else "") or category or _("Sans description")
     row.update(
         {
             "description": description,
@@ -344,9 +359,9 @@ def month_view(request, year, month):
         "editor_categories": [
             {
                 "id": category.pk,
-                "name": category.name,
+                "name": str(category),
                 "type": category.entry_type,
-                "subs": [{"id": sub.pk, "name": sub.name} for sub in category.subcategories.all()],
+                "subs": [{"id": sub.pk, "name": str(sub)} for sub in category.subcategories.all()],
             }
             for category in Category.objects.filter(user=request.user).prefetch_related("subcategories")
         ],
@@ -397,10 +412,10 @@ def start_month(request, year, month):
         )
         messages.success(
             request,
-            f"Le mois a été démarré avec {created_count} ligne(s) récurrente(s).",
+            _('Le mois a été démarré avec %(created_count)s ligne(s) récurrente(s).') % {"created_count": created_count},
         )
     else:
-        messages.info(request, "Ce mois est déjà démarré.")
+        messages.info(request, _("Ce mois est déjà démarré."))
 
     return redirect("finance:month", year=year, month=month)
 
@@ -422,7 +437,7 @@ def add_transaction(request, year, month):
                 recurring_name = transaction.category.name
             recurring_item = RecurringItem.objects.create(
                 user=request.user,
-                name=recurring_name or "Ligne récurrente",
+                name=recurring_name or _("Ligne récurrente"),
                 kind=form.cleaned_data.get("recurring_kind") or RecurrenceKind.SUBSCRIPTION,
                 entry_type=transaction.transaction_type,
                 default_amount=transaction.amount,
@@ -436,9 +451,9 @@ def add_transaction(request, year, month):
             )
             transaction.recurring_item = recurring_item
             transaction.save(update_fields=["recurring_item"])
-        messages.success(request, "Ligne ajoutée.")
+        messages.success(request, _("Ligne ajoutée."))
     else:
-        messages.error(request, "Impossible d'ajouter la ligne : vérifiez le formulaire.")
+        messages.error(request, _("Impossible d'ajouter la ligne : vérifiez le formulaire."))
     return redirect("finance:month", year=year, month=month)
 
 
@@ -449,9 +464,9 @@ def edit_transaction(request, year, month, pk):
     form = TransactionForm(request.POST, instance=transaction, user=request.user)
     if form.is_valid():
         form.save()
-        messages.success(request, "Ligne mise à jour.")
+        messages.success(request, _("Ligne mise à jour."))
     else:
-        messages.error(request, "Impossible de mettre à jour la ligne.")
+        messages.error(request, _("Impossible de mettre à jour la ligne."))
     return redirect("finance:month", year=year, month=month)
 
 
@@ -518,7 +533,7 @@ def update_transaction_details(request, year, month, pk):
             pk=category_id, user=request.user, entry_type=transaction.transaction_type
         ).first()
         if category is None:
-            return JsonResponse({"ok": False, "error": "Catégorie invalide."}, status=400)
+            return JsonResponse({"ok": False, "error": _("Catégorie invalide.")}, status=400)
 
     subcategory = None
     subcategory_id = request.POST.get("subcategory") or ""
@@ -536,7 +551,7 @@ def update_transaction_details(request, year, month, pk):
     transaction.save()
 
     if not _wants_json(request):
-        messages.success(request, "Opération mise à jour.")
+        messages.success(request, _("Opération mise à jour."))
         return redirect("finance:month", year=year, month=month)
 
     return JsonResponse({
@@ -557,7 +572,11 @@ def track_transaction_subscription(request, year, month, pk):
     unit = RecurrenceUnit.YEAR if request.POST.get("unit") == RecurrenceUnit.YEAR else RecurrenceUnit.MONTH
     item, count = subscription_detection.track_transaction(transaction, unit)
 
-    message = f"« {item.name} » est suivi comme abonnement ({count} paiement{'s' if count > 1 else ''} rattaché{'s' if count > 1 else ''})."
+    message = ngettext(
+        "« %(name)s » est suivi comme abonnement (%(count)s paiement rattaché).",
+        "« %(name)s » est suivi comme abonnement (%(count)s paiements rattachés).",
+        count,
+    ) % {"name": item.name, "count": count}
     if not _wants_json(request):
         messages.success(request, message)
         return redirect("finance:month", year=year, month=month)
@@ -571,7 +590,7 @@ def delete_transaction(request, year, month, pk):
     transaction.delete()
     if _wants_json(request):
         return JsonResponse({"ok": True, "month": _month_live_payload(request.user, year, month)})
-    messages.success(request, "Ligne supprimée.")
+    messages.success(request, _("Ligne supprimée."))
     return redirect("finance:month", year=year, month=month)
 
 
@@ -592,14 +611,14 @@ def _history_start(today):
 def _rolling_history_rows(history_start_year, history_start_month, totals_by_month):
     history = []
     cursor_year, cursor_month = history_start_year, history_start_month
-    for _ in range(HISTORY_MONTHS):
+    for _step in range(HISTORY_MONTHS):
         key = date(cursor_year, cursor_month, 1)
         row = totals_by_month.get(key)
         history.append(
             {
                 "year": cursor_year,
                 "month": cursor_month,
-                "label": f"{budget_calc.SHORT_MONTHS[cursor_month - 1]} {cursor_year}",
+                "label": budget_calc.short_month_label(cursor_year, cursor_month),
                 **budget_calc.split_totals(row),
             }
         )
@@ -678,6 +697,7 @@ def dashboard_hub_view(request):
                 "months": [[row["year"], row["month"]] for row in last_months],
             },
             "wealth": summary["wealth"]["history"],
+            "cash": summary["cashflow"].get("chart"),
             "monthUrl": reverse("finance:month", args=[2000, 1]).replace("2000/1/", ""),
         },
     }
@@ -695,7 +715,7 @@ def dashboard_budget_view(request):
     )
     subscription_detection.sync_subscriptions(request.user, today)
 
-    _, _, history_start = _history_start(today)
+    _ignored, _ignored2, history_start = _history_start(today)
     history_transactions = Transaction.objects.filter(
         user=request.user, transaction_date__gte=history_start
     )
@@ -731,7 +751,7 @@ def dashboard_budget_view(request):
     category_totals = {}
     cells = {}
     for row in by_category:
-        name = row["category__name"] or "À classer"
+        name = _(row["category__name"]) if row["category__name"] else _("À classer")
         category_totals[name] = category_totals.get(name, Decimal("0")) + row["total"]
         cells[(row["month"], name)] = cells.get((row["month"], name), Decimal("0")) + row["total"]
     top = [name for name, _ in sorted(category_totals.items(), key=lambda item: -item[1])[:6]]
@@ -748,7 +768,7 @@ def dashboard_budget_view(request):
         for key in month_keys
     ]
     if any(value != "0.00" for value in others):
-        category_series.append({"name": "Autres", "values": others})
+        category_series.append({"name": _("Autres"), "values": others})
 
     plan = budget_calc.plan_for_month(request.user, today.year, today.month)
     trend = budget_calc.budget_trend(request.user, today, months=12) if plan else None
@@ -799,10 +819,121 @@ def dashboard_budget_view(request):
     return render(request, "finance/dashboard_budget.html", context)
 
 
+BACKUP_NOTICES = {
+    "sauvegarde": ("ok", gettext_lazy("Sauvegarde enregistrée.")),
+    "restauree": ("ok", gettext_lazy("Sauvegarde restaurée.")),
+    "fichier": ("error", gettext_lazy("Ce fichier n'est pas une sauvegarde BudgWealth.")),
+    "introuvable": ("error", gettext_lazy("Sauvegarde introuvable.")),
+    "impossible": ("error", gettext_lazy("La sauvegarde a échoué.")),
+}
+
+
+def _backup_tab(state):
+    return redirect(f"{reverse('finance:settings')}?tab=sauvegarde&etat={state}")
+
+
+@login_required
+@require_POST
+def backup_now(request):
+    try:
+        backups.create_backup(backups.MANUAL)
+    except backups.BackupError:
+        return _backup_tab("impossible")
+    return _backup_tab("sauvegarde")
+
+
+@login_required
+def download_backup(request, name):
+    try:
+        path = backups.backup_path(name)
+    except backups.BackupError:
+        raise Http404
+    return FileResponse(open(path, "rb"), as_attachment=True, filename=path.name)
+
+
+def _after_restore(request):
+    # La base restaurée a ses propres sessions : on repasse par la connexion
+    logout(request)
+    return redirect(f"{reverse('accounts:login')}")
+
+
+@login_required
+@require_POST
+def restore_backup(request, name):
+    try:
+        backups.restore_backup(backups.backup_path(name))
+    except backups.BackupError:
+        return _backup_tab("introuvable")
+    return _after_restore(request)
+
+
+@login_required
+@require_POST
+def restore_backup_upload(request):
+    upload = request.FILES.get("backup")
+    if not upload:
+        return _backup_tab("fichier")
+    target = backups.backup_dir() / "import-en-cours.sqlite3"
+    with open(target, "wb") as handle:
+        for chunk in upload.chunks():
+            handle.write(chunk)
+    try:
+        backups.restore_backup(target)
+    except backups.BackupError:
+        return _backup_tab("fichier")
+    finally:
+        target.unlink(missing_ok=True)
+    return _after_restore(request)
+
+
+@login_required
+def export_transactions_csv(request):
+    response = HttpResponse(data_export.transactions_csv(request.user), content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="budgwealth-operations-{date.today():%Y-%m-%d}.csv"'
+    return response
+
+
+@login_required
+def export_workbook(request):
+    response = HttpResponse(
+        data_export.workbook(request.user),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="budgwealth-{date.today():%Y-%m-%d}.xlsx"'
+    return response
+
+
+def _category_groups(categories):
+    """Dépenses rangées en deux groupes : charges fixes (fixes, abonnements,
+    provisions annuelles) et charges variables. Une catégorie mixte apparaît
+    dans les deux groupes, chacun avec ses sous-catégories."""
+    groups = [
+        {"key": "fixed", "title": _("Charges fixes"),
+         "hint": _("Charges fixes, abonnements et provisions annuelles : ce qui tombe chaque mois ou chaque année."),
+         "categories": []},
+        {"key": "variable", "title": _("Charges variables"),
+         "hint": _("Courses, restaurants, sorties : ce qui varie d'un mois à l'autre."),
+         "categories": []},
+    ]
+    for category in categories:
+        if category.entry_type != EntryType.EXPENSE:
+            continue
+        subcategories = list(category.subcategories.all())
+        for group in groups:
+            fixed = group["key"] == "fixed"
+            if subcategories:
+                subs = [sub for sub in subcategories if sub.is_fixed == fixed]
+                if subs:
+                    group["categories"].append({"category": category, "subcategories": subs})
+            elif (category.budget_section in FIXED_GROUP_SECTIONS) == fixed:
+                group["categories"].append({"category": category, "subcategories": []})
+    return groups
+
+
 @login_required
 def settings_view(request):
     active_tab = request.GET.get("tab", "compte")
-    if active_tab not in {"compte", "banque", "postes-fixes", "categories"}:
+    if active_tab not in {"compte", "banque", "postes-fixes", "categories", "sauvegarde"}:
         active_tab = "compte"
 
     items = RecurringItem.objects.filter(user=request.user).select_related(
@@ -819,6 +950,13 @@ def settings_view(request):
         "items": items,
         "recurring_item_form": RecurringItemForm(user=request.user),
         "categories": user_categories,
+        "category_groups": _category_groups(user_categories),
+        "backups": backups.list_backups() if active_tab == "sauvegarde" else [],
+        "data_dir": settings.DATA_DIR,
+        "backup_dir": settings.BACKUP_DIR,
+        "backup_notice": BACKUP_NOTICES.get(request.GET.get("etat", "")),
+        "income_categories": [c for c in user_categories if c.entry_type == EntryType.INCOME],
+        "budget_sections": BudgetSection.choices,
         "category_form": CategoryForm(user=request.user),
         "subcategory_form": SubcategoryForm(user=request.user),
     }
@@ -840,9 +978,9 @@ def update_account(request):
     form = AccountForm(request.POST, instance=request.user)
     if form.is_valid():
         form.save()
-        messages.success(request, "Vos informations ont été mises à jour.")
+        messages.success(request, _("Vos informations ont été mises à jour."))
     else:
-        messages.error(request, "Impossible de mettre à jour vos informations.")
+        messages.error(request, _("Impossible de mettre à jour vos informations."))
     return redirect(f"{reverse('finance:settings')}?tab=compte")
 
 
@@ -853,9 +991,9 @@ def update_password(request):
     if form.is_valid():
         user = form.save()
         update_session_auth_hash(request, user)
-        messages.success(request, "Votre mot de passe a été mis à jour.")
+        messages.success(request, _("Votre mot de passe a été mis à jour."))
     else:
-        messages.error(request, "Impossible de mettre à jour le mot de passe.")
+        messages.error(request, _("Impossible de mettre à jour le mot de passe."))
     return redirect(f"{reverse('finance:settings')}?tab=compte")
 
 
@@ -871,9 +1009,9 @@ def add_recurring_item(request):
         if item.end_date and item.end_date <= date.today():
             item.is_active = False
         item.save()
-        messages.success(request, "Élément récurrent ajouté.")
+        messages.success(request, _("Élément récurrent ajouté."))
     else:
-        messages.error(request, "Impossible d'ajouter l'élément récurrent.")
+        messages.error(request, _("Impossible d'ajouter l'élément récurrent."))
     return redirect(f"{reverse('finance:settings')}?tab=postes-fixes")
 
 
@@ -889,9 +1027,9 @@ def edit_recurring_item(request, pk):
         if item.end_date and item.end_date <= date.today():
             item.is_active = False
         item.save()
-        messages.success(request, "Élément récurrent mis à jour.")
+        messages.success(request, _("Élément récurrent mis à jour."))
     else:
-        messages.error(request, "Impossible de mettre à jour l'élément récurrent.")
+        messages.error(request, _("Impossible de mettre à jour l'élément récurrent."))
     return redirect(f"{reverse('finance:settings')}?tab=postes-fixes")
 
 
@@ -919,7 +1057,7 @@ def cancel_recurring_item(request, pk):
     item.end_date = end_date
     item.is_active = False
     item.save(update_fields=["end_date", "is_active"])
-    messages.success(request, "Abonnement annulé. L'historique reste conservé.")
+    messages.success(request, _("Abonnement annulé. L'historique reste conservé."))
     return redirect(f"{reverse('finance:settings')}?tab=postes-fixes")
 
 
@@ -928,7 +1066,7 @@ def cancel_recurring_item(request, pk):
 def delete_recurring_item(request, pk):
     item = get_object_or_404(RecurringItem, pk=pk, user=request.user)
     item.delete()
-    messages.success(request, "Élément récurrent supprimé.")
+    messages.success(request, _("Élément récurrent supprimé."))
     return redirect(f"{reverse('finance:settings')}?tab=postes-fixes")
 
 
@@ -938,9 +1076,9 @@ def add_category(request):
     form = CategoryForm(request.POST, user=request.user)
     if form.is_valid():
         form.save()
-        messages.success(request, "Catégorie ajoutée.")
+        messages.success(request, _("Catégorie ajoutée."))
     else:
-        messages.error(request, "Impossible d'ajouter la catégorie.")
+        messages.error(request, _("Impossible d'ajouter la catégorie."))
     return redirect(f"{reverse('finance:settings')}?tab=categories")
 
 
@@ -949,7 +1087,7 @@ def add_category(request):
 def delete_category(request, pk):
     category = get_object_or_404(Category, pk=pk, user=request.user)
     category.delete()
-    messages.success(request, "Catégorie supprimée.")
+    messages.success(request, _("Catégorie supprimée."))
     return redirect(f"{reverse('finance:settings')}?tab=categories")
 
 
@@ -960,13 +1098,33 @@ def add_subcategory(request):
     if form.is_valid():
         subcategory = form.save(commit=False)
         if subcategory.category.user_id != request.user.id:
-            messages.error(request, "Catégorie invalide.")
+            messages.error(request, _("Catégorie invalide."))
         else:
             subcategory.save()
-            messages.success(request, "Sous-catégorie ajoutée.")
+            messages.success(request, _("Sous-catégorie ajoutée."))
     else:
-        messages.error(request, "Impossible d'ajouter la sous-catégorie.")
+        messages.error(request, _("Impossible d'ajouter la sous-catégorie."))
     return redirect(f"{reverse('finance:settings')}?tab=categories")
+
+
+@login_required
+@require_POST
+def update_budget_section(request, kind, pk):
+    """Change le type (fixe, abonnement, provision, variable) d'une
+    sous-catégorie, ou d'une catégorie sans sous-catégorie."""
+    model = Subcategory if kind == "sous-categorie" else Category
+    filters = {"category__user": request.user} if model is Subcategory else {"user": request.user}
+    item = get_object_or_404(model, pk=pk, **filters)
+    section = request.POST.get("budget_section")
+    if section in BudgetSection.values:
+        item.budget_section = section
+        item.save(update_fields=["budget_section"])
+        messages.success(request, _("« %(name)s » est maintenant en %(section)s.") % {
+            "name": item, "section": item.get_budget_section_display().lower(),
+        })
+    else:
+        messages.error(request, _("Type invalide."))
+    return redirect(f"{reverse('finance:settings')}?tab=categories#categorie-{item.category_id if model is Subcategory else item.pk}")
 
 
 @login_required
@@ -976,7 +1134,7 @@ def delete_subcategory(request, pk):
         Subcategory, pk=pk, category__user=request.user
     )
     subcategory.delete()
-    messages.success(request, "Sous-catégorie supprimée.")
+    messages.success(request, _("Sous-catégorie supprimée."))
     return redirect(f"{reverse('finance:settings')}?tab=categories")
 
 
@@ -992,10 +1150,10 @@ def update_bank_connection(request):
         # Première connexion : on enchaîne sur l'import des 12 mois d'historique
         if not bank_connection.initial_import_done:
             return redirect("finance:bank_initial_sync")
-        messages.success(request, "Connexion bancaire enregistrée.")
+        messages.success(request, _("Connexion bancaire enregistrée."))
     else:
         errors = " ".join(error for field_errors in form.errors.values() for error in field_errors)
-        messages.error(request, f"Impossible d'enregistrer la connexion bancaire. {errors}")
+        messages.error(request, _("Impossible d'enregistrer la connexion bancaire. %(errors)s") % {"errors": errors})
     return redirect(f"{reverse('finance:settings')}?tab=banque")
 
 
@@ -1003,7 +1161,7 @@ def update_bank_connection(request):
 @require_POST
 def delete_bank_connection(request):
     BankConnection.objects.filter(user=request.user).delete()
-    messages.success(request, "Connexion bancaire supprimée.")
+    messages.success(request, _("Connexion bancaire supprimée."))
     return redirect(f"{reverse('finance:settings')}?tab=banque")
 
 
@@ -1024,12 +1182,12 @@ def _bank_sync_payload(sync):
 def bank_sync_start(request, year, month):
     if not BankConnection.objects.filter(user=request.user).exists():
         return JsonResponse(
-            {"error": "Renseignez d'abord votre identifiant bancaire dans les paramètres."},
+            {"error": _("Renseignez d'abord votre identifiant bancaire dans les paramètres.")},
             status=400,
         )
     if not is_month_syncable(year, month):
         return JsonResponse(
-            {"error": "La banque ne donne accès qu'aux 12 derniers mois."},
+            {"error": _("La banque ne donne accès qu'aux 12 derniers mois.")},
             status=400,
         )
     sync = start_bank_sync(request.user, year, month)
@@ -1076,11 +1234,11 @@ def bank_initial_sync_start(request):
     connection = BankConnection.objects.filter(user=request.user).first()
     if not connection:
         return JsonResponse(
-            {"error": "Renseignez d'abord votre identifiant bancaire."}, status=400
+            {"error": _("Renseignez d'abord votre identifiant bancaire.")}, status=400
         )
     if connection.initial_import_done:
         return JsonResponse(
-            {"error": "Votre historique a déjà été importé."}, status=400
+            {"error": _("Votre historique a déjà été importé.")}, status=400
         )
     sync = start_bank_sync(request.user, kind=BankSyncKind.INITIAL)
     return JsonResponse(_bank_sync_payload(sync))
@@ -1090,13 +1248,6 @@ def bank_initial_sync_start(request):
 @require_GET
 def bank_sync_status(request, pk):
     sync = get_object_or_404(BankSync, pk=pk, user=request.user)
-    if sync.status == BankSyncStatus.DONE and request.GET.get("final"):
-        messages.success(
-            request,
-            f"Synchronisation terminée : {sync.created_count} opération(s) importée(s)"
-            + (f", {sync.skipped_count} déjà présente(s)." if sync.skipped_count else ".")
-            + (f" {sync.message}" if sync.message else ""),
-        )
     return JsonResponse(_bank_sync_payload(sync))
 
 
@@ -1120,8 +1271,18 @@ def _suggested_budget_lines(user, today):
             monthly = item.default_amount / (12 * (item.frequency_interval or 1))
         elif item.frequency_unit == RecurrenceUnit.MONTH and item.frequency_interval > 1:
             monthly = item.default_amount / item.frequency_interval
+        if item.subcategory_id:
+            section = item.subcategory.budget_section
+        elif item.kind == RecurrenceKind.SUBSCRIPTION:
+            section = BudgetSection.SUBSCRIPTION
+        else:
+            section = BudgetSection.FIXED
+        # La section doit rester compatible avec le classement de la catégorie
+        allowed = item.category.budget_sections()
+        if section not in allowed:
+            section = sorted(allowed)[0] if allowed else section
         lines.append({
-            "section": BudgetSection.SUBSCRIPTION if item.kind == RecurrenceKind.SUBSCRIPTION else BudgetSection.FIXED,
+            "section": section,
             "category": item.category_id,
             "subcategory": item.subcategory_id,
             "label": item.name,
@@ -1145,40 +1306,52 @@ def _suggested_budget_lines(user, today):
         .exclude(category__name=budget_calc.SAVINGS_CATEGORY_NAME)
         .exclude(category_id__in=covered_categories)
         .exclude(subcategory_id__in=covered_subcategories)
-        .values("category_id", "category__name")
+        .values("category_id", "category__budget_section", "subcategory_id", "subcategory__budget_section")
         .annotate(total=Sum("amount"))
         .order_by("-total")
     )
+    categories = {
+        category.id: category
+        for category in Category.objects.filter(user=user).prefetch_related("subcategories")
+    }
     for row in averages:
         amount = (row["total"] / 3).quantize(Decimal("1"))
-        if amount >= 5:
-            lines.append({
-                "section": BudgetSection.VARIABLE,
-                "category": row["category_id"],
-                "subcategory": None,
-                "label": "",
-                "amount": amount,
-            })
+        if amount < 5:
+            continue
+        if row["subcategory_id"]:
+            section = row["subcategory__budget_section"]
+        else:
+            category = categories.get(row["category_id"])
+            allowed = category.budget_sections() if category else {BudgetSection.VARIABLE}
+            section = BudgetSection.VARIABLE if BudgetSection.VARIABLE in allowed else sorted(allowed)[0]
+        lines.append({
+            "section": section,
+            "category": row["category_id"],
+            "subcategory": row["subcategory_id"],
+            "label": "",
+            "amount": amount,
+        })
 
     return lines
 
 
 def _plan_lines_initial(plan):
+    # Une ligne dont la sous-catégorie a changé de type passe dans la bonne section
     return [
         {
-            "section": line.section,
+            "section": line.subcategory.budget_section if line.subcategory_id else line.section,
             "category": line.category_id,
             "subcategory": line.subcategory_id,
             "label": line.label,
             "amount": line.amount,
         }
-        for line in plan.lines.all()
+        for line in plan.lines.select_related("subcategory")
     ]
 
 
 def _save_plan(user, plan_form, formset):
     valid_from = plan_form.cleaned_data["valid_from"]
-    plan, _ = BudgetPlan.objects.get_or_create(user=user, valid_from=valid_from)
+    plan, _ignored = BudgetPlan.objects.get_or_create(user=user, valid_from=valid_from)
     for field in plan_form.Meta.fields:
         setattr(plan, field, plan_form.cleaned_data[field])
     plan.save()
@@ -1222,10 +1395,10 @@ def budget_plan_view(request):
             saved = _save_plan(request.user, plan_form, formset)
             messages.success(
                 request,
-                f"Budget enregistré. Il s'applique à partir de {month_label(saved.valid_from)}.",
+                _("Budget enregistré. Il s'applique à partir de %(month_label)s.") % {"month_label": month_label(saved.valid_from)},
             )
             return redirect("finance:budget_plan")
-        messages.error(request, "Le budget n'a pas été enregistré : vérifie les champs en rouge.")
+        messages.error(request, _("Le budget n'a pas été enregistré : vérifie les champs en rouge."))
     else:
         current_month = date(today.year, today.month, 1)
         initial_from = plan.valid_from if plan and plan.valid_from > current_month else current_month
@@ -1269,9 +1442,9 @@ def update_meal_vouchers(request):
     form = _meal_voucher_form(request.user, request.POST)
     if form.is_valid():
         form.save()
-        messages.success(request, "Tickets restaurant mis à jour.")
+        messages.success(request, _("Tickets restaurant mis à jour."))
     else:
-        messages.error(request, "Impossible d'enregistrer les tickets restaurant.")
+        messages.error(request, _("Impossible d'enregistrer les tickets restaurant."))
     return redirect(reverse("finance:budget_plan") + "#tickets")
 
 
@@ -1283,7 +1456,7 @@ def _current_plan_or_new(user, today):
 
 
 @login_required
-def budget_goals_view(request):
+def budget_goals_view(request, global_goal_form=None):
     today = date.today()
     plan = budget_calc.plan_for_month(request.user, today.year, today.month)
     overview = budget_calc.projects_overview(request.user, today)
@@ -1293,8 +1466,18 @@ def budget_goals_view(request):
         )
     savings_target = plan.savings_target_monthly if plan else Decimal("0")
 
+    goal = SavingsGoal.objects.filter(user=request.user).first()
+    global_goal = None
+    if goal:
+        current = wealth.savings_overview(request.user, today)["total"]
+        global_goal = savings_goal_calc.goal_overview(
+            goal, request.user, current, today, monthly_target=savings_target
+        )
+
     context = {
         "budget_tab": "objectifs",
+        "global_goal": global_goal,
+        "global_goal_form": global_goal_form or GlobalSavingsGoalForm(instance=goal),
         "plan": plan,
         "savings_goal_form": SavingsGoalForm(instance=_current_plan_or_new(request.user, today)),
         "savings_target": savings_target,
@@ -1319,10 +1502,87 @@ def update_savings_goal(request):
     form = SavingsGoalForm(request.POST, instance=plan)
     if form.is_valid():
         form.save()
-        messages.success(request, "Objectif d'épargne mis à jour.")
+        messages.success(request, _("Objectif d'épargne mis à jour."))
     else:
-        messages.error(request, "Montant invalide.")
+        messages.error(request, _("Montant invalide."))
     return redirect("finance:budget_goals")
+
+
+@login_required
+def budget_cashflow_view(request, balance_form=None):
+    today = date.today()
+    horizon = request.GET.get("horizon", "mois")
+    if horizon not in forecast_calc.HORIZONS:
+        horizon = "mois"
+    result = forecast_calc.forecast(request.user, today, horizon)
+    account = result["account"]
+    if balance_form is None:
+        snapshot = result.get("snapshot")
+        balance_form = CurrentBalanceForm(initial={
+            "date": today.isoformat(),
+            "balance": result["current"] if result["has_balance"] else None,
+            "safety_buffer": account.safety_buffer if account else Decimal("200"),
+        })
+    chart = result.get("chart")
+    context = {
+        "budget_tab": "tresorerie",
+        "forecast": result,
+        "horizon": horizon,
+        "horizons": [("mois", _("Fin du mois")), ("30", _("30 jours")), ("60", _("60 jours")), ("90", _("90 jours"))],
+        "balance_form": balance_form,
+        "chart": chart,
+        "has_bank": BankConnection.objects.filter(user=request.user).exists(),
+    }
+    return render(request, "finance/budget_cashflow.html", context)
+
+
+@login_required
+@require_POST
+def update_current_balance(request):
+    form = CurrentBalanceForm(request.POST)
+    if not form.is_valid():
+        return budget_cashflow_view(request, balance_form=form)
+    snapshot = forecast_calc.set_manual_balance(request.user, form.cleaned_data["date"], form.cleaned_data["balance"])
+    account = snapshot.account
+    account.safety_buffer = form.cleaned_data["safety_buffer"]
+    account.save(update_fields=["safety_buffer"])
+    return redirect("finance:budget_cashflow")
+
+
+@login_required
+@require_POST
+def update_global_savings_goal(request):
+    goal = SavingsGoal.objects.filter(user=request.user).first()
+    form = GlobalSavingsGoalForm(request.POST, instance=goal)
+    if form.is_valid():
+        goal = form.save(commit=False)
+        goal.user = request.user
+        goal.save()
+        return redirect(reverse("finance:budget_goals") + "#objectif-global")
+    # Les erreurs s'affichent sous les champs (pas de notification)
+    request.method = "GET"
+    return budget_goals_view(request, global_goal_form=form)
+
+
+@login_required
+@require_POST
+def delete_global_savings_goal(request):
+    SavingsGoal.objects.filter(user=request.user).delete()
+    return redirect("finance:budget_goals")
+
+
+@login_required
+@require_POST
+def apply_global_goal_monthly(request):
+    """Reprend le versement nécessaire comme objectif d'épargne mensuel du budget."""
+    goal = get_object_or_404(SavingsGoal, user=request.user)
+    today = date.today()
+    current = wealth.savings_overview(request.user, today)["total"]
+    overview = savings_goal_calc.goal_overview(goal, request.user, current, today)
+    plan = _current_plan_or_new(request.user, today)
+    plan.savings_target_monthly = overview["needed"].quantize(Decimal("1"), rounding="ROUND_CEILING")
+    plan.save()
+    return redirect(reverse("finance:budget_goals") + "#objectif-global")
 
 
 @login_required
@@ -1333,9 +1593,9 @@ def add_savings_project(request):
         project = form.save(commit=False)
         project.user = request.user
         project.save()
-        messages.success(request, f"Projet « {project.name} » créé.")
+        messages.success(request, _('Projet « %(name)s » créé.') % {"name": project.name})
     else:
-        messages.error(request, "Impossible de créer le projet : vérifie le formulaire.")
+        messages.error(request, _("Impossible de créer le projet : vérifie le formulaire."))
     return redirect("finance:budget_goals")
 
 
@@ -1346,9 +1606,9 @@ def edit_savings_project(request, pk):
     form = SavingsProjectForm(request.POST, instance=project, prefix=f"p{pk}")
     if form.is_valid():
         form.save()
-        messages.success(request, "Projet mis à jour.")
+        messages.success(request, _("Projet mis à jour."))
     else:
-        messages.error(request, "Impossible de mettre à jour le projet.")
+        messages.error(request, _("Impossible de mettre à jour le projet."))
     return redirect("finance:budget_goals")
 
 
@@ -1357,7 +1617,7 @@ def edit_savings_project(request, pk):
 def delete_savings_project(request, pk):
     project = get_object_or_404(SavingsProject, pk=pk, user=request.user)
     project.delete()
-    messages.success(request, "Projet supprimé.")
+    messages.success(request, _("Projet supprimé."))
     return redirect("finance:budget_goals")
 
 
@@ -1371,9 +1631,9 @@ def subscriptions_view(request):
     changes = subscription_detection.sync_subscriptions(request.user, today)
     for change, item in changes:
         if change == "stopped":
-            messages.info(request, f"« {item.name} » n'a pas été payé : abonnement marqué comme arrêté.")
+            messages.info(request, _("« %(name)s » n'a pas été payé : abonnement marqué comme arrêté.") % {"name": item.name})
         else:
-            messages.info(request, f"« {item.name} » a de nouveau été payé : abonnement réactivé.")
+            messages.info(request, _('« %(name)s » a de nouveau été payé : abonnement réactivé.') % {"name": item.name})
 
     tracked = subscription_detection.tracked_subscriptions(request.user, today)
 
@@ -1430,12 +1690,12 @@ def subscriptions_view(request):
 def follow_subscription(request):
     candidate = subscription_detection.find_candidate(request.user, request.POST.get("key", ""))
     if candidate is None:
-        messages.error(request, "Cet abonnement n'a pas été retrouvé dans tes opérations.")
+        messages.error(request, _("Cet abonnement n'a pas été retrouvé dans tes opérations."))
     else:
         item = subscription_detection.follow_candidate(request.user, candidate)
         messages.success(
             request,
-            f"« {item.name} » est maintenant suivi ({candidate.count} paiements rattachés).",
+            _('« %(name)s » est maintenant suivi (%(count)s paiements rattachés).') % {"name": item.name, "count": candidate.count},
         )
     return redirect("finance:budget_subscriptions")
 
@@ -1446,7 +1706,7 @@ def dismiss_subscription(request):
     key = request.POST.get("key", "")
     if key:
         subscription_detection.dismiss_candidate(request.user, key)
-        messages.info(request, "Suggestion ignorée.")
+        messages.info(request, _("Suggestion ignorée."))
     return redirect("finance:budget_subscriptions")
 
 
@@ -1457,5 +1717,5 @@ def untrack_subscription(request, pk):
     name = item.name
     # Les paiements restent dans l'historique, simplement détachés
     item.delete()
-    messages.success(request, f"« {name} » n'est plus suivi.")
+    messages.success(request, _("« %(name)s » n'est plus suivi.") % {"name": name})
     return redirect("finance:budget_subscriptions")

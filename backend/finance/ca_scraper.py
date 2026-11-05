@@ -36,6 +36,7 @@ from playwright.sync_api import (
     Error as PlaywrightError,
     TimeoutError as PlaywrightTimeoutError,
 )
+from django.utils.translation import gettext as _
 
 
 logger = logging.getLogger(__name__)
@@ -216,7 +217,7 @@ class CreditAgricoleScraper:
             )
         except PlaywrightTimeoutError:
             raise BankSyncError(
-                "Caisse régionale introuvable : vérifiez le code postal dans les paramètres."
+                _("Caisse régionale introuvable : vérifiez le code postal dans les paramètres.")
             )
 
     def log_in(self):
@@ -233,13 +234,13 @@ class CreditAgricoleScraper:
 
         page.get_by_role("button", name=re.compile("valider", re.I)).first.click()
 
-        self.on_status("WAITING_PASSWORD", "Saisissez votre code personnel dans la fenêtre Crédit Agricole.")
+        self.on_status("WAITING_PASSWORD", _("Saisissez votre code personnel dans la fenêtre Crédit Agricole."))
         self.show_window()
 
         try:
             page.wait_for_url(lambda url: is_logged_in(url), timeout=LOGIN_TIMEOUT_MS)
         except PlaywrightTimeoutError:
-            raise BankSyncError("Code personnel non saisi à temps : relancez la synchronisation.")
+            raise BankSyncError(_("Code personnel non saisi à temps : relancez la synchronisation."))
 
         self.hide_window()
         self.on_status("CONNECTING", "Connecté.")
@@ -308,7 +309,7 @@ class CreditAgricoleScraper:
         ], timeout=5000):
             return
 
-        raise BankSyncError("Le site ne propose plus le format CSV : synchronisation impossible.")
+        raise BankSyncError(_("Le site ne propose plus le format CSV : synchronisation impossible."))
 
     def fill_date(self, form, name, value):
         """
@@ -335,7 +336,7 @@ class CreditAgricoleScraper:
             page.keyboard.type(digits, delay=80)
 
             if field.get_attribute("aria-valuenow") != str(number):
-                raise BankSyncError(f"Impossible de remplir la date ({segment}).")
+                raise BankSyncError(_('Impossible de remplir la date (%(segment)s).') % {"segment": segment})
 
         page.keyboard.press("Tab")
 
@@ -353,7 +354,7 @@ class CreditAgricoleScraper:
 
         # Sans choix à faire, les dates peuvent être affichées d'office
         if not clicked and not form.locator('mds-date-picker[name="startDate"]').is_visible():
-            raise BankSyncError("Choix de la période introuvable sur le site.")
+            raise BankSyncError(_("Choix de la période introuvable sur le site."))
 
         self.fill_date(form, "startDate", start)
         self.fill_date(form, "endDate", end)
@@ -378,7 +379,7 @@ class CreditAgricoleScraper:
 
             time.sleep(0.5)
 
-        raise BankSyncError("La banque n'a pas envoyé le fichier des opérations.")
+        raise BankSyncError(_("La banque n'a pas envoyé le fichier des opérations."))
 
     def download_csv(self, start, end, account_numbers=None):
         """
@@ -508,13 +509,13 @@ class CreditAgricoleScraper:
                         },
                     )
 
-                    self.on_status("CONNECTING", "Connexion au Crédit Agricole…")
+                    self.on_status("CONNECTING", _("Connexion au Crédit Agricole…"))
                     self.open_login_page()
 
                     if not is_logged_in(self.page.url):
                         self.log_in()
 
-                    self.on_status("DOWNLOADING", "Téléchargement des opérations…")
+                    self.on_status("DOWNLOADING", _("Téléchargement des opérations…"))
                     downloaded = self.download_csv(start, end)
 
                     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
@@ -525,7 +526,7 @@ class CreditAgricoleScraper:
 
                     missing = balance_accounts(target, self.account_cards) if balance_accounts and balance_start else []
                     if missing:
-                        self.on_status("DOWNLOADING", "Relevé du solde des livrets…")
+                        self.on_status("DOWNLOADING", _("Relevé du solde des livrets…"))
                         try:
                             downloaded = self.download_csv(balance_start, end, account_numbers=missing)
                         except (PlaywrightError, BankSyncError):
@@ -542,7 +543,7 @@ class CreditAgricoleScraper:
 
                     if "closed" in str(error).lower():
                         raise BankSyncError(
-                            "La fenêtre Crédit Agricole s'est fermée avant la fin. Relancez la synchronisation."
+                            _("La fenêtre Crédit Agricole s'est fermée avant la fin. Relancez la synchronisation.")
                         )
 
                     # Le message affiché reste générique : le détail (élément introuvable,
@@ -553,7 +554,7 @@ class CreditAgricoleScraper:
                     )
 
                     raise BankSyncError(
-                        "Le site du Crédit Agricole ne répond pas comme prévu. Réessayez dans un instant."
+                        _("Le site du Crédit Agricole ne répond pas comme prévu. Réessayez dans un instant.")
                     ) from error
 
                 finally:

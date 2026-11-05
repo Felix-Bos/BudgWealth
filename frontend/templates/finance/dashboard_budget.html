@@ -1,54 +1,55 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 
-{% block title %}Budget - BudgWealth{% endblock %}
+{% block title %}{% translate "Budget - BudgWealth" %}{% endblock %}
 
 {% block content %}
 <section class="finance-dashboard budget-page">
-    {% include "finance/_budget_tabs.html" with subtitle="Tes tendances sur les 12 derniers mois" %}
+    {% include "finance/_budget_tabs.html" with subtitle=_("Tes tendances sur les 12 derniers mois") %}
 
     {% if not kpis.months %}
     <div class="content-panel budget-empty mb-4">
         <div>
-            <h2 class="h5 mb-1">Pas encore d'historique</h2>
-            <p class="text-muted mb-0">Importe tes opérations bancaires pour voir tes tendances, ton taux d'épargne et la réussite de ton budget.</p>
+            <h2 class="h5 mb-1">{% translate "Pas encore d'historique" %}</h2>
+            <p class="text-muted mb-0">{% translate "Importe tes opérations bancaires pour voir tes tendances, ton taux d'épargne et la réussite de ton budget." %}</p>
         </div>
-        <a class="btn btn-primary" href="{% url 'finance:bank_initial_sync' %}">Importer mon historique</a>
+        <a class="btn btn-primary" href="{% url 'finance:bank_initial_sync' %}">{% translate "Importer mon historique" %}</a>
     </div>
     {% else %}
 
     {# ---------- Indicateurs globaux ---------- #}
     <div class="dash-kpis mb-4">
         <div class="dash-kpi is-income">
-            <span>Revenus moyens</span>
+            <span>{% translate "Revenus moyens" %}</span>
             <strong>{{ kpis.avg_income|floatformat:"0g" }} €</strong>
-            <small>par mois · {{ kpis.months }} mois</small>
+            <small>{% translate "par mois ·" %} {{ kpis.months }} {% translate "mois" %}</small>
         </div>
         <div class="dash-kpi is-expense">
-            <span>Charges moyennes</span>
+            <span>{% translate "Charges moyennes" %}</span>
             <strong>{{ kpis.avg_expense|floatformat:"0g" }} €</strong>
-            <small>par mois, hors épargne</small>
+            <small>{% translate "par mois, hors épargne" %}</small>
         </div>
         <div class="dash-kpi is-savings">
-            <span>Épargne</span>
+            <span>{% translate "Épargne" %}</span>
             <strong>{{ kpis.total_savings|floatformat:"0g" }} €</strong>
-            <small>{{ kpis.avg_savings|floatformat:"0g" }} € par mois en moyenne</small>
+            <small>{{ kpis.avg_savings|floatformat:"0g" }} {% translate "€ par mois en moyenne" %}</small>
         </div>
         <div class="dash-kpi">
-            <span>Taux d'épargne</span>
+            <span>{% translate "Taux d'épargne" %}</span>
             <strong>{{ kpis.savings_rate }} %</strong>
-            <small>de tes revenus mis de côté</small>
+            <small>{% translate "de tes revenus mis de côté" %}</small>
         </div>
         <div class="dash-kpi">
-            <span>Mois à l'équilibre</span>
+            <span>{% translate "Mois à l'équilibre" %}</span>
             <strong>{{ kpis.positive_months }} / {{ kpis.months }}</strong>
-            <small>revenus ≥ charges</small>
+            <small>{% translate "revenus ≥ charges" %}</small>
         </div>
         {% if trend and trend.closed_count %}
         <div class="dash-kpi {% if trend.on_budget_months|add:trend.on_budget_months >= trend.closed_count %}is-good{% else %}is-bad{% endif %}">
-            <span>Budget tenu</span>
+            <span>{% translate "Budget tenu" %}</span>
             <strong>{{ trend.on_budget_months }} / {{ trend.closed_count }}</strong>
-            <small>objectif d'épargne atteint {{ trend.savings_months }} / {{ trend.closed_count }}</small>
+            <small>{% translate "objectif d'épargne atteint" %} {{ trend.savings_months }} / {{ trend.closed_count }}</small>
         </div>
         {% endif %}
     </div>
@@ -56,11 +57,11 @@
     {% if subscription_summary.suggestion_count or subscription_summary.stopped_count %}
     <a class="budget-callout sub-alert mb-4" href="{% url 'finance:budget_subscriptions' %}">
         <strong>
-            {% if subscription_summary.suggestion_count %}{{ subscription_summary.suggestion_count }} abonnement{{ subscription_summary.suggestion_count|pluralize }} détecté{{ subscription_summary.suggestion_count|pluralize }} à valider{% endif %}
+            {% if subscription_summary.suggestion_count %}{{ subscription_summary.suggestion_count }} {% translate "abonnement" %}{{ subscription_summary.suggestion_count|pluralize }} {% translate "détecté" %}{{ subscription_summary.suggestion_count|pluralize }} {% translate "à valider" %}{% endif %}
             {% if subscription_summary.suggestion_count and subscription_summary.stopped_count %} · {% endif %}
-            {% if subscription_summary.stopped_count %}{{ subscription_summary.stopped_count }} arrêté{{ subscription_summary.stopped_count|pluralize }} (plus payé{{ subscription_summary.stopped_count|pluralize }}){% endif %}
+            {% if subscription_summary.stopped_count %}{{ subscription_summary.stopped_count }} {% translate "arrêté" %}{{ subscription_summary.stopped_count|pluralize }} {% translate "(plus payé" %}{{ subscription_summary.stopped_count|pluralize }}){% endif %}
         </strong>
-        <span>Voir mes abonnements →</span>
+        <span>{% translate "Voir mes abonnements →" %}</span>
     </a>
     {% endif %}
 
@@ -68,38 +69,38 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Évolution mensuelle</h2>
-                <p class="text-muted small mb-0">Revenus, charges, épargne et solde · clique sur un mois pour l'ouvrir</p>
+                <h2 class="h5 mb-1">{% translate "Évolution mensuelle" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Revenus, charges, épargne et solde · clique sur un mois pour l'ouvrir" %}</p>
             </div>
         </div>
-        <div class="dash-chart is-tall"><canvas id="historyChart" role="img" aria-label="Revenus, charges, épargne et solde sur 12 mois"></canvas></div>
+        <div class="dash-chart is-tall"><canvas id="historyChart" role="img" aria-label="{% translate "Revenus, charges, épargne et solde sur 12 mois" %}"></canvas></div>
     </div>
 
     <div class="dash-grid mb-4">
         <div class="content-panel dash-card">
             <div class="month-card-head">
                 <div>
-                    <h2 class="h5 mb-1">Taux d'épargne</h2>
-                    <p class="text-muted small mb-0">Part des revenus mise de côté chaque mois{% if plan %}, comparée à ton objectif{% endif %}</p>
+                    <h2 class="h5 mb-1">{% translate "Taux d'épargne" %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Part des revenus mise de côté chaque mois" %}{% if plan %}{% translate ", comparée à ton objectif" %}{% endif %}</p>
                 </div>
             </div>
-            <div class="dash-chart"><canvas id="savingsRateChart" role="img" aria-label="Taux d'épargne mois par mois"></canvas></div>
+            <div class="dash-chart"><canvas id="savingsRateChart" role="img" aria-label="{% translate "Taux d'épargne mois par mois" %}"></canvas></div>
         </div>
 
         <div class="content-panel dash-card">
             <div class="month-card-head">
                 <div>
-                    <h2 class="h5 mb-1">Réussite du budget</h2>
+                    <h2 class="h5 mb-1">{% translate "Réussite du budget" %}</h2>
                     <p class="text-muted small mb-0">
-                        {% if trend %}Dépensé vs budget (barre rouge = dépassé) et épargne vs objectif{% else %}Crée ton budget pour suivre s'il est tenu chaque mois{% endif %}
+                        {% if trend %}{% translate "Dépensé vs budget (barre rouge = dépassé) et épargne vs objectif" %}{% else %}{% translate "Crée ton budget pour suivre s'il est tenu chaque mois" %}{% endif %}
                     </p>
                 </div>
-                {% if not plan %}<a class="btn btn-primary btn-sm" href="{% url 'finance:budget_plan' %}">Créer</a>{% endif %}
+                {% if not plan %}<a class="btn btn-primary btn-sm" href="{% url 'finance:budget_plan' %}">{% translate "Créer" %}</a>{% endif %}
             </div>
             {% if trend %}
-            <div class="dash-chart"><canvas id="budgetChart" role="img" aria-label="Dépenses comparées au budget et épargne comparée à l'objectif"></canvas></div>
+            <div class="dash-chart"><canvas id="budgetChart" role="img" aria-label="{% translate "Dépenses comparées au budget et épargne comparée à l'objectif" %}"></canvas></div>
             {% else %}
-            <p class="text-muted mb-0">Aucun budget enregistré pour l'instant.</p>
+            <p class="text-muted mb-0">{% translate "Aucun budget enregistré pour l'instant." %}</p>
             {% endif %}
         </div>
     </div>
@@ -108,19 +109,19 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Charges par catégorie</h2>
-                <p class="text-muted small mb-0">Évolution mois par mois · clique sur une catégorie de la légende pour la masquer</p>
+                <h2 class="h5 mb-1">{% translate "Charges par catégorie" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Évolution mois par mois · clique sur une catégorie de la légende pour la masquer" %}</p>
             </div>
         </div>
-        <div class="dash-chart is-tall"><canvas id="categoriesChart" role="img" aria-label="Charges par catégorie sur 12 mois"></canvas></div>
+        <div class="dash-chart is-tall"><canvas id="categoriesChart" role="img" aria-label="{% translate "Charges par catégorie sur 12 mois" %}"></canvas></div>
     </div>
 
     <div class="dash-grid mb-4">
         <div class="content-panel dash-card">
             <div class="month-card-head">
                 <div>
-                    <h2 class="h5 mb-1">Postes à surveiller</h2>
-                    <p class="text-muted small mb-0">Dépassés au moins 2 mois</p>
+                    <h2 class="h5 mb-1">{% translate "Postes à surveiller" %}</h2>
+                    <p class="text-muted small mb-0">{% translate "Dépassés au moins 2 mois" %}</p>
                 </div>
             </div>
             {% if trend.recurring_overruns %}
@@ -129,28 +130,28 @@
                 <li>
                     <div>
                         <strong>{{ item.label }}</strong>
-                        <small>Dépassé {{ item.over }} mois sur {{ item.months }} · prévu {{ item.budget }} €</small>
+                        <small>{% translate "Dépassé" %} {{ item.over }} {% translate "mois sur" %} {{ item.months }} {% translate "· prévu" %} {{ item.budget }} €</small>
                     </div>
-                    <span>+{{ item.gap }} €<small>/ mois en moyenne</small></span>
+                    <span>+{{ item.gap }} €<small>{% translate "/ mois en moyenne" %}</small></span>
                 </li>
                 {% endfor %}
             </ul>
             {% elif trend %}
-            <p class="text-muted mb-0">Aucun poste ne dépasse régulièrement son budget.</p>
+            <p class="text-muted mb-0">{% translate "Aucun poste ne dépasse régulièrement son budget." %}</p>
             {% else %}
-            <p class="text-muted mb-0">Disponible une fois ton budget créé.</p>
+            <p class="text-muted mb-0">{% translate "Disponible une fois ton budget créé." %}</p>
             {% endif %}
         </div>
 
         <div class="content-panel dash-card">
             <div class="month-card-head">
                 <div>
-                    <h2 class="h5 mb-1">Abonnements</h2>
-                    <p class="text-muted small mb-0">{{ subscription_summary.active_count }} actif{{ subscription_summary.active_count|pluralize }} · {{ subscription_summary.monthly_total }} € par mois</p>
+                    <h2 class="h5 mb-1">{% translate "Abonnements" %}</h2>
+                    <p class="text-muted small mb-0">{{ subscription_summary.active_count }} {% translate "actif" %}{{ subscription_summary.active_count|pluralize }} · {{ subscription_summary.monthly_total }} {% translate "€ par mois" %}</p>
                 </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">Gérer</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_subscriptions' %}">{% translate "Gérer" %}</a>
             </div>
-            <div class="dash-chart is-small"><canvas id="subscriptionsChart" role="img" aria-label="Coût des abonnements par mois"></canvas></div>
+            <div class="dash-chart is-small"><canvas id="subscriptionsChart" role="img" aria-label="{% translate "Coût des abonnements par mois" %}"></canvas></div>
         </div>
     </div>
 
@@ -158,17 +159,17 @@
     <div class="content-panel dash-card mb-4">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Projets d'épargne</h2>
-                <p class="text-muted small mb-0">{{ projects.monthly_needed }} € à mettre de côté par mois pour tout tenir</p>
+                <h2 class="h5 mb-1">{% translate "Projets d'épargne" %}</h2>
+                <p class="text-muted small mb-0">{{ projects.monthly_needed }} {% translate "€ à mettre de côté par mois pour tout tenir" %}</p>
             </div>
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_goals' %}">Gérer</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'finance:budget_goals' %}">{% translate "Gérer" %}</a>
         </div>
         <div class="budget-project-mini-list">
             {% for item in projects.projects %}{% if not item.project.is_done %}
             <div class="budget-project-mini">
                 <div class="budget-track-label">
                     <span>{{ item.project.name }}</span>
-                    <small>{{ item.saved }} / {{ item.project.target_amount }} € · {{ item.monthly_needed }} € / mois</small>
+                    <small>{{ item.saved }} / {{ item.project.target_amount }} € · {{ item.monthly_needed }} {% translate "€ / mois" %}</small>
                 </div>
                 <div class="budget-progress is-savings"><span style="width: {{ item.percent }}%"></span></div>
                 <span class="budget-badge is-{{ item.status }}">{{ item.status_label }}</span>
@@ -182,26 +183,26 @@
     <div class="content-panel dash-card">
         <div class="month-card-head">
             <div>
-                <h2 class="h5 mb-1">Récapitulatif mensuel</h2>
-                <p class="text-muted small mb-0">Clique sur un mois pour voir son détail</p>
+                <h2 class="h5 mb-1">{% translate "Récapitulatif mensuel" %}</h2>
+                <p class="text-muted small mb-0">{% translate "Clique sur un mois pour voir son détail" %}</p>
             </div>
         </div>
         <div class="table-responsive">
             <table class="table finance-table align-middle finance-table-clickable dashboard-history-table">
                 <thead>
                     <tr>
-                        <th>Mois</th>
-                        <th class="text-end">Revenus</th>
-                        <th class="text-end">Charges</th>
-                        <th class="text-end">Épargne</th>
-                        <th class="text-end">Solde</th>
-                        <th class="text-end">Taux d'épargne</th>
+                        <th>{% translate "Mois" %}</th>
+                        <th class="text-end">{% translate "Revenus" %}</th>
+                        <th class="text-end">{% translate "Charges" %}</th>
+                        <th class="text-end">{% translate "Épargne" %}</th>
+                        <th class="text-end">{% translate "Solde" %}</th>
+                        <th class="text-end">{% translate "Taux d'épargne" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in history reversed %}
                     <tr class="finance-table-row-link" onclick="window.location='{% url 'finance:month' row.year row.month %}'">
-                        <td>{{ row.label }}{% if row.is_current %} <span class="text-muted small">(en cours)</span>{% endif %}</td>
+                        <td>{{ row.label }}{% if row.is_current %} <span class="text-muted small">{% translate "(en cours)" %}</span>{% endif %}</td>
                         <td class="text-end dash-income">{{ row.income|floatformat:"2g" }} €</td>
                         <td class="text-end">{{ row.expense|floatformat:"2g" }} €</td>
                         <td class="text-end dash-savings">{{ row.savings|floatformat:"2g" }} €</td>

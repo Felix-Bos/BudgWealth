@@ -1,0 +1,5236 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-05 23:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: backend/accounts/forms.py:23 backend/accounts/forms.py:57
+msgid "Un compte existe déjà avec cette adresse email."
+msgstr "An account already exists with this email address."
+
+#: backend/accounts/forms.py:35 frontend/templates/finance/settings.html:58
+msgid "Nom d'utilisateur"
+msgstr "Username"
+
+#: backend/accounts/forms.py:64
+msgid "Ce nom d'utilisateur est déjà pris."
+msgstr "This username is already taken."
+
+#: backend/finance/bank_import.py:204
+msgid "Virement vers l'épargne"
+msgstr "Transfer to savings"
+
+#: backend/finance/bank_sync.py:123
+msgid "Soldes mis à jour : "
+msgstr "Balances updated: "
+
+#: backend/finance/bank_sync.py:225
+msgid "Renseignez votre identifiant bancaire dans les paramètres."
+msgstr "Enter your bank login in the settings."
+
+#: backend/finance/bank_sync.py:247
+msgid "Import des opérations…"
+msgstr "Importing transactions…"
+
+#: backend/finance/bank_sync.py:289
+msgid "Erreur inattendue pendant la synchronisation."
+msgstr "Unexpected error during sync."
+
+#: backend/finance/budget.py:137
+msgid "Aucun budget"
+msgstr "No budget"
+
+#: backend/finance/budget.py:140 backend/finance/models.py:484
+msgid "Montant fixe"
+msgstr "Fixed amount"
+
+#: backend/finance/budget.py:144
+msgid "Pas encore d'historique de salaire"
+msgstr "No salary history yet"
+
+#: backend/finance/budget.py:146
+#, python-format
+msgid "Moyenne sur %(count)s mois"
+msgstr "Average over %(count)s months"
+
+#: backend/finance/budget.py:236
+msgid "Taux d'effort logement"
+msgstr "Housing cost ratio"
+
+#: backend/finance/budget.py:237
+msgid "Logement soutenable"
+msgstr "Sustainable housing cost"
+
+#: backend/finance/budget.py:237
+msgid "Logement trop lourd"
+msgstr "Housing too expensive"
+
+#: backend/finance/budget.py:238 frontend/templates/finance/dashboard_budget.html:39 frontend/templates/finance/dashboard_budget.html:83 frontend/templates/finance/dashboard_budget.html:199 frontend/templates/finance/dashboard_hub.html:231
+msgid "Taux d'épargne"
+msgstr "Savings rate"
+
+#: backend/finance/budget.py:239
+msgid "Épargne satisfaisante"
+msgstr "Healthy savings"
+
+#: backend/finance/budget.py:239
+msgid "Épargne faible"
+msgstr "Low savings"
+
+#: backend/finance/budget.py:240 backend/finance/models.py:53 backend/finance/views.py:911
+msgid "Charges fixes"
+msgstr "Fixed expenses"
+
+#: backend/finance/budget.py:241
+msgid "Charges fixes maîtrisées"
+msgstr "Fixed expenses under control"
+
+#: backend/finance/budget.py:241
+msgid "Charges fixes élevées"
+msgstr "High fixed expenses"
+
+#: backend/finance/budget.py:242 backend/finance/models.py:54 backend/finance/views.py:914
+msgid "Charges variables"
+msgstr "Variable expenses"
+
+#: backend/finance/budget.py:243
+msgid "Variables sous contrôle"
+msgstr "Variable expenses under control"
+
+#: backend/finance/budget.py:243
+msgid "Variables élevées"
+msgstr "High variable expenses"
+
+#: backend/finance/budget.py:244 frontend/templates/finance/budget_plan.html:146 frontend/templates/finance/budget_plan.html:163 frontend/templates/finance/budget_plan.html:186
+msgid "Reste à vivre"
+msgstr "Left to live on"
+
+#: backend/finance/budget.py:245
+msgid "Marge confortable"
+msgstr "Comfortable margin"
+
+#: backend/finance/budget.py:245
+msgid "Marge très faible"
+msgstr "Very thin margin"
+
+#: backend/finance/budget.py:335 backend/finance/views.py:212 frontend/templates/finance/budget_subscriptions.html:111 frontend/templates/finance/settings.html:250
+msgid "Sans catégorie"
+msgstr "No category"
+
+#: backend/finance/budget.py:388
+msgid "Budget en danger"
+msgstr "Budget at risk"
+
+#: backend/finance/budget.py:390
+msgid "À surveiller"
+msgstr "Keep an eye on it"
+
+#: backend/finance/budget.py:392
+msgid "Sur la bonne voie"
+msgstr "On track"
+
+#: backend/finance/budget.py:533
+msgid "Objectif atteint"
+msgstr "Goal reached"
+
+#: backend/finance/budget.py:535
+msgid "Échéance dépassée"
+msgstr "Deadline passed"
+
+#: backend/finance/budget.py:537
+msgid "Dans les temps"
+msgstr "On schedule"
+
+#: backend/finance/budget.py:539
+#, python-format
+msgid "En retard de %(money)s €"
+msgstr "%(money)s € behind"
+
+#: backend/finance/budget.py:642 backend/finance/views.py:754 frontend/templates/finance/_transaction_row.html:23 frontend/templates/finance/dashboard_hub.html:325
+msgid "À classer"
+msgstr "To categorize"
+
+#: backend/finance/budget.py:643
+msgid "Non précisé"
+msgstr "Unspecified"
+
+#: backend/finance/ca_scraper.py:220
+msgid "Caisse régionale introuvable : vérifiez le code postal dans les paramètres."
+msgstr "Regional bank not found: check the postal code in the settings."
+
+#: backend/finance/ca_scraper.py:237
+msgid "Saisissez votre code personnel dans la fenêtre Crédit Agricole."
+msgstr "Enter your personal code in the Crédit Agricole window."
+
+#: backend/finance/ca_scraper.py:243
+msgid "Code personnel non saisi à temps : relancez la synchronisation."
+msgstr "Personal code not entered in time: restart the sync."
+
+#: backend/finance/ca_scraper.py:312
+msgid "Le site ne propose plus le format CSV : synchronisation impossible."
+msgstr "The website no longer offers the CSV format: sync is not possible."
+
+#: backend/finance/ca_scraper.py:339
+#, python-format
+msgid "Impossible de remplir la date (%(segment)s)."
+msgstr "Could not fill in the date (%(segment)s)."
+
+#: backend/finance/ca_scraper.py:357
+msgid "Choix de la période introuvable sur le site."
+msgstr "Could not find the period selector on the website."
+
+#: backend/finance/ca_scraper.py:382
+msgid "La banque n'a pas envoyé le fichier des opérations."
+msgstr "The bank did not send the transactions file."
+
+#: backend/finance/ca_scraper.py:512
+msgid "Connexion au Crédit Agricole…"
+msgstr "Connecting to Crédit Agricole…"
+
+#: backend/finance/ca_scraper.py:518
+msgid "Téléchargement des opérations…"
+msgstr "Downloading transactions…"
+
+#: backend/finance/ca_scraper.py:529
+msgid "Relevé du solde des livrets…"
+msgstr "Fetching savings account balances…"
+
+#: backend/finance/ca_scraper.py:546
+msgid "La fenêtre Crédit Agricole s'est fermée avant la fin. Relancez la synchronisation."
+msgstr "The Crédit Agricole window closed before the end. Restart the sync."
+
+#: backend/finance/ca_scraper.py:557
+msgid "Le site du Crédit Agricole ne répond pas comme prévu. Réessayez dans un instant."
+msgstr "The Crédit Agricole website is not responding as expected. Try again in a moment."
+
+#: backend/finance/default_categories.py:10
+msgid "Achats & shopping"
+msgstr "Shopping"
+
+#: backend/finance/default_categories.py:12
+msgid "Articles de sport"
+msgstr "Sporting goods"
+
+#: backend/finance/default_categories.py:13
+msgid "Cadeaux"
+msgstr "Gifts"
+
+#: backend/finance/default_categories.py:14
+msgid "Dons"
+msgstr "Donations"
+
+#: backend/finance/default_categories.py:15
+msgid "High Tech, Jeux vidéos"
+msgstr "Tech, video games"
+
+#: backend/finance/default_categories.py:16
+msgid "Livres, musique"
+msgstr "Books, music"
+
+#: backend/finance/default_categories.py:17
+msgid "Mobilier décoration"
+msgstr "Furniture & decor"
+
+#: backend/finance/default_categories.py:18
+msgid "Prêt consommation"
+msgstr "Consumer loan"
+
+#: backend/finance/default_categories.py:19
+msgid "Tabac, presse"
+msgstr "Tobacco, newspapers"
+
+#: backend/finance/default_categories.py:20
+msgid "Vêtements, chaussures, accessoires"
+msgstr "Clothes, shoes, accessories"
+
+#: backend/finance/default_categories.py:21
+msgid "Achats & shopping - Autres"
+msgstr "Shopping - Other"
+
+#: backend/finance/default_categories.py:25
+msgid "Alimentation & restaurants"
+msgstr "Food & dining"
+
+#: backend/finance/default_categories.py:27
+msgid "Marché"
+msgstr "Market"
+
+#: backend/finance/default_categories.py:28
+msgid "Restaurants, snacks"
+msgstr "Restaurants, snacks"
+
+#: backend/finance/default_categories.py:29
+msgid "Supermarché, épicerie"
+msgstr "Supermarket, grocery"
+
+#: backend/finance/default_categories.py:30
+msgid "Vins et spiritueux"
+msgstr "Wine & spirits"
+
+#: backend/finance/default_categories.py:31
+msgid "Alimentation & restaurants - Autres"
+msgstr "Food & dining - Other"
+
+#: backend/finance/default_categories.py:35
+msgid "Animaux"
+msgstr "Pets"
+
+#: backend/finance/default_categories.py:37
+msgid "Jouets"
+msgstr "Toys"
+
+#: backend/finance/default_categories.py:38 backend/finance/default_categories.py:88
+msgid "Mutuelle"
+msgstr "Health insurance"
+
+#: backend/finance/default_categories.py:39
+msgid "Nourriture"
+msgstr "Food"
+
+#: backend/finance/default_categories.py:40
+msgid "Santé, soins"
+msgstr "Health, care"
+
+#: backend/finance/default_categories.py:41
+msgid "Animaux - Autres"
+msgstr "Pets - Other"
+
+#: backend/finance/default_categories.py:45 frontend/templates/accounts/_auth_aside.html:16
+msgid "Épargne & placements"
+msgstr "Savings & investments"
+
+#: backend/finance/default_categories.py:47
+msgid "Livret"
+msgstr "Savings account"
+
+#: backend/finance/default_categories.py:48
+msgid "PEA"
+msgstr "PEA"
+
+#: backend/finance/default_categories.py:49
+msgid "CTO"
+msgstr "Brokerage account"
+
+#: backend/finance/default_categories.py:50 backend/finance/models.py:665
+msgid "Assurance vie"
+msgstr "Life insurance"
+
+#: backend/finance/default_categories.py:51
+msgid "Fond retraite"
+msgstr "Retirement fund"
+
+#: backend/finance/default_categories.py:55
+msgid "Retraits"
+msgstr "Cash withdrawals"
+
+#: backend/finance/default_categories.py:59
+msgid "Travail & études"
+msgstr "Work & studies"
+
+#: backend/finance/default_categories.py:61
+msgid "Dépenses professionnelles"
+msgstr "Business expenses"
+
+#: backend/finance/default_categories.py:62
+msgid "Notes de frais"
+msgstr "Expense reports"
+
+#: backend/finance/default_categories.py:63
+msgid "Prêt étudiant"
+msgstr "Student loan"
+
+#: backend/finance/default_categories.py:64
+msgid "Repas au travail"
+msgstr "Meals at work"
+
+#: backend/finance/default_categories.py:65
+msgid "Travail & études - Autres"
+msgstr "Work & studies - Other"
+
+#: backend/finance/default_categories.py:69
+msgid "Transport"
+msgstr "Transport"
+
+#: backend/finance/default_categories.py:71
+msgid "Assurance véhicule"
+msgstr "Vehicle insurance"
+
+#: backend/finance/default_categories.py:72
+msgid "Avion, train, bateau"
+msgstr "Plane, train, boat"
+
+#: backend/finance/default_categories.py:73
+msgid "Carburant"
+msgstr "Fuel"
+
+#: backend/finance/default_categories.py:74
+msgid "Entretien, équipement véhicule"
+msgstr "Vehicle maintenance & equipment"
+
+#: backend/finance/default_categories.py:75
+msgid "Location véhicule"
+msgstr "Vehicle rental"
+
+#: backend/finance/default_categories.py:76
+msgid "Péage"
+msgstr "Tolls"
+
+#: backend/finance/default_categories.py:77
+msgid "Prêt véhicule"
+msgstr "Car loan"
+
+#: backend/finance/default_categories.py:78
+msgid "Stationnement"
+msgstr "Parking"
+
+#: backend/finance/default_categories.py:79
+msgid "Taxi, VTC"
+msgstr "Taxi, ride-hailing"
+
+#: backend/finance/default_categories.py:80
+msgid "Transport en commun"
+msgstr "Public transport"
+
+#: backend/finance/default_categories.py:81
+msgid "Transport - Autres"
+msgstr "Transport - Other"
+
+#: backend/finance/default_categories.py:85
+msgid "Santé"
+msgstr "Health"
+
+#: backend/finance/default_categories.py:87
+msgid "Médecin"
+msgstr "Doctor"
+
+#: backend/finance/default_categories.py:89
+msgid "Optique"
+msgstr "Optician"
+
+#: backend/finance/default_categories.py:90
+msgid "Pharmacie"
+msgstr "Pharmacy"
+
+#: backend/finance/default_categories.py:91
+msgid "Santé - Autres"
+msgstr "Health - Other"
+
+#: backend/finance/default_categories.py:95
+msgid "Loisirs & vacances"
+msgstr "Leisure & holidays"
+
+#: backend/finance/default_categories.py:97
+msgid "Abonnement multimédia"
+msgstr "Media subscription"
+
+#: backend/finance/default_categories.py:98
+msgid "Bars et clubs"
+msgstr "Bars & clubs"
+
+#: backend/finance/default_categories.py:99
+msgid "Coiffeur, esthétique"
+msgstr "Hairdresser, beauty"
+
+#: backend/finance/default_categories.py:100
+msgid "Sorties culturelles"
+msgstr "Cultural outings"
+
+#: backend/finance/default_categories.py:101
+msgid "Sport"
+msgstr "Sport"
+
+#: backend/finance/default_categories.py:102
+msgid "Vacances, voyages"
+msgstr "Holidays, travel"
+
+#: backend/finance/default_categories.py:103
+msgid "Loisirs & vacances - Autres"
+msgstr "Leisure & holidays - Other"
+
+#: backend/finance/default_categories.py:107
+msgid "Abonnements & services"
+msgstr "Subscriptions & services"
+
+#: backend/finance/default_categories.py:109
+msgid "Streaming vidéo"
+msgstr "Video streaming"
+
+#: backend/finance/default_categories.py:110
+msgid "Musique"
+msgstr "Music"
+
+#: backend/finance/default_categories.py:111
+msgid "Outils IA & logiciels"
+msgstr "AI tools & software"
+
+#: backend/finance/default_categories.py:112
+msgid "Cloud & stockage"
+msgstr "Cloud & storage"
+
+#: backend/finance/default_categories.py:113
+msgid "Jeux vidéo"
+msgstr "Video games"
+
+#: backend/finance/default_categories.py:114
+msgid "Presse & magazines"
+msgstr "News & magazines"
+
+#: backend/finance/default_categories.py:115
+msgid "Abonnements & services - Autres"
+msgstr "Subscriptions & services - Other"
+
+#: backend/finance/default_categories.py:119
+msgid "Logement & charges"
+msgstr "Housing & utilities"
+
+#: backend/finance/default_categories.py:121
+msgid "Assurance logement"
+msgstr "Home insurance"
+
+#: backend/finance/default_categories.py:122
+msgid "Charges logement, accessoires"
+msgstr "Housing charges, supplies"
+
+#: backend/finance/default_categories.py:123
+msgid "Eau, électricité, gaz"
+msgstr "Water, electricity, gas"
+
+#: backend/finance/default_categories.py:124
+msgid "Internet, téléphonie"
+msgstr "Internet, phone"
+
+#: backend/finance/default_categories.py:125
+msgid "Loyer"
+msgstr "Rent"
+
+#: backend/finance/default_categories.py:126
+msgid "Prêt immobilier"
+msgstr "Mortgage"
+
+#: backend/finance/default_categories.py:127
+msgid "Résidence secondaire"
+msgstr "Second home"
+
+#: backend/finance/default_categories.py:128
+msgid "Travaux, entretien"
+msgstr "Repairs, maintenance"
+
+#: backend/finance/default_categories.py:129
+msgid "Logement & charges - Autres"
+msgstr "Housing & utilities - Other"
+
+#: backend/finance/default_categories.py:133
+msgid "Impôts, taxes & frais"
+msgstr "Taxes & fees"
+
+#: backend/finance/default_categories.py:135
+msgid "Amendes"
+msgstr "Fines"
+
+#: backend/finance/default_categories.py:136
+msgid "Contributions sociales"
+msgstr "Social contributions"
+
+#: backend/finance/default_categories.py:137
+msgid "Frais bancaires"
+msgstr "Bank fees"
+
+#: backend/finance/default_categories.py:138
+msgid "Impôts sur la fortune"
+msgstr "Wealth tax"
+
+#: backend/finance/default_categories.py:139
+msgid "Impôts sur le revenu"
+msgstr "Income tax"
+
+#: backend/finance/default_categories.py:140
+msgid "Taxes foncières, d'habitation"
+msgstr "Property & housing taxes"
+
+#: backend/finance/default_categories.py:141
+msgid "Impôts, taxes & frais - Autres"
+msgstr "Taxes & fees - Other"
+
+#: backend/finance/default_categories.py:145
+msgid "Enfants"
+msgstr "Children"
+
+#: backend/finance/default_categories.py:147
+msgid "Activités enfants"
+msgstr "Children's activities"
+
+#: backend/finance/default_categories.py:148
+msgid "Argent de poche"
+msgstr "Pocket money"
+
+#: backend/finance/default_categories.py:149
+msgid "Assurances enfants"
+msgstr "Children's insurance"
+
+#: backend/finance/default_categories.py:150
+msgid "Fourniture scolaire"
+msgstr "School supplies"
+
+#: backend/finance/default_categories.py:151
+msgid "Frais de scolarité"
+msgstr "Tuition fees"
+
+#: backend/finance/default_categories.py:152
+msgid "Garde d'enfants"
+msgstr "Childcare"
+
+#: backend/finance/default_categories.py:153
+msgid "Jouets, cadeaux"
+msgstr "Toys, gifts"
+
+#: backend/finance/default_categories.py:154
+msgid "Pensions alimentaires"
+msgstr "Child support"
+
+#: backend/finance/default_categories.py:155
+msgid "Enfants - Autres"
+msgstr "Children - Other"
+
+#: backend/finance/default_categories.py:161
+msgid "Salaire"
+msgstr "Salary"
+
+#: backend/finance/default_categories.py:162
+msgid "Freelance, indépendant"
+msgstr "Freelance, self-employed"
+
+#: backend/finance/default_categories.py:163
+msgid "Aides (CAF et autres)"
+msgstr "Benefits (CAF and others)"
+
+#: backend/finance/default_categories.py:164
+msgid "Pensions, retraite"
+msgstr "Pensions, retirement"
+
+#: backend/finance/default_categories.py:165
+msgid "Remboursements"
+msgstr "Refunds"
+
+#: backend/finance/default_categories.py:166
+msgid "Revenus - Autres"
+msgstr "Income - Other"
+
+#: backend/finance/export.py:42
+msgid "Oui"
+msgstr "Yes"
+
+#: backend/finance/export.py:49
+msgid "Date (budget)"
+msgstr "Date (budget)"
+
+#: backend/finance/export.py:49
+msgid "Date réelle"
+msgstr "Actual date"
+
+#: backend/finance/export.py:49 backend/finance/export.py:105 backend/finance/export.py:141 backend/finance/forms.py:636 backend/finance/forms.py:679 frontend/templates/base.html:201 frontend/templates/finance/month.html:162 frontend/templates/finance/month.html:194 frontend/templates/finance/settings.html:193 frontend/templates/finance/settings.html:277 frontend/templates/finance/settings.html:372
+msgid "Type"
+msgstr "Type"
+
+#: backend/finance/export.py:49 backend/finance/export.py:127 backend/finance/export.py:141 backend/finance/forms.py:400 frontend/templates/base.html:173 frontend/templates/finance/_budget_line.html:5 frontend/templates/finance/budget_plan.html:90 frontend/templates/finance/month.html:170 frontend/templates/finance/settings.html:201 frontend/templates/finance/settings.html:288
+msgid "Catégorie"
+msgstr "Category"
+
+#: backend/finance/export.py:49 backend/finance/export.py:127 backend/finance/export.py:141 frontend/templates/base.html:177 frontend/templates/finance/_budget_line.html:10 frontend/templates/finance/budget_plan.html:90 frontend/templates/finance/month.html:174 frontend/templates/finance/settings.html:205 frontend/templates/finance/settings.html:297
+msgid "Sous-catégorie"
+msgstr "Subcategory"
+
+#: backend/finance/export.py:50 backend/finance/export.py:127 backend/finance/forms.py:404 backend/finance/forms.py:763 frontend/templates/finance/_budget_line.html:14 frontend/templates/finance/budget_plan.html:90
+msgid "Libellé"
+msgstr "Label"
+
+#: backend/finance/export.py:50
+msgid "Libellé bancaire"
+msgstr "Bank label"
+
+#: backend/finance/export.py:50 backend/finance/export.py:119 backend/finance/forms.py:371 backend/finance/forms.py:762
+msgid "Montant (€)"
+msgstr "Amount (€)"
+
+#: backend/finance/export.py:50 backend/finance/export.py:112
+msgid "Source"
+msgstr "Source"
+
+#: backend/finance/export.py:50 frontend/templates/finance/_month_insights.html:127 frontend/templates/finance/budget_plan.html:179 frontend/templates/finance/budget_plan.html:227
+msgid "Tickets restaurant"
+msgstr "Meal vouchers"
+
+#: backend/finance/export.py:50 backend/finance/forms.py:567
+msgid "Projet"
+msgstr "Project"
+
+#: backend/finance/export.py:100
+msgid "Opérations"
+msgstr "Transactions"
+
+#: backend/finance/export.py:104
+msgid "Comptes épargne"
+msgstr "Savings accounts"
+
+#: backend/finance/export.py:105 backend/finance/export.py:112 backend/finance/export.py:119 backend/finance/forms.py:756 frontend/templates/base.html:65 frontend/templates/finance/settings.html:13
+msgid "Compte"
+msgstr "Account"
+
+#: backend/finance/export.py:105
+msgid "Établissement"
+msgstr "Institution"
+
+#: backend/finance/export.py:105
+msgid "Taux (%)"
+msgstr "Rate (%)"
+
+#: backend/finance/export.py:105 backend/finance/forms.py:640
+msgid "Plafond (€)"
+msgstr "Ceiling (€)"
+
+#: backend/finance/export.py:105
+msgid "Ouvert le"
+msgstr "Opened on"
+
+#: backend/finance/export.py:105 backend/finance/forms.py:683
+msgid "Liquidités (€)"
+msgstr "Cash (€)"
+
+#: backend/finance/export.py:111
+msgid "Soldes des livrets"
+msgstr "Savings balances"
+
+#: backend/finance/export.py:112 backend/finance/export.py:119 backend/finance/forms.py:758 frontend/templates/base.html:185 frontend/templates/finance/month.html:182 frontend/templates/finance/savings_portfolio.html:349
+msgid "Date"
+msgstr "Date"
+
+#: backend/finance/export.py:112
+msgid "Solde (€)"
+msgstr "Balance (€)"
+
+#: backend/finance/export.py:118 frontend/templates/finance/_savings_tabs.html:16
+msgid "Portefeuille"
+msgstr "Portfolio"
+
+#: backend/finance/export.py:119 backend/finance/forms.py:757 frontend/templates/finance/savings_portfolio.html:350
+msgid "Opération"
+msgstr "Transaction"
+
+#: backend/finance/export.py:119 frontend/templates/finance/savings_portfolio.html:140
+msgid "Titre"
+msgstr "Security"
+
+#: backend/finance/export.py:119
+msgid "Symbole"
+msgstr "Symbol"
+
+#: backend/finance/export.py:119 backend/finance/forms.py:759 frontend/templates/finance/savings_portfolio.html:222 frontend/templates/finance/savings_portfolio.html:351
+msgid "Quantité"
+msgstr "Quantity"
+
+#: backend/finance/export.py:119
+msgid "Prix unitaire"
+msgstr "Unit price"
+
+#: backend/finance/export.py:119 backend/finance/forms.py:761
+msgid "Frais (€)"
+msgstr "Fees (€)"
+
+#: backend/finance/export.py:119
+msgid "Note"
+msgstr "Note"
+
+#: backend/finance/export.py:126 frontend/templates/base.html:59 frontend/templates/base.html:125 frontend/templates/finance/_budget_tabs.html:4
+msgid "Budget"
+msgstr "Budget"
+
+#: backend/finance/export.py:127
+msgid "À partir de"
+msgstr "From"
+
+#: backend/finance/export.py:127 backend/finance/forms.py:399
+msgid "Section"
+msgstr "Section"
+
+#: backend/finance/export.py:127
+msgid "Montant / mois (€)"
+msgstr "Amount / month (€)"
+
+#: backend/finance/export.py:141 frontend/templates/finance/settings.html:22
+msgid "Catégories"
+msgstr "Categories"
+
+#: backend/finance/export.py:141 backend/finance/forms.py:278 backend/finance/forms.py:298 frontend/templates/finance/settings.html:435 frontend/templates/finance/settings.html:452
+msgid "Type dans le budget"
+msgstr "Budget type"
+
+#: backend/finance/forecast.py:72
+msgid "Compte courant"
+msgstr "Current account"
+
+#: backend/finance/forecast.py:174
+msgid "en retard sur la date habituelle"
+msgstr "late compared with the usual date"
+
+#: backend/finance/forecast.py:208
+msgid "Salaire (estimé)"
+msgstr "Salary (estimated)"
+
+#: backend/finance/forecast.py:208
+msgid "moyenne des 3 derniers mois"
+msgstr "average of the last 3 months"
+
+#: backend/finance/forecast.py:305
+msgid "Risque de découvert"
+msgstr "Overdraft risk"
+
+#: backend/finance/forecast.py:307
+msgid "Sous ta marge de sécurité"
+msgstr "Below your safety margin"
+
+#: backend/finance/forecast.py:309
+msgid "Trésorerie confortable"
+msgstr "Comfortable cash position"
+
+#: backend/finance/forms.py:116
+msgid "Rendre cette ligne récurrente"
+msgstr "Make this a recurring entry"
+
+#: backend/finance/forms.py:122
+msgid "Type de récurrence"
+msgstr "Recurrence type"
+
+#: backend/finance/forms.py:128 frontend/templates/base.html:205 frontend/templates/finance/month.html:198 frontend/templates/finance/settings.html:209 frontend/templates/finance/settings.html:308
+msgid "Tous les"
+msgstr "Every"
+
+#: backend/finance/forms.py:134 frontend/templates/base.html:209 frontend/templates/finance/month.html:202 frontend/templates/finance/settings.html:213 frontend/templates/finance/settings.html:312
+msgid "Période"
+msgstr "Period"
+
+#: backend/finance/forms.py:150 frontend/templates/finance/_transaction_extras.html:6
+msgid "Payé en tickets restaurant"
+msgstr "Paid with meal vouchers"
+
+#: backend/finance/forms.py:151 frontend/templates/finance/_transaction_extras.html:12
+msgid "Projet d'épargne"
+msgstr "Savings project"
+
+#: backend/finance/forms.py:170
+msgid "Épargne libre (aucun projet)"
+msgstr "General savings (no project)"
+
+#: backend/finance/forms.py:197
+msgid "Les tickets restaurant ne peuvent payer que des dépenses d'alimentation."
+msgstr "Meal vouchers can only pay for food expenses."
+
+#: backend/finance/forms.py:279
+msgid "Dépenses uniquement : type de la catégorie tant qu'elle n'a pas de sous-catégorie."
+msgstr "Expenses only: the category's type while it has no subcategory."
+
+#: backend/finance/forms.py:309
+msgid "Identifiant Crédit Agricole"
+msgstr "Crédit Agricole login"
+
+#: backend/finance/forms.py:312
+msgid "11 chiffres"
+msgstr "11 digits"
+
+#: backend/finance/forms.py:319
+msgid "Code postal de l'agence"
+msgstr "Branch postal code"
+
+#: backend/finance/forms.py:333
+msgid "Le code postal doit contenir 5 chiffres."
+msgstr "The postal code must have 5 digits."
+
+#: backend/finance/forms.py:339
+msgid "L'identifiant doit contenir 11 chiffres."
+msgstr "The login must have 11 digits."
+
+#: backend/finance/forms.py:358
+msgid " (ce mois-ci)"
+msgstr " (this month)"
+
+#: backend/finance/forms.py:364
+msgid "Appliquer à partir de"
+msgstr "Apply from"
+
+#: backend/finance/forms.py:370
+msgid "Revenu de référence"
+msgstr "Reference income"
+
+#: backend/finance/forms.py:372
+msgid "Moyenne sur (mois)"
+msgstr "Average over (months)"
+
+#: backend/finance/forms.py:373
+msgid "Épargne visée par mois (€)"
+msgstr "Monthly savings target (€)"
+
+#: backend/finance/forms.py:394
+msgid "Indique ton revenu mensuel."
+msgstr "Enter your monthly income."
+
+#: backend/finance/forms.py:409
+msgid "Montant / mois"
+msgstr "Amount / month"
+
+#: backend/finance/forms.py:427
+msgid "Facultatif"
+msgstr "Optional"
+
+#: backend/finance/forms.py:471
+#, python-format
+msgid "« %(name)s » est classée en %(type)s, pas en %(section)s (modifiable dans Paramètres → Catégories)."
+msgstr "“%(name)s” is classed as %(type)s, not %(section)s (change it in Settings → Categories)."
+
+#: backend/finance/forms.py:475
+#, python-format
+msgid "« %(name)s » n'a rien à mettre en %(section)s : choisis une autre catégorie ou change le type de ses sous-catégories dans Paramètres."
+msgstr "“%(name)s” has nothing for %(section)s: pick another category or change its subcategories' type in Settings."
+
+#: backend/finance/forms.py:488
+msgid "Épargne visée chaque mois (€)"
+msgstr "Savings target each month (€)"
+
+#: backend/finance/forms.py:500 backend/finance/forms.py:725
+msgid "Date du solde"
+msgstr "Balance date"
+
+#: backend/finance/forms.py:504
+msgid "Solde du compte courant (€)"
+msgstr "Current account balance (€)"
+
+#: backend/finance/forms.py:508
+msgid "Marge de sécurité (€)"
+msgstr "Safety margin (€)"
+
+#: backend/finance/forms.py:509
+msgid "Le solde sous lequel tu ne veux pas descendre."
+msgstr "The balance you don't want to go below."
+
+#: backend/finance/forms.py:520
+msgid "Le solde ne peut pas être daté dans le futur."
+msgstr "The balance can't be dated in the future."
+
+#: backend/finance/forms.py:529
+msgid "Montant visé (€)"
+msgstr "Target amount (€)"
+
+#: backend/finance/forms.py:530 frontend/templates/finance/budget_goals.html:218
+msgid "Pour le"
+msgstr "By"
+
+#: backend/finance/forms.py:531
+msgid "Rendement espéré (%/an)"
+msgstr "Expected return (%/yr)"
+
+#: backend/finance/forms.py:532
+msgid "Épargne hors app (€)"
+msgstr "Savings outside the app (€)"
+
+#: backend/finance/forms.py:535
+msgid "Livret A ≈ 2,4 %, fonds euros ≈ 2,5 %, actions ≈ 5–7 % sur longue durée. 0 = sans rendement."
+msgstr "Livret A ≈ 2.4%, euro funds ≈ 2.5%, equities ≈ 5–7% over the long run. 0 = no return."
+
+#: backend/finance/forms.py:536
+msgid "Ce que tu as ailleurs : autre banque, espèces…"
+msgstr "What you hold elsewhere: another bank, cash…"
+
+#: backend/finance/forms.py:552
+msgid "Choisis une date dans le futur."
+msgstr "Pick a date in the future."
+
+#: backend/finance/forms.py:558
+msgid "Entre 0 et 20 %."
+msgstr "Between 0 and 20%."
+
+#: backend/finance/forms.py:568
+msgid "Montant à réunir (€)"
+msgstr "Amount to save (€)"
+
+#: backend/finance/forms.py:569
+msgid "Pour quand ?"
+msgstr "By when?"
+
+#: backend/finance/forms.py:570
+msgid "Déjà de côté (€)"
+msgstr "Already saved (€)"
+
+#: backend/finance/forms.py:571
+msgid "Projet terminé"
+msgstr "Project completed"
+
+#: backend/finance/forms.py:574
+msgid "Ex. Vélo électrique"
+msgstr "e.g. Electric bike"
+
+#: backend/finance/forms.py:587
+msgid "Le montant doit être positif."
+msgstr "The amount must be positive."
+
+#: backend/finance/forms.py:596
+msgid "J'ai des tickets restaurant"
+msgstr "I have meal vouchers"
+
+#: backend/finance/forms.py:597
+msgid "Valeur d'un ticket (€)"
+msgstr "Value of one voucher (€)"
+
+#: backend/finance/forms.py:598
+msgid "Part payée par moi (%)"
+msgstr "Share I pay (%)"
+
+#: backend/finance/forms.py:599
+msgid "Tickets par mois"
+msgstr "Vouchers per month"
+
+#: backend/finance/forms.py:602
+msgid "Retenue sur ton salaire, souvent 40 à 50 %."
+msgstr "Deducted from your salary, often 40 to 50%."
+
+#: backend/finance/forms.py:603
+msgid "Laisse vide pour compter les jours ouvrés du mois."
+msgstr "Leave empty to count the working days of the month."
+
+#: backend/finance/forms.py:608 backend/finance/forms.py:649
+msgid "Auto"
+msgstr "Auto"
+
+#: backend/finance/forms.py:624
+msgid "Solde actuel (€)"
+msgstr "Current balance (€)"
+
+#: backend/finance/forms.py:637 backend/finance/forms.py:680 backend/finance/forms.py:876 frontend/templates/finance/settings.html:185 frontend/templates/finance/settings.html:266 frontend/templates/finance/settings.html:368 frontend/templates/finance/settings.html:396
+msgid "Nom"
+msgstr "Name"
+
+#: backend/finance/forms.py:638 frontend/templates/finance/_transaction_row.html:33 frontend/templates/finance/settings.html:16
+msgid "Banque"
+msgstr "Bank"
+
+#: backend/finance/forms.py:639
+msgid "Taux annuel (%)"
+msgstr "Annual rate (%)"
+
+#: backend/finance/forms.py:643
+msgid "Laisse vide pour le plafond réglementaire."
+msgstr "Leave empty for the regulatory ceiling."
+
+#: backend/finance/forms.py:646
+msgid "Ex. Livret A"
+msgstr "e.g. Livret A"
+
+#: backend/finance/forms.py:647
+msgid "Ex. Crédit Agricole"
+msgstr "e.g. Crédit Agricole"
+
+#: backend/finance/forms.py:648
+msgid "Ex. 1,70"
+msgstr "e.g. 1.70"
+
+#: backend/finance/forms.py:659
+msgid "Laisse vide s'il n'y a pas de plafond."
+msgstr "Leave empty if there is no ceiling."
+
+#: backend/finance/forms.py:681
+msgid "Courtier / banque"
+msgstr "Broker / bank"
+
+#: backend/finance/forms.py:682
+msgid "Date d'ouverture"
+msgstr "Opening date"
+
+#: backend/finance/forms.py:686
+msgid "Après 5 ans, le PEA garde son avantage fiscal."
+msgstr "After 5 years, the PEA keeps its tax advantage."
+
+#: backend/finance/forms.py:687
+msgid "Espèces non investies sur le compte."
+msgstr "Uninvested cash in the account."
+
+#: backend/finance/forms.py:690
+msgid "Ex. PEA Boursorama"
+msgstr "e.g. Boursorama PEA"
+
+#: backend/finance/forms.py:691
+msgid "Ex. Boursorama, Fortuneo, Trade Republic"
+msgstr "e.g. Boursorama, Fortuneo, Trade Republic"
+
+#: backend/finance/forms.py:725
+msgid "Nouveau solde (€)"
+msgstr "New balance (€)"
+
+#: backend/finance/forms.py:738 backend/finance/forms.py:801 backend/finance/forms.py:860
+msgid "La date ne peut pas être dans le futur."
+msgstr "The date cannot be in the future."
+
+#: backend/finance/forms.py:760
+msgid "Prix unitaire (€)"
+msgstr "Unit price (€)"
+
+#: backend/finance/forms.py:768
+msgid "Ex. 10"
+msgstr "e.g. 10"
+
+#: backend/finance/forms.py:772
+msgid "Ex. Droits de garde 2026"
+msgstr "e.g. 2026 custody fees"
+
+#: backend/finance/forms.py:785 backend/finance/models.py:873
+msgid "Achat"
+msgstr "Buy"
+
+#: backend/finance/forms.py:786 backend/finance/models.py:877
+msgid "Déjà détenu"
+msgstr "Already held"
+
+#: backend/finance/forms.py:787 backend/finance/models.py:878
+msgid "Vente"
+msgstr "Sell"
+
+#: backend/finance/forms.py:788 backend/finance/models.py:879
+msgid "Dividende"
+msgstr "Dividend"
+
+#: backend/finance/forms.py:789 frontend/templates/finance/_savings_tabs.html:19 frontend/templates/finance/savings_portfolio.html:353
+msgid "Frais"
+msgstr "Fees"
+
+#: backend/finance/forms.py:806
+msgid "Choisis un titre dans la recherche (ISIN, nom ou ticker)."
+msgstr "Pick a security from the search (ISIN, name or ticker)."
+
+#: backend/finance/forms.py:812 backend/finance/forms.py:865
+msgid "Indique un nombre positif."
+msgstr "Enter a positive number."
+
+#: backend/finance/forms.py:820
+msgid "Indique un montant positif."
+msgstr "Enter a positive amount."
+
+#: backend/finance/forms.py:849 frontend/templates/finance/savings_portfolio.html:167
+msgid "PRU (€)"
+msgstr "Average cost (€)"
+
+#: backend/finance/forms.py:850 frontend/templates/finance/savings_portfolio.html:159
+msgid "Détenu au"
+msgstr "Held as of"
+
+#: backend/finance/forms.py:878
+msgid "Classe d'actifs"
+msgstr "Asset class"
+
+#: backend/finance/forms.py:879
+msgid "Zone géographique"
+msgstr "Region"
+
+#: backend/finance/forms.py:880
+msgid "Frais courants (% par an)"
+msgstr "Ongoing charges (% per year)"
+
+#: backend/finance/forms.py:883
+msgid "Le TER de l'ETF, indiqué sur sa fiche (ex. 0,38)."
+msgstr "The ETF's TER, shown on its factsheet (e.g. 0.38)."
+
+#: backend/finance/forms.py:886
+msgid "Ex. 0,38"
+msgstr "e.g. 0.38"
+
+#: backend/finance/forms.py:901
+msgid "Horizon (années)"
+msgstr "Horizon (years)"
+
+#: backend/finance/forms.py:903
+msgid "Versement mensuel (€)"
+msgstr "Monthly contribution (€)"
+
+#: backend/finance/forms.py:905
+msgid "Tirage n°"
+msgstr "Draw no."
+
+#: backend/finance/home.py:131 backend/finance/views.py:771
+msgid "Autres"
+msgstr "Other"
+
+#: backend/finance/market_data.py:57
+msgid "Le module yfinance n'est pas installé (pip install yfinance)."
+msgstr "The yfinance module is not installed (pip install yfinance)."
+
+#: backend/finance/market_data.py:94
+msgid "Yahoo Finance ne répond pas. Réessaie dans un instant."
+msgstr "Yahoo Finance is not responding. Try again in a moment."
+
+#: backend/finance/market_data.py:134
+#, python-format
+msgid "Cours indisponibles pour %(symbol)s."
+msgstr "Prices unavailable for %(symbol)s."
+
+#: backend/finance/market_data.py:144
+#, python-format
+msgid "Aucun cours trouvé pour %(symbol)s sur Yahoo Finance."
+msgstr "No prices found for %(symbol)s on Yahoo Finance."
+
+#: backend/finance/market_data.py:166
+msgid "Pas de cotation à cette date."
+msgstr "No quote on this date."
+
+#: backend/finance/market_data.py:177
+#, python-format
+msgid "Taux de change %(currency)s/EUR indisponible."
+msgstr "%(currency)s/EUR exchange rate unavailable."
+
+#: backend/finance/models.py:31 frontend/templates/base.html:157 frontend/templates/finance/settings.html:279
+msgid "Dépense"
+msgstr "Expense"
+
+#: backend/finance/models.py:32 frontend/templates/base.html:160 frontend/templates/finance/_transaction_row.html:21 frontend/templates/finance/budget_cashflow.html:92 frontend/templates/finance/budget_plan.html:177 frontend/templates/finance/settings.html:280
+msgid "Revenu"
+msgstr "Income"
+
+#: backend/finance/models.py:36 backend/finance/models.py:714
+msgid "Saisie manuelle"
+msgstr "Manual entry"
+
+#: backend/finance/models.py:37 backend/finance/models.py:715
+msgid "Import bancaire"
+msgstr "Bank import"
+
+#: backend/finance/models.py:41 frontend/templates/finance/budget_cashflow.html:92 frontend/templates/finance/settings.html:272
+msgid "Poste fixe"
+msgstr "Fixed expense"
+
+#: backend/finance/models.py:42 backend/finance/subscriptions.py:556 frontend/templates/finance/budget_cashflow.html:92 frontend/templates/finance/settings.html:256 frontend/templates/finance/settings.html:273
+msgid "Abonnement"
+msgstr "Subscription"
+
+#: backend/finance/models.py:46 frontend/templates/finance/settings.html:314
+msgid "jour"
+msgstr "day"
+
+#: backend/finance/models.py:47 frontend/templates/finance/settings.html:315
+msgid "semaine"
+msgstr "week"
+
+#: backend/finance/models.py:48 frontend/templates/finance/budget_goals.html:93 frontend/templates/finance/budget_goals.html:97 frontend/templates/finance/budget_plan.html:47 frontend/templates/finance/dashboard_budget.html:26 frontend/templates/finance/dashboard_hub.html:245 frontend/templates/finance/settings.html:316
+msgid "mois"
+msgstr "month"
+
+#: backend/finance/models.py:49 frontend/templates/finance/savings_portfolio.html:94 frontend/templates/finance/settings.html:317
+msgid "an"
+msgstr "year"
+
+#: backend/finance/models.py:55 frontend/templates/finance/_budget_tabs.html:22 frontend/templates/finance/dashboard_budget.html:149 frontend/templates/finance/dashboard_hub.html:265
+msgid "Abonnements"
+msgstr "Subscriptions"
+
+#: backend/finance/models.py:56
+msgid "Provisions annuelles"
+msgstr "Annual provisions"
+
+#: backend/finance/models.py:188
+#, python-format
+msgid "Tous les jours"
+msgid_plural "Tous les %(count)s jours"
+msgstr[0] "Every day"
+msgstr[1] "Every %(count)s days"
+
+#: backend/finance/models.py:189
+#, python-format
+msgid "Toutes les semaines"
+msgid_plural "Toutes les %(count)s semaines"
+msgstr[0] "Every week"
+msgstr[1] "Every %(count)s weeks"
+
+#: backend/finance/models.py:190 backend/finance/subscriptions.py:151
+#, python-format
+msgid "Tous les mois"
+msgid_plural "Tous les %(count)s mois"
+msgstr[0] "Every month"
+msgstr[1] "Every %(count)s months"
+
+#: backend/finance/models.py:191 backend/finance/subscriptions.py:152
+#, python-format
+msgid "Tous les ans"
+msgid_plural "Tous les %(count)s ans"
+msgstr[0] "Every year"
+msgstr[1] "Every %(count)s years"
+
+#: backend/finance/models.py:427 backend/finance/subscriptions.py:507 frontend/templates/finance/budget_subscriptions.html:90
+msgid "En attente"
+msgstr "Pending"
+
+#: backend/finance/models.py:428
+msgid "Connexion à la banque"
+msgstr "Connecting to the bank"
+
+#: backend/finance/models.py:429
+msgid "En attente du code personnel"
+msgstr "Waiting for your personal code"
+
+#: backend/finance/models.py:430 frontend/templates/finance/bank_initial_sync.html:22 frontend/templates/finance/month.html:240
+msgid "Téléchargement des opérations"
+msgstr "Downloading transactions"
+
+#: backend/finance/models.py:431
+msgid "Import des opérations"
+msgstr "Importing transactions"
+
+#: backend/finance/models.py:432
+msgid "Terminé"
+msgstr "Done"
+
+#: backend/finance/models.py:433
+msgid "Erreur"
+msgstr "Error"
+
+#: backend/finance/models.py:437
+msgid "Un mois"
+msgstr "One month"
+
+#: backend/finance/models.py:438
+msgid "Import initial (12 mois)"
+msgstr "Initial import (12 months)"
+
+#: backend/finance/models.py:483
+msgid "Moyenne de mes salaires"
+msgstr "Average of my salaries"
+
+#: backend/finance/models.py:658
+msgid "Livret A"
+msgstr "Livret A"
+
+#: backend/finance/models.py:661
+msgid "Livret Jeune"
+msgstr "Livret Jeune"
+
+#: backend/finance/models.py:664
+msgid "Autre livret"
+msgstr "Other savings account"
+
+#: backend/finance/models.py:785 frontend/templates/finance/savings_portfolio.html:228 frontend/templates/finance/savings_portfolio.html:355
+msgid "Actions"
+msgstr "Equities"
+
+#: backend/finance/models.py:786
+msgid "Obligations"
+msgstr "Bonds"
+
+#: backend/finance/models.py:787
+msgid "Monétaire"
+msgstr "Money market"
+
+#: backend/finance/models.py:788
+msgid "Immobilier"
+msgstr "Real estate"
+
+#: backend/finance/models.py:789
+msgid "Or & matières premières"
+msgstr "Gold & commodities"
+
+#: backend/finance/models.py:790
+msgid "Crypto"
+msgstr "Crypto"
+
+#: backend/finance/models.py:791 backend/finance/models.py:801
+msgid "Autre"
+msgstr "Other"
+
+#: backend/finance/models.py:795
+msgid "Monde"
+msgstr "World"
+
+#: backend/finance/models.py:796
+msgid "États-Unis"
+msgstr "United States"
+
+#: backend/finance/models.py:797
+msgid "Europe"
+msgstr "Europe"
+
+#: backend/finance/models.py:798
+msgid "France"
+msgstr "France"
+
+#: backend/finance/models.py:799
+msgid "Pays émergents"
+msgstr "Emerging markets"
+
+#: backend/finance/models.py:800
+msgid "Japon & Asie"
+msgstr "Japan & Asia"
+
+#: backend/finance/models.py:880 frontend/templates/finance/savings_fees.html:34 frontend/templates/finance/savings_fees.html:156 frontend/templates/finance/savings_portfolio.html:365
+msgid "Frais de compte"
+msgstr "Account fees"
+
+#: backend/finance/savings_goal.py:116
+msgid "Objectif déjà atteint"
+msgstr "Goal already reached"
+
+#: backend/finance/savings_goal.py:117
+msgid "Tu as déjà de côté le montant visé : tu peux viser plus haut ou plus tôt."
+msgstr "You already have the target amount set aside: you can aim higher or sooner."
+
+#: backend/finance/savings_goal.py:119
+msgid "Date trop proche"
+msgstr "Date too close"
+
+#: backend/finance/savings_goal.py:120
+msgid "Il ne reste pas de mois complet avant la date : repousse-la pour avoir un plan."
+msgstr "There is no full month left before the date: push it back to get a plan."
+
+#: backend/finance/savings_goal.py:122
+msgid "Réalisable à ton rythme actuel"
+msgstr "Achievable at your current pace"
+
+#: backend/finance/savings_goal.py:123
+msgid "Tu épargnes déjà assez chaque mois : continue comme ça."
+msgstr "You already save enough each month: keep it up."
+
+#: backend/finance/savings_goal.py:125
+msgid "Réalisable en épargnant plus"
+msgstr "Achievable by saving more"
+
+#: backend/finance/savings_goal.py:126
+msgid "Il faut épargner plus qu'aujourd'hui, mais ça reste dans ce qu'il te reste une fois tes charges payées."
+msgstr "You need to save more than today, but it fits within what you have left once your expenses are paid."
+
+#: backend/finance/savings_goal.py:128
+msgid "Pas réaliste à cette date"
+msgstr "Not realistic by this date"
+
+#: backend/finance/savings_goal.py:129
+msgid "Le versement nécessaire dépasse ce qu'il te reste chaque mois après tes charges."
+msgstr "The monthly amount needed is more than you have left each month after your expenses."
+
+#: backend/finance/savings_views.py:232
+msgid "Droits de garde"
+msgstr "Custody fees"
+
+#: backend/finance/savings_views.py:258
+#, python-format
+msgid "« %(name)s » ajouté."
+msgstr "“%(name)s” added."
+
+#: backend/finance/savings_views.py:260
+#, python-format
+msgid "Impossible d'ajouter le livret. %(form_errors)s"
+msgstr "Could not add the savings account. %(form_errors)s"
+
+#: backend/finance/savings_views.py:272
+#, python-format
+msgid "« %(name)s » créé. Ajoute maintenant tes lignes."
+msgstr "“%(name)s” created. Now add your holdings."
+
+#: backend/finance/savings_views.py:274
+#, python-format
+msgid "Impossible de créer le compte. %(form_errors)s"
+msgstr "Could not create the account. %(form_errors)s"
+
+#: backend/finance/savings_views.py:290 backend/finance/savings_views.py:462
+#, python-format
+msgid "« %(name)s » mis à jour."
+msgstr "“%(name)s” updated."
+
+#: backend/finance/savings_views.py:292
+#, python-format
+msgid "Impossible de mettre à jour le support. %(form_errors)s"
+msgstr "Could not update the account. %(form_errors)s"
+
+#: backend/finance/savings_views.py:303
+#, python-format
+msgid "« %(name)s » supprimé."
+msgstr "“%(name)s” deleted."
+
+#: backend/finance/savings_views.py:313
+msgid "Un PEA ou un compte-titres se suit ligne par ligne."
+msgstr "A PEA or brokerage account is tracked holding by holding."
+
+#: backend/finance/savings_views.py:320
+#, python-format
+msgid "Solde de « %(name)s » mis à jour."
+msgstr "Balance of “%(name)s” updated."
+
+#: backend/finance/savings_views.py:322
+#, python-format
+msgid "Solde invalide. %(form_errors)s"
+msgstr "Invalid balance. %(form_errors)s"
+
+#: backend/finance/savings_views.py:331
+msgid "Relevé supprimé."
+msgstr "Balance entry deleted."
+
+#: backend/finance/savings_views.py:352
+#, python-format
+msgid "Vente impossible : tu détiens %(clean_quantity)s part(s) de « %(name)s » au %(day)s."
+msgstr "Sale not possible: you hold %(clean_quantity)s unit(s) of “%(name)s” on %(day)s."
+
+#: backend/finance/savings_views.py:362
+#, python-format
+msgid "Ligne non ajoutée. %(form_errors)s"
+msgstr "Entry not added. %(form_errors)s"
+
+#: backend/finance/savings_views.py:388
+#, python-format
+msgid "Achat de « %(name)s » enregistré."
+msgstr "Purchase of “%(name)s” saved."
+
+#: backend/finance/savings_views.py:389
+#, python-format
+msgid "Position « %(name)s » enregistrée."
+msgstr "Holding “%(name)s” saved."
+
+#: backend/finance/savings_views.py:390
+#, python-format
+msgid "Vente de « %(name)s » enregistrée."
+msgstr "Sale of “%(name)s” saved."
+
+#: backend/finance/savings_views.py:391
+#, python-format
+msgid "Dividende de « %(name)s » enregistré."
+msgstr "Dividend from “%(name)s” saved."
+
+#: backend/finance/savings_views.py:392
+msgid "Frais enregistrés."
+msgstr "Fees saved."
+
+#: backend/finance/savings_views.py:398
+#, python-format
+msgid "Les cours n'ont pas pu être récupérés (%(error)s) : la ligne est valorisée à son prix d'achat en attendant."
+msgstr "Prices could not be retrieved (%(error)s): the holding is valued at its purchase price for now."
+
+#: backend/finance/savings_views.py:414
+#, python-format
+msgid "Ligne non modifiée. %(form_errors)s"
+msgstr "Entry not updated. %(form_errors)s"
+
+#: backend/finance/savings_views.py:426 backend/finance/views.py:467
+msgid "Ligne mise à jour."
+msgstr "Entry updated."
+
+#: backend/finance/savings_views.py:436 backend/finance/views.py:593
+msgid "Ligne supprimée."
+msgstr "Entry deleted."
+
+#: backend/finance/savings_views.py:450
+#, python-format
+msgid "« %(name)s » retiré de « %(name2)s » (%(count)s opération%(value)s supprimée%(value)s)."
+msgstr "“%(name)s” removed from “%(name2)s” (%(count)s transaction%(value)s deleted)."
+
+#: backend/finance/savings_views.py:464
+#, python-format
+msgid "Impossible de mettre à jour le titre. %(form_errors)s"
+msgstr "Could not update the security. %(form_errors)s"
+
+#: backend/finance/savings_views.py:489
+msgid "Date invalide."
+msgstr "Invalid date."
+
+#: backend/finance/savings_views.py:491
+msgid "Titre ou date invalide."
+msgstr "Invalid security or date."
+
+#: backend/finance/savings_views.py:526
+#, python-format
+msgid "Hypothèses invalides : valeurs par défaut utilisées. %(errors)s"
+msgstr "Invalid assumptions: default values used. %(errors)s"
+
+#: backend/finance/savings_views.py:572 frontend/templates/finance/savings_simulation.html:265
+msgid "Inflation"
+msgstr "Inflation"
+
+#: backend/finance/savings_views.py:573
+msgid "Inflation (France)"
+msgstr "Inflation (France)"
+
+#: backend/finance/subscriptions.py:256 backend/finance/subscriptions.py:501 frontend/templates/finance/_subscription_row.html:19
+msgid "Arrêté"
+msgstr "Stopped"
+
+#: backend/finance/subscriptions.py:258 frontend/templates/finance/_subscription_row.html:21
+msgid "Paiement attendu"
+msgstr "Payment expected"
+
+#: backend/finance/subscriptions.py:260 backend/finance/views.py:216 frontend/templates/finance/_subscription_row.html:23 frontend/templates/finance/settings.html:226 frontend/templates/finance/settings.html:330
+msgid "Actif"
+msgstr "Active"
+
+#: backend/finance/subscriptions.py:482 frontend/templates/finance/budget_subscriptions.html:88
+msgid "Payé"
+msgstr "Paid"
+
+#: backend/finance/subscriptions.py:505 frontend/templates/finance/budget_cashflow.html:81 frontend/templates/finance/budget_subscriptions.html:89
+msgid "À venir"
+msgstr "Upcoming"
+
+#: backend/finance/subscriptions.py:509
+msgid "Non payé"
+msgstr "Not paid"
+
+#: backend/finance/views.py:216 frontend/templates/finance/settings.html:257
+msgid "Annulé"
+msgstr "Cancelled"
+
+#: backend/finance/views.py:268
+msgid "Sans description"
+msgstr "No description"
+
+#: backend/finance/views.py:415
+#, python-format
+msgid "Le mois a été démarré avec %(created_count)s ligne(s) récurrente(s)."
+msgstr "The month was started with %(created_count)s recurring entry(ies)."
+
+#: backend/finance/views.py:418
+msgid "Ce mois est déjà démarré."
+msgstr "This month has already been started."
+
+#: backend/finance/views.py:440
+msgid "Ligne récurrente"
+msgstr "Recurring entry"
+
+#: backend/finance/views.py:454
+msgid "Ligne ajoutée."
+msgstr "Entry added."
+
+#: backend/finance/views.py:456
+msgid "Impossible d'ajouter la ligne : vérifiez le formulaire."
+msgstr "Could not add the entry: check the form."
+
+#: backend/finance/views.py:469
+msgid "Impossible de mettre à jour la ligne."
+msgstr "Could not update the entry."
+
+#: backend/finance/views.py:536 backend/finance/views.py:1101
+msgid "Catégorie invalide."
+msgstr "Invalid category."
+
+#: backend/finance/views.py:554
+msgid "Opération mise à jour."
+msgstr "Transaction updated."
+
+#: backend/finance/views.py:576
+#, python-format
+msgid "« %(name)s » est suivi comme abonnement (%(count)s paiement rattaché)."
+msgid_plural "« %(name)s » est suivi comme abonnement (%(count)s paiements rattachés)."
+msgstr[0] "“%(name)s” is now tracked as a subscription (%(count)s payment linked)."
+msgstr[1] "“%(name)s” is now tracked as a subscription (%(count)s payments linked)."
+
+#: backend/finance/views.py:823
+msgid "Sauvegarde enregistrée."
+msgstr "Backup saved."
+
+#: backend/finance/views.py:824
+msgid "Sauvegarde restaurée."
+msgstr "Backup restored."
+
+#: backend/finance/views.py:825
+msgid "Ce fichier n'est pas une sauvegarde BudgWealth."
+msgstr "This file is not a BudgWealth backup."
+
+#: backend/finance/views.py:826
+msgid "Sauvegarde introuvable."
+msgstr "Backup not found."
+
+#: backend/finance/views.py:827
+msgid "La sauvegarde a échoué."
+msgstr "The backup failed."
+
+#: backend/finance/views.py:912
+msgid "Charges fixes, abonnements et provisions annuelles : ce qui tombe chaque mois ou chaque année."
+msgstr "Fixed expenses, subscriptions and annual provisions: what comes out every month or every year."
+
+#: backend/finance/views.py:915 frontend/templates/finance/budget_plan.html:80
+msgid "Courses, restaurants, sorties : ce qui varie d'un mois à l'autre."
+msgstr "Groceries, restaurants, outings: what varies from month to month."
+
+#: backend/finance/views.py:981
+msgid "Vos informations ont été mises à jour."
+msgstr "Your details have been updated."
+
+#: backend/finance/views.py:983
+msgid "Impossible de mettre à jour vos informations."
+msgstr "Could not update your details."
+
+#: backend/finance/views.py:994
+msgid "Votre mot de passe a été mis à jour."
+msgstr "Your password has been updated."
+
+#: backend/finance/views.py:996
+msgid "Impossible de mettre à jour le mot de passe."
+msgstr "Could not update the password."
+
+#: backend/finance/views.py:1012
+msgid "Élément récurrent ajouté."
+msgstr "Recurring item added."
+
+#: backend/finance/views.py:1014
+msgid "Impossible d'ajouter l'élément récurrent."
+msgstr "Could not add the recurring item."
+
+#: backend/finance/views.py:1030
+msgid "Élément récurrent mis à jour."
+msgstr "Recurring item updated."
+
+#: backend/finance/views.py:1032
+msgid "Impossible de mettre à jour l'élément récurrent."
+msgstr "Could not update the recurring item."
+
+#: backend/finance/views.py:1060
+msgid "Abonnement annulé. L'historique reste conservé."
+msgstr "Subscription cancelled. Its history is kept."
+
+#: backend/finance/views.py:1069
+msgid "Élément récurrent supprimé."
+msgstr "Recurring item deleted."
+
+#: backend/finance/views.py:1079
+msgid "Catégorie ajoutée."
+msgstr "Category added."
+
+#: backend/finance/views.py:1081
+msgid "Impossible d'ajouter la catégorie."
+msgstr "Could not add the category."
+
+#: backend/finance/views.py:1090
+msgid "Catégorie supprimée."
+msgstr "Category deleted."
+
+#: backend/finance/views.py:1104
+msgid "Sous-catégorie ajoutée."
+msgstr "Subcategory added."
+
+#: backend/finance/views.py:1106
+msgid "Impossible d'ajouter la sous-catégorie."
+msgstr "Could not add the subcategory."
+
+#: backend/finance/views.py:1122
+#, python-format
+msgid "« %(name)s » est maintenant en %(section)s."
+msgstr "“%(name)s” is now in %(section)s."
+
+#: backend/finance/views.py:1126
+msgid "Type invalide."
+msgstr "Invalid type."
+
+#: backend/finance/views.py:1137
+msgid "Sous-catégorie supprimée."
+msgstr "Subcategory deleted."
+
+#: backend/finance/views.py:1153
+msgid "Connexion bancaire enregistrée."
+msgstr "Bank connection saved."
+
+#: backend/finance/views.py:1156
+#, python-format
+msgid "Impossible d'enregistrer la connexion bancaire. %(errors)s"
+msgstr "Could not save the bank connection. %(errors)s"
+
+#: backend/finance/views.py:1164
+msgid "Connexion bancaire supprimée."
+msgstr "Bank connection deleted."
+
+#: backend/finance/views.py:1185
+msgid "Renseignez d'abord votre identifiant bancaire dans les paramètres."
+msgstr "First enter your bank login in the settings."
+
+#: backend/finance/views.py:1190 frontend/templates/finance/month.html:63
+msgid "La banque ne donne accès qu'aux 12 derniers mois."
+msgstr "The bank only gives access to the last 12 months."
+
+#: backend/finance/views.py:1237
+msgid "Renseignez d'abord votre identifiant bancaire."
+msgstr "First enter your bank login."
+
+#: backend/finance/views.py:1241
+msgid "Votre historique a déjà été importé."
+msgstr "Your history has already been imported."
+
+#: backend/finance/views.py:1398
+#, python-format
+msgid "Budget enregistré. Il s'applique à partir de %(month_label)s."
+msgstr "Budget saved. It applies from %(month_label)s."
+
+#: backend/finance/views.py:1401
+msgid "Le budget n'a pas été enregistré : vérifie les champs en rouge."
+msgstr "The budget was not saved: check the fields in red."
+
+#: backend/finance/views.py:1445
+msgid "Tickets restaurant mis à jour."
+msgstr "Meal vouchers updated."
+
+#: backend/finance/views.py:1447
+msgid "Impossible d'enregistrer les tickets restaurant."
+msgstr "Could not save the meal vouchers."
+
+#: backend/finance/views.py:1505
+msgid "Objectif d'épargne mis à jour."
+msgstr "Savings goal updated."
+
+#: backend/finance/views.py:1507
+msgid "Montant invalide."
+msgstr "Invalid amount."
+
+#: backend/finance/views.py:1531 frontend/templates/finance/budget_cashflow.html:23 frontend/templates/finance/dashboard_hub.html:178
+msgid "Fin du mois"
+msgstr "End of month"
+
+#: backend/finance/views.py:1531
+msgid "30 jours"
+msgstr "30 days"
+
+#: backend/finance/views.py:1531
+msgid "60 jours"
+msgstr "60 days"
+
+#: backend/finance/views.py:1531
+msgid "90 jours"
+msgstr "90 days"
+
+#: backend/finance/views.py:1596
+#, python-format
+msgid "Projet « %(name)s » créé."
+msgstr "Project “%(name)s” created."
+
+#: backend/finance/views.py:1598
+msgid "Impossible de créer le projet : vérifie le formulaire."
+msgstr "Could not create the project: check the form."
+
+#: backend/finance/views.py:1609
+msgid "Projet mis à jour."
+msgstr "Project updated."
+
+#: backend/finance/views.py:1611
+msgid "Impossible de mettre à jour le projet."
+msgstr "Could not update the project."
+
+#: backend/finance/views.py:1620
+msgid "Projet supprimé."
+msgstr "Project deleted."
+
+#: backend/finance/views.py:1634
+#, python-format
+msgid "« %(name)s » n'a pas été payé : abonnement marqué comme arrêté."
+msgstr "“%(name)s” was not paid: subscription marked as stopped."
+
+#: backend/finance/views.py:1636
+#, python-format
+msgid "« %(name)s » a de nouveau été payé : abonnement réactivé."
+msgstr "“%(name)s” was paid again: subscription reactivated."
+
+#: backend/finance/views.py:1693
+msgid "Cet abonnement n'a pas été retrouvé dans tes opérations."
+msgstr "This subscription was not found in your transactions."
+
+#: backend/finance/views.py:1698
+#, python-format
+msgid "« %(name)s » est maintenant suivi (%(count)s paiements rattachés)."
+msgstr "“%(name)s” is now tracked (%(count)s payments linked)."
+
+#: backend/finance/views.py:1709
+msgid "Suggestion ignorée."
+msgstr "Suggestion dismissed."
+
+#: backend/finance/views.py:1720
+#, python-format
+msgid "« %(name)s » n'est plus suivi."
+msgstr "“%(name)s” is no longer tracked."
+
+#: backend/finance/wealth.py:75
+msgid "Liquidités"
+msgstr "Cash"
+
+#: backend/finance/wealth.py:76
+msgid "Livrets & épargne réglementée"
+msgstr "Savings accounts"
+
+#: backend/finance/wealth.py:77
+msgid "Assurance vie & PER"
+msgstr "Life insurance & PER"
+
+#: frontend/templates/_theme_toggle.html:2
+msgid "Changer de thème"
+msgstr "Change theme"
+
+#: frontend/templates/_theme_toggle.html:2
+msgid "Mode jour / nuit"
+msgstr "Light / dark mode"
+
+#: frontend/templates/accounts/_auth_aside.html:3
+#, python-format
+msgid "Finances personnelles · 100 %% locale"
+msgstr "Personal finance · 100%% local"
+
+#: frontend/templates/accounts/_auth_aside.html:4
+msgid "Ton budget et ton patrimoine, enfin au même endroit."
+msgstr "Your budget and your wealth, finally in one place."
+
+#: frontend/templates/accounts/_auth_aside.html:8
+msgid "Import bancaire automatique"
+msgstr "Automatic bank import"
+
+#: frontend/templates/accounts/_auth_aside.html:8
+msgid "Tes opérations se classent toutes seules."
+msgstr "Your transactions categorize themselves."
+
+#: frontend/templates/accounts/_auth_aside.html:12
+msgid "Un budget simple"
+msgstr "A simple budget"
+
+#: frontend/templates/accounts/_auth_aside.html:12
+msgid "Prérempli, avec ton reste à vivre en direct."
+msgstr "Prefilled, with your money left to live on in real time."
+
+#: frontend/templates/accounts/_auth_aside.html:16
+msgid "Livrets, PEA, compte-titres : tout ton patrimoine."
+msgstr "Savings accounts, PEA, brokerage: all your wealth."
+
+#: frontend/templates/accounts/_auth_aside.html:19
+msgid "Tes données restent sur ta machine."
+msgstr "Your data stays on your computer."
+
+#: frontend/templates/accounts/login.html:4
+msgid "Connexion - BudgWealth"
+msgstr "Log in - BudgWealth"
+
+#: frontend/templates/accounts/login.html:11
+msgid "Connexion"
+msgstr "Log in"
+
+#: frontend/templates/accounts/login.html:12
+msgid "Accéder à votre espace"
+msgstr "Access your space"
+
+#: frontend/templates/accounts/login.html:13
+msgid "Connectez-vous pour continuer."
+msgstr "Log in to continue."
+
+#: frontend/templates/accounts/login.html:41
+msgid "Se connecter"
+msgstr "Log in"
+
+#: frontend/templates/accounts/signup.html:4
+msgid "Création de compte - BudgWealth"
+msgstr "Sign up - BudgWealth"
+
+#: frontend/templates/accounts/signup.html:11
+msgid "Création de compte"
+msgstr "Sign up"
+
+#: frontend/templates/accounts/signup.html:12
+msgid "Démarrer votre espace"
+msgstr "Start your space"
+
+#: frontend/templates/accounts/signup.html:13
+msgid "Renseignez les informations de base de votre compte."
+msgstr "Fill in your account's basic details."
+
+#: frontend/templates/accounts/signup.html:38
+msgid "Créer mon compte"
+msgstr "Create my account"
+
+#: frontend/templates/accounts/signup.html:42
+msgid "Tes données restent sur cet ordinateur : un seul compte par installation."
+msgstr "Your data stays on this computer: one account per installation."
+
+#: frontend/templates/base.html:37
+msgid "Navigation principale"
+msgstr "Main navigation"
+
+#: frontend/templates/base.html:45 frontend/templates/base.html:121 frontend/templates/base.html:146
+msgid "Nouvelle opération"
+msgstr "New transaction"
+
+#: frontend/templates/base.html:49
+msgid "Suivi"
+msgstr "Tracking"
+
+#: frontend/templates/base.html:51 frontend/templates/base.html:116
+msgid "Accueil"
+msgstr "Home"
+
+#: frontend/templates/base.html:54 frontend/templates/finance/month.html:11
+msgid "Mon mois"
+msgstr "My month"
+
+#: frontend/templates/base.html:57
+msgid "Planifier"
+msgstr "Plan"
+
+#: frontend/templates/base.html:62
+msgid "Épargne & patrimoine"
+msgstr "Savings & wealth"
+
+#: frontend/templates/base.html:67 frontend/templates/base.html:89 frontend/templates/finance/settings.html:9
+msgid "Paramètres"
+msgstr "Settings"
+
+#: frontend/templates/base.html:76
+msgid "Données locales"
+msgstr "Local data"
+
+#: frontend/templates/base.html:114
+msgid "Navigation"
+msgstr "Navigation"
+
+#: frontend/templates/base.html:119 frontend/templates/finance/dashboard_budget.html:194
+msgid "Mois"
+msgstr "Month"
+
+#: frontend/templates/base.html:128 frontend/templates/finance/_month_insights.html:120 frontend/templates/finance/_savings_tabs.html:4 frontend/templates/finance/_transaction_row.html:21 frontend/templates/finance/budget_plan.html:107 frontend/templates/finance/budget_plan.html:185 frontend/templates/finance/budget_plan.html:202 frontend/templates/finance/dashboard_budget.html:34 frontend/templates/finance/dashboard_budget.html:197 frontend/templates/finance/dashboard_hub.html:121 frontend/templates/finance/dashboard_hub.html:138 frontend/templates/finance/month.html:45 frontend/templates/finance/month.html:117
+msgid "Épargne"
+msgstr "Savings"
+
+#: frontend/templates/base.html:134
+msgid "BudgWealth · Tes données restent sur ta machine"
+msgstr "BudgWealth · Your data stays on your computer"
+
+#: frontend/templates/base.html:147 frontend/templates/base.html:218 frontend/templates/finance/dashboard_hub.html:348 frontend/templates/finance/month.html:209 frontend/templates/finance/savings_fees.html:144 frontend/templates/finance/settings.html:229 frontend/templates/finance/settings.html:381 frontend/templates/finance/settings.html:404
+msgid "Ajouter"
+msgstr "Add"
+
+#: frontend/templates/base.html:147 frontend/templates/base.html:345
+msgid "une dépense"
+msgstr "an expense"
+
+#: frontend/templates/base.html:149 frontend/templates/finance/month.html:250
+msgid "Fermer"
+msgstr "Close"
+
+#: frontend/templates/base.html:155 frontend/templates/finance/savings_portfolio.html:120
+msgid "Type d'opération"
+msgstr "Transaction type"
+
+#: frontend/templates/base.html:165 frontend/templates/finance/month.html:166
+msgid "Montant"
+msgstr "Amount"
+
+#: frontend/templates/base.html:181 frontend/templates/finance/month.html:178
+msgid "Description"
+msgstr "Description"
+
+#: frontend/templates/base.html:181 frontend/templates/finance/_portfolio_account_form.html:11 frontend/templates/finance/savings_balances.html:41 frontend/templates/finance/savings_portfolio.html:179
+msgid "facultatif"
+msgstr "optional"
+
+#: frontend/templates/base.html:195
+msgid "Opération récurrente"
+msgstr "Recurring transaction"
+
+#: frontend/templates/base.html:196
+msgid "Abonnement ou poste fixe qui revient régulièrement"
+msgstr "A subscription or fixed expense that comes back regularly"
+
+#: frontend/templates/base.html:217
+msgid "Annuler"
+msgstr "Cancel"
+
+#: frontend/templates/base.html:345
+msgid "un revenu"
+msgstr "an income"
+
+#: frontend/templates/finance/_budget_line.html:18
+msgid "Montant par mois"
+msgstr "Amount per month"
+
+#: frontend/templates/finance/_budget_line.html:22
+msgid "Supprimer la ligne"
+msgstr "Delete the line"
+
+#: frontend/templates/finance/_budget_tabs.html:10
+msgid "Analyse"
+msgstr "Analysis"
+
+#: frontend/templates/finance/_budget_tabs.html:13
+msgid "Mon budget"
+msgstr "My budget"
+
+#: frontend/templates/finance/_budget_tabs.html:16 frontend/templates/finance/dashboard_hub.html:169
+msgid "Trésorerie"
+msgstr "Cash flow"
+
+#: frontend/templates/finance/_budget_tabs.html:19
+msgid "Objectifs"
+msgstr "Goals"
+
+#: frontend/templates/finance/_cash_balance_form.html:2
+msgid "Solde et marge de sécurité"
+msgstr "Balance and safety margin"
+
+#: frontend/templates/finance/_cash_balance_form.html:14 frontend/templates/finance/budget_goals.html:141 frontend/templates/finance/budget_goals.html:261 frontend/templates/finance/budget_plan.html:262 frontend/templates/finance/savings_balances.html:167 frontend/templates/finance/savings_portfolio.html:286 frontend/templates/finance/savings_portfolio.html:413 frontend/templates/finance/savings_portfolio.html:436 frontend/templates/finance/settings.html:66 frontend/templates/finance/settings.html:128 frontend/templates/finance/settings.html:333
+msgid "Enregistrer"
+msgstr "Save"
+
+#: frontend/templates/finance/_month_insights.html:7 frontend/templates/finance/dashboard_budget.html:112
+msgid "Charges par catégorie"
+msgstr "Expenses by category"
+
+#: frontend/templates/finance/_month_insights.html:8
+msgid "Clique sur une catégorie pour voir ses sous-catégories"
+msgstr "Click a category to see its subcategories"
+
+#: frontend/templates/finance/_month_insights.html:10
+msgid "← Toutes"
+msgstr "← All"
+
+#: frontend/templates/finance/_month_insights.html:15
+msgid "Répartition des charges du mois par catégorie"
+msgstr "Breakdown of the month's expenses by category"
+
+#: frontend/templates/finance/_month_insights.html:20
+msgid "Aucune charge enregistrée ce mois-ci."
+msgstr "No expenses recorded this month."
+
+#: frontend/templates/finance/_month_insights.html:27
+msgid "Au fil du mois"
+msgstr "Through the month"
+
+#: frontend/templates/finance/_month_insights.html:28
+msgid "Cumul des revenus, charges et épargne"
+msgstr "Cumulative income, expenses and savings"
+
+#: frontend/templates/finance/_month_insights.html:28
+msgid ", comparé au rythme du budget"
+msgstr ", compared with the budget pace"
+
+#: frontend/templates/finance/_month_insights.html:32
+msgid "Cumul des revenus, charges et épargne jour par jour"
+msgstr "Cumulative income, expenses and savings day by day"
+
+#: frontend/templates/finance/_month_insights.html:42
+msgid "Abonnements du mois"
+msgstr "This month's subscriptions"
+
+#: frontend/templates/finance/_month_insights.html:44 frontend/templates/finance/budget_subscriptions.html:53
+msgid "€ payés"
+msgstr "€ paid"
+
+#: frontend/templates/finance/_month_insights.html:45
+msgid "€ restent à payer"
+msgstr "€ left to pay"
+
+#: frontend/templates/finance/_month_insights.html:48 frontend/templates/finance/dashboard_budget.html:152 frontend/templates/finance/dashboard_budget.html:165 frontend/templates/finance/dashboard_hub.html:348 frontend/templates/finance/dashboard_hub.html:375
+msgid "Gérer"
+msgstr "Manage"
+
+#: frontend/templates/finance/_month_insights.html:52
+msgid "Payés"
+msgstr "Paid"
+
+#: frontend/templates/finance/_month_insights.html:61
+msgid "Aucun pour l'instant."
+msgstr "None for now."
+
+#: frontend/templates/finance/_month_insights.html:65
+msgid "Reste à payer"
+msgstr "Left to pay"
+
+#: frontend/templates/finance/_month_insights.html:70
+msgid "attendu le"
+msgstr "expected on"
+
+#: frontend/templates/finance/_month_insights.html:74
+msgid "Tout est payé ✔"
+msgstr "Everything is paid ✔"
+
+#: frontend/templates/finance/_month_insights.html:80
+msgid "· prévu le"
+msgstr "· due on"
+
+#: frontend/templates/finance/_month_insights.html:94
+msgid "Budget du mois"
+msgstr "This month's budget"
+
+#: frontend/templates/finance/_month_insights.html:96
+msgid "Jour"
+msgstr "Day"
+
+#: frontend/templates/finance/_month_insights.html:96 frontend/templates/finance/_month_insights.html:106 frontend/templates/finance/budget_goals.html:225 frontend/templates/finance/dashboard_hub.html:105
+msgid "sur"
+msgstr "of"
+
+#: frontend/templates/finance/_month_insights.html:96 frontend/templates/finance/dashboard_hub.html:113
+#, python-format
+msgid "%% du mois écoulé"
+msgstr "%% of the month gone"
+
+#: frontend/templates/finance/_month_insights.html:96
+msgid "Mois terminé"
+msgstr "Month over"
+
+#: frontend/templates/finance/_month_insights.html:104 frontend/templates/finance/dashboard_hub.html:111
+msgid "Dépensé"
+msgstr "Spent"
+
+#: frontend/templates/finance/_month_insights.html:106
+msgid "€ prévus"
+msgstr "€ planned"
+
+#: frontend/templates/finance/_month_insights.html:109 frontend/templates/finance/_month_insights.html:152
+msgid "Rythme attendu"
+msgstr "Expected pace"
+
+#: frontend/templates/finance/_month_insights.html:113
+msgid "Projection fin de mois"
+msgstr "End-of-month projection"
+
+#: frontend/templates/finance/_month_insights.html:113
+msgid "Écart au budget"
+msgstr "Difference from budget"
+
+#: frontend/templates/finance/_month_insights.html:116
+msgid "Dépassement prévu de"
+msgstr "Projected overrun of"
+
+#: frontend/templates/finance/_month_insights.html:116
+msgid "Dépassement de"
+msgstr "Overrun of"
+
+#: frontend/templates/finance/_month_insights.html:116
+msgid "Dans le budget"
+msgstr "Within budget"
+
+#: frontend/templates/finance/_month_insights.html:122 frontend/templates/finance/dashboard_hub.html:123
+msgid "objectif"
+msgstr "goal"
+
+#: frontend/templates/finance/_month_insights.html:129
+msgid "restants sur"
+msgstr "left of"
+
+#: frontend/templates/finance/_month_insights.html:145
+msgid "· dépassé de"
+msgstr "· over by"
+
+#: frontend/templates/finance/_month_insights.html:146
+msgid "· au-dessus du rythme"
+msgstr "· above pace"
+
+#: frontend/templates/finance/_month_insights.html:147
+msgid "· reste"
+msgstr "· left"
+
+#: frontend/templates/finance/_month_insights.html:160
+msgid "Hors budget"
+msgstr "Outside the budget"
+
+#: frontend/templates/finance/_month_insights.html:165
+msgid "€ non prévus"
+msgstr "€ not planned"
+
+#: frontend/templates/finance/_month_insights.html:176
+msgid "Pas encore de budget"
+msgstr "No budget yet"
+
+#: frontend/templates/finance/_month_insights.html:177
+msgid "Fixe un objectif par poste et un objectif d'épargne pour suivre chaque mois s'il est tenu."
+msgstr "Set a target for each line and a savings goal to check every month whether you stick to them."
+
+#: frontend/templates/finance/_month_insights.html:179
+msgid "Créer mon budget"
+msgstr "Create my budget"
+
+#: frontend/templates/finance/_savings_allocation.html:26
+msgid "Rien à afficher pour l'instant."
+msgstr "Nothing to show for now."
+
+#: frontend/templates/finance/_savings_prices.html:6
+msgid "Cours au"
+msgstr "Prices as of"
+
+#: frontend/templates/finance/_savings_prices.html:6
+msgid "Cours indisponibles"
+msgstr "Prices unavailable"
+
+#: frontend/templates/finance/_savings_prices.html:7
+msgid "Actualiser"
+msgstr "Refresh"
+
+#: frontend/templates/finance/_savings_range.html:2
+msgid "Période affichée"
+msgstr "Period shown"
+
+#: frontend/templates/finance/_savings_range.html:5
+msgid "1 an"
+msgstr "1 year"
+
+#: frontend/templates/finance/_savings_range.html:6 frontend/templates/finance/month.html:109
+msgid "Tout"
+msgstr "All"
+
+#: frontend/templates/finance/_savings_scope.html:5
+msgid "Compte affiché"
+msgstr "Account shown"
+
+#: frontend/templates/finance/_savings_scope.html:6
+msgid "Tous les comptes"
+msgstr "All accounts"
+
+#: frontend/templates/finance/_savings_tabs.html:10
+msgid "Vue d'ensemble"
+msgstr "Overview"
+
+#: frontend/templates/finance/_savings_tabs.html:13 frontend/templates/finance/dashboard_hub.html:59 frontend/templates/finance/savings_overview.html:33
+msgid "Livrets"
+msgstr "Savings accounts"
+
+#: frontend/templates/finance/_savings_tabs.html:22 frontend/templates/finance/savings_simulation.html:29
+msgid "Simulation"
+msgstr "Simulation"
+
+#: frontend/templates/finance/_subscription_row.html:9
+msgid "· dernier paiement le"
+msgstr "· last payment on"
+
+#: frontend/templates/finance/_subscription_row.html:11
+msgid "· attendu le"
+msgstr "· expected on"
+
+#: frontend/templates/finance/_subscription_row.html:11
+msgid ", jamais arrivé"
+msgstr ", never arrived"
+
+#: frontend/templates/finance/_subscription_row.html:13 frontend/templates/finance/budget_subscriptions.html:117
+msgid "· prochain vers le"
+msgstr "· next around"
+
+#: frontend/templates/finance/_subscription_row.html:21
+msgid "En retard de"
+msgstr "Overdue by"
+
+#: frontend/templates/finance/_subscription_row.html:26
+msgid "Ne plus suivre cet abonnement ? Les paiements restent dans ton historique."
+msgstr "Stop tracking this subscription? The payments stay in your history."
+
+#: frontend/templates/finance/_subscription_row.html:28
+msgid "Ne plus suivre"
+msgstr "Stop tracking"
+
+#: frontend/templates/finance/_transaction_extras.html:7
+msgid "Déduit de ton solde de tickets, pas de ton compte bancaire"
+msgstr "Deducted from your voucher balance, not from your bank account"
+
+#: frontend/templates/finance/_transaction_row.html:18
+#, python-format
+msgid "Modifier « %(name)s »"
+msgstr "Edit “%(name)s”"
+
+#: frontend/templates/finance/_transaction_row.html:21
+msgid "Charge"
+msgstr "Expense"
+
+#: frontend/templates/finance/_transaction_row.html:25
+msgid "↻ Abonnement"
+msgstr "↻ Subscription"
+
+#: frontend/templates/finance/_transaction_row.html:26
+msgid "Tickets resto"
+msgstr "Meal vouchers"
+
+#: frontend/templates/finance/_transaction_row.html:29
+msgid "Compté le"
+msgstr "Counted on"
+
+#: frontend/templates/finance/_transaction_row.html:29
+msgid ": salaire de fin de mois et épargne qui le suit"
+msgstr ": end-of-month salary and the savings that follow it"
+
+#: frontend/templates/finance/_transaction_row.html:29
+msgid "Reçu"
+msgstr "Received"
+
+#: frontend/templates/finance/_transaction_row.html:29
+msgid "Versé"
+msgstr "Paid in"
+
+#: frontend/templates/finance/_transaction_row.html:29 frontend/templates/finance/budget_cashflow.html:30 frontend/templates/finance/budget_cashflow.html:45
+msgid "le"
+msgstr "on"
+
+#: frontend/templates/finance/_transaction_row.html:31
+msgid "Importée depuis la banque"
+msgstr "Imported from the bank"
+
+#: frontend/templates/finance/_transaction_row.html:47
+#, python-format
+msgid "Supprimer « %(name)s »"
+msgstr "Delete “%(name)s”"
+
+#: frontend/templates/finance/_transaction_row.html:47 frontend/templates/finance/savings_fees.html:161 frontend/templates/finance/settings.html:424 frontend/templates/finance/settings.html:441 frontend/templates/finance/settings.html:477
+msgid "Supprimer"
+msgstr "Delete"
+
+#: frontend/templates/finance/bank_connect.html:4
+msgid "Connecter ma banque - BudgWealth"
+msgstr "Connect my bank - BudgWealth"
+
+#: frontend/templates/finance/bank_connect.html:10
+msgid "Dernière étape"
+msgstr "Last step"
+
+#: frontend/templates/finance/bank_connect.html:11
+msgid "Connecter votre banque"
+msgstr "Connect your bank"
+
+#: frontend/templates/finance/bank_connect.html:13
+msgid "BudgWealth peut récupérer vos opérations automatiquement depuis le Crédit Agricole. Votre code personnel n'est jamais enregistré : vous le taperez vous-même sur le site de la banque."
+msgstr "BudgWealth can fetch your transactions automatically from Crédit Agricole. Your personal code is never stored: you type it yourself on the bank's website."
+
+#: frontend/templates/finance/bank_connect.html:37
+msgid "Juste après, nous importerons vos"
+msgstr "Right after, we will import your"
+
+#: frontend/templates/finance/bank_connect.html:37
+msgid "12 derniers mois"
+msgstr "last 12 months"
+
+#: frontend/templates/finance/bank_connect.html:37
+msgid "d'opérations pour que votre espace soit prêt tout de suite."
+msgstr "of transactions so your space is ready right away."
+
+#: frontend/templates/finance/bank_connect.html:41
+msgid "Connecter et importer l'historique"
+msgstr "Connect and import history"
+
+#: frontend/templates/finance/bank_connect.html:42 frontend/templates/finance/bank_initial_sync.html:37
+msgid "Plus tard"
+msgstr "Later"
+
+#: frontend/templates/finance/bank_initial_sync.html:4
+msgid "Import de votre historique - BudgWealth"
+msgstr "Importing your history - BudgWealth"
+
+#: frontend/templates/finance/bank_initial_sync.html:10
+msgid "Import de l'historique"
+msgstr "History import"
+
+#: frontend/templates/finance/bank_initial_sync.html:11
+msgid "Vos 12 derniers mois"
+msgstr "Your last 12 months"
+
+#: frontend/templates/finance/bank_initial_sync.html:13
+msgid "Nous récupérons tout votre historique en une fois. Une fenêtre Crédit Agricole s'affichera pour que vous tapiez votre code personnel, puis elle disparaîtra."
+msgstr "We fetch your whole history at once. A Crédit Agricole window will open so you can type your personal code, then it will close."
+
+#: frontend/templates/finance/bank_initial_sync.html:20 frontend/templates/finance/month.html:238
+msgid "Connexion au Crédit Agricole"
+msgstr "Connecting to Crédit Agricole"
+
+#: frontend/templates/finance/bank_initial_sync.html:21 frontend/templates/finance/month.html:239
+msgid "Saisie de votre code personnel"
+msgstr "Entering your personal code"
+
+#: frontend/templates/finance/bank_initial_sync.html:23 frontend/templates/finance/month.html:241
+msgid "Import dans BudgWealth"
+msgstr "Importing into BudgWealth"
+
+#: frontend/templates/finance/bank_initial_sync.html:27 frontend/templates/finance/month.html:245
+msgid "Une fenêtre Crédit Agricole vient de s'ouvrir : tapez votre code personnel sur le clavier du site. Elle se fermera toute seule ensuite."
+msgstr "A Crédit Agricole window has just opened: type your personal code on the website's keypad. It will close by itself afterwards."
+
+#: frontend/templates/finance/bank_initial_sync.html:35
+msgid "Démarrer l'import"
+msgstr "Start the import"
+
+#: frontend/templates/finance/bank_initial_sync.html:68
+msgid "Réessayer"
+msgstr "Try again"
+
+#: frontend/templates/finance/bank_initial_sync.html:76
+msgid "L'import a échoué."
+msgstr "The import failed."
+
+#: frontend/templates/finance/bank_initial_sync.html:90
+msgid "Import en cours…"
+msgstr "Import in progress…"
+
+#: frontend/templates/finance/bank_initial_sync.html:101
+msgid "Impossible de lancer l'import."
+msgstr "Could not start the import."
+
+#: frontend/templates/finance/bank_initial_sync.html:104 frontend/templates/finance/month.html:328
+msgid "Impossible de joindre le serveur."
+msgstr "Could not reach the server."
+
+#: frontend/templates/finance/budget_cashflow.html:4
+msgid "Trésorerie - BudgWealth"
+msgstr "Cash flow - BudgWealth"
+
+#: frontend/templates/finance/budget_cashflow.html:8 frontend/templates/finance/dashboard_hub.html:170
+msgid "Ton compte courant dans les semaines qui viennent"
+msgstr "Your current account over the coming weeks"
+
+#: frontend/templates/finance/budget_cashflow.html:16
+msgid "Solde aujourd'hui"
+msgstr "Balance today"
+
+#: frontend/templates/finance/budget_cashflow.html:19
+msgid "relevé du"
+msgstr "statement of"
+
+#: frontend/templates/finance/budget_cashflow.html:19
+msgid "depuis"
+msgstr "since"
+
+#: frontend/templates/finance/budget_cashflow.html:25
+msgid "prévu au"
+msgstr "expected on"
+
+#: frontend/templates/finance/budget_cashflow.html:28
+msgid "Point le plus bas"
+msgstr "Lowest point"
+
+#: frontend/templates/finance/budget_cashflow.html:33
+msgid "Tu peux mettre de côté"
+msgstr "You can set aside"
+
+#: frontend/templates/finance/budget_cashflow.html:35
+msgid "aujourd'hui, sans passer sous"
+msgstr "today, without going below"
+
+#: frontend/templates/finance/budget_cashflow.html:43
+msgid "Ton solde passerait sous zéro le"
+msgstr "Your balance would go below zero on"
+
+#: frontend/templates/finance/budget_cashflow.html:43
+msgid ". Décale une dépense ou fais un virement depuis ton épargne avant cette date."
+msgstr ". Postpone an expense or transfer money from your savings before that date."
+
+#: frontend/templates/finance/budget_cashflow.html:45
+msgid "Ton solde descendrait à"
+msgstr "Your balance would drop to"
+
+#: frontend/templates/finance/budget_cashflow.html:45
+msgid ", sous ta marge de"
+msgstr ", below your margin of"
+
+#: frontend/templates/finance/budget_cashflow.html:45
+msgid "Évite les virements vers l'épargne d'ici là."
+msgstr "Avoid transfers to savings until then."
+
+#: frontend/templates/finance/budget_cashflow.html:47
+msgid "Ton solde reste au-dessus de ta marge de sécurité jusqu'au"
+msgstr "Your balance stays above your safety margin until"
+
+#: frontend/templates/finance/budget_cashflow.html:50
+#, python-format
+msgid "Ton dernier solde date du %(day)s : synchronise ta banque ou saisis ton solde pour une prévision juste."
+msgstr "Your last balance is from %(day)s: sync your bank or enter your balance for an accurate forecast."
+
+#: frontend/templates/finance/budget_cashflow.html:54
+msgid "Entrées prévues"
+msgstr "Expected income"
+
+#: frontend/templates/finance/budget_cashflow.html:55
+msgid "Prélèvements prévus"
+msgstr "Expected debits"
+
+#: frontend/templates/finance/budget_cashflow.html:56
+msgid "Dépenses courantes"
+msgstr "Everyday spending"
+
+#: frontend/templates/finance/budget_cashflow.html:56
+msgid "€ / jour en moyenne"
+msgstr "€ / day on average"
+
+#: frontend/templates/finance/budget_cashflow.html:64
+msgid "Solde prévu, jour par jour"
+msgstr "Expected balance, day by day"
+
+#: frontend/templates/finance/budget_cashflow.html:65
+msgid "Jusqu'au"
+msgstr "Until"
+
+#: frontend/templates/finance/budget_cashflow.html:65
+msgid "la ligne pointillée est ta marge de sécurité"
+msgstr "the dashed line is your safety margin"
+
+#: frontend/templates/finance/budget_cashflow.html:67
+msgid "Horizon"
+msgstr "Horizon"
+
+#: frontend/templates/finance/budget_cashflow.html:73 frontend/templates/finance/dashboard_hub.html:182
+msgid "Solde prévu du compte courant"
+msgstr "Expected current account balance"
+
+#: frontend/templates/finance/budget_cashflow.html:82
+msgid "Salaire, postes fixes et abonnements attendus"
+msgstr "Expected salary, fixed items and subscriptions"
+
+#: frontend/templates/finance/budget_cashflow.html:92
+msgid "Déjà saisi"
+msgstr "Already entered"
+
+#: frontend/templates/finance/budget_cashflow.html:100
+msgid "Rien de prévu d'ici là, à part tes dépenses courantes."
+msgstr "Nothing planned until then, apart from your everyday spending."
+
+#: frontend/templates/finance/budget_cashflow.html:107
+msgid "Comment c'est calculé : ton dernier solde, les opérations saisies depuis, puis jour après jour ton salaire, tes postes fixes, tes abonnements à leur date habituelle et tes dépenses courantes (moyenne des 90 derniers jours). Les virements vers l'épargne ne sont pas prévus : c'est ce que tu peux mettre de côté."
+msgstr "How it's calculated: your last balance, the transactions entered since, then day by day your salary, your fixed items, your subscriptions on their usual date and your everyday spending (average of the last 90 days). Transfers to savings are not forecast: that's what you can set aside."
+
+#: frontend/templates/finance/budget_cashflow.html:113
+msgid "Quel est le solde de ton compte courant ?"
+msgstr "What is your current account balance?"
+
+#: frontend/templates/finance/budget_cashflow.html:114
+msgid "Il sera relevé automatiquement à la prochaine synchronisation bancaire. Tu peux aussi le saisir maintenant :"
+msgstr "It will be read automatically at the next bank sync. You can also enter it now:"
+
+#: frontend/templates/finance/budget_cashflow.html:114
+msgid "Saisis-le pour voir ton solde des prochaines semaines. Avec la synchronisation bancaire, il se met à jour tout seul."
+msgstr "Enter it to see your balance over the coming weeks. With the bank sync, it updates by itself."
+
+#: frontend/templates/finance/budget_cashflow.html:146
+msgid "Solde prévu"
+msgstr "Expected balance"
+
+#: frontend/templates/finance/budget_cashflow.html:156
+msgid "Marge de sécurité"
+msgstr "Safety margin"
+
+#: frontend/templates/finance/budget_goals.html:4
+msgid "Objectifs - BudgWealth"
+msgstr "Goals - BudgWealth"
+
+#: frontend/templates/finance/budget_goals.html:8
+msgid "Ce que tu veux mettre de côté, chaque mois et pour tes projets"
+msgstr "What you want to set aside, each month and for your projects"
+
+#: frontend/templates/finance/budget_goals.html:14
+msgid "Objectif d'épargne global"
+msgstr "Overall savings goal"
+
+#: frontend/templates/finance/budget_goals.html:15
+msgid "Le total que tu veux avoir de côté (livrets, PEA, assurance vie…) à une date donnée."
+msgstr "The total you want set aside (savings accounts, PEA, life insurance…) by a given date."
+
+#: frontend/templates/finance/budget_goals.html:33
+msgid "Recalculer"
+msgstr "Recalculate"
+
+#: frontend/templates/finance/budget_goals.html:33
+msgid "Calculer mon plan"
+msgstr "Work out my plan"
+
+#: frontend/templates/finance/budget_goals.html:37
+msgid "Supprimer l'objectif global ?"
+msgstr "Delete the overall goal?"
+
+#: frontend/templates/finance/budget_goals.html:39
+msgid "Supprimer l'objectif"
+msgstr "Delete the goal"
+
+#: frontend/templates/finance/budget_goals.html:47
+msgid "Déjà de côté"
+msgstr "Already set aside"
+
+#: frontend/templates/finance/budget_goals.html:47
+msgid "suivis"
+msgstr "tracked"
+
+#: frontend/templates/finance/budget_goals.html:47
+msgid "hors app"
+msgstr "outside the app"
+
+#: frontend/templates/finance/budget_goals.html:55 frontend/templates/finance/budget_goals.html:232
+msgid "À mettre de côté"
+msgstr "To set aside"
+
+#: frontend/templates/finance/budget_goals.html:57
+msgid "par mois"
+msgstr "per month"
+
+#: frontend/templates/finance/budget_goals.html:57 frontend/templates/finance/dashboard_hub.html:238
+#, python-format
+msgid "%% de tes revenus"
+msgstr "%% of your income"
+
+#: frontend/templates/finance/budget_goals.html:60
+msgid "Reste à réunir"
+msgstr "Still to save"
+
+#: frontend/templates/finance/budget_goals.html:62
+#, python-format
+msgid "en %(months)s mois"
+msgid_plural "en %(months)s mois"
+msgstr[0] "in %(months)s month"
+msgstr[1] "in %(months)s months"
+
+#: frontend/templates/finance/budget_goals.html:62
+msgid "jusqu'au"
+msgstr "until"
+
+#: frontend/templates/finance/budget_goals.html:65
+msgid "Tes versements"
+msgstr "Your contributions"
+
+#: frontend/templates/finance/budget_goals.html:67
+msgid "au total, d'ici la date"
+msgstr "in total, by the date"
+
+#: frontend/templates/finance/budget_goals.html:70
+msgid "Intérêts gagnés"
+msgstr "Interest earned"
+
+#: frontend/templates/finance/budget_goals.html:72
+msgid "à"
+msgstr "at"
+
+#: frontend/templates/finance/budget_goals.html:72 frontend/templates/finance/savings_simulation.html:58 frontend/templates/finance/savings_simulation.html:63
+#, python-format
+msgid "%%/an"
+msgstr "%%/year"
+
+#: frontend/templates/finance/budget_goals.html:81
+msgid "En épargnant tout ce qu'il te reste chaque mois, tu aurais environ"
+msgstr "Saving everything you have left each month, you would have about"
+
+#: frontend/templates/finance/budget_goals.html:81
+msgid "à la date visée"
+msgstr "by the target date"
+
+#: frontend/templates/finance/budget_goals.html:81
+msgid "et l'objectif complet en"
+msgstr "and the full goal in"
+
+#: frontend/templates/finance/budget_goals.html:84
+msgid "À ton rythme actuel, tu l'atteindrais en"
+msgstr "At your current pace, you would reach it in"
+
+#: frontend/templates/finance/budget_goals.html:86
+msgid "À ton rythme actuel, tu ne l'atteindrais pas dans les 60 prochaines années."
+msgstr "At your current pace, you would not reach it in the next 60 years."
+
+#: frontend/templates/finance/budget_goals.html:93
+msgid "Tu épargnes en moyenne"
+msgstr "You save on average"
+
+#: frontend/templates/finance/budget_goals.html:97
+msgid "Il te reste après tes charges"
+msgstr "Left after your expenses"
+
+#: frontend/templates/finance/budget_goals.html:100
+#, python-format
+msgid "Barre pleine = les %(needed)s € nécessaires · moyenne du dernier mois complet"
+msgid_plural "Barre pleine = les %(needed)s € nécessaires · moyenne des %(months)s derniers mois complets"
+msgstr[0] "Full bar = the %(needed)s € needed · average of the last full month"
+msgstr[1] "Full bar = the %(needed)s € needed · average of the last %(months)s full months"
+
+#: frontend/templates/finance/budget_goals.html:103
+msgid "Pas encore assez d'opérations pour juger : importe ou saisis quelques mois de revenus et de dépenses."
+msgstr "Not enough transactions to judge yet: import or enter a few months of income and expenses."
+
+#: frontend/templates/finance/budget_goals.html:109
+msgid "Ton objectif d'épargne mensuel du budget :"
+msgstr "Your budget's monthly savings target:"
+
+#: frontend/templates/finance/budget_goals.html:109
+msgid "il suffit pour cet objectif."
+msgstr "it is enough for this goal."
+
+#: frontend/templates/finance/budget_goals.html:113
+#, python-format
+msgid "Passer à %(amount)s € par mois"
+msgstr "Switch to %(amount)s € a month"
+
+#: frontend/templates/finance/budget_goals.html:119
+msgid "Projection de ton épargne jusqu'à la date visée"
+msgstr "Projection of your savings up to the target date"
+
+#: frontend/templates/finance/budget_goals.html:128
+msgid "Épargne mensuelle"
+msgstr "Monthly savings"
+
+#: frontend/templates/finance/budget_goals.html:129
+msgid "· versements vers « Épargne & placements »"
+msgstr "· transfers to “Savings & investments”"
+
+#: frontend/templates/finance/budget_goals.html:147
+msgid "Épargné ce mois"
+msgstr "Saved this month"
+
+#: frontend/templates/finance/budget_goals.html:152
+msgid "Projets :"
+msgstr "Projects:"
+
+#: frontend/templates/finance/budget_goals.html:153
+msgid "Épargne libre :"
+msgstr "General savings:"
+
+#: frontend/templates/finance/budget_goals.html:162 frontend/templates/finance/budget_plan.html:110
+msgid "Tes projets demandent"
+msgstr "Your projects need"
+
+#: frontend/templates/finance/budget_goals.html:162 frontend/templates/finance/budget_subscriptions.html:28 frontend/templates/finance/dashboard_budget.html:150
+msgid "€ par mois"
+msgstr "€ per month"
+
+#: frontend/templates/finance/budget_goals.html:163
+msgid "C'est plus que ton objectif d'épargne ("
+msgstr "That is more than your savings goal ("
+
+#: frontend/templates/finance/budget_goals.html:163
+msgid "€). Augmente ton objectif ou repousse une échéance."
+msgstr "€). Raise your goal or push back a deadline."
+
+#: frontend/templates/finance/budget_goals.html:165
+msgid "€ par mois pour tes projets"
+msgstr "€ per month for your projects"
+
+#: frontend/templates/finance/budget_goals.html:166
+msgid "Il te reste"
+msgstr "You have"
+
+#: frontend/templates/finance/budget_goals.html:166
+msgid "€ d'épargne libre dans ton objectif."
+msgstr "€ of general savings left in your goal."
+
+#: frontend/templates/finance/budget_goals.html:175
+msgid "Projets"
+msgstr "Projects"
+
+#: frontend/templates/finance/budget_goals.html:176
+msgid "Affecte un versement d'épargne à un projet quand tu l'enregistres : la progression se met à jour toute seule."
+msgstr "Assign a savings transfer to a project when you record it: the progress updates by itself."
+
+#: frontend/templates/finance/budget_goals.html:178
+msgid "+ Nouveau projet"
+msgstr "+ New project"
+
+#: frontend/templates/finance/budget_goals.html:183
+msgid "Nouveau projet"
+msgstr "New project"
+
+#: frontend/templates/finance/budget_goals.html:203
+msgid "Créer le projet"
+msgstr "Create the project"
+
+#: frontend/templates/finance/budget_goals.html:230
+msgid "Reste à épargner"
+msgstr "Left to save"
+
+#: frontend/templates/finance/budget_goals.html:231
+msgid "Mois restants"
+msgstr "Months left"
+
+#: frontend/templates/finance/budget_goals.html:232 frontend/templates/finance/budget_plan.html:90 frontend/templates/finance/budget_plan.html:110 frontend/templates/finance/dashboard_budget.html:172
+msgid "€ / mois"
+msgstr "€ / month"
+
+#: frontend/templates/finance/budget_goals.html:233
+msgid "Versé ce mois"
+msgstr "Paid in this month"
+
+#: frontend/templates/finance/budget_goals.html:237 frontend/templates/finance/savings_balances.html:142 frontend/templates/finance/savings_portfolio.html:256 frontend/templates/finance/savings_portfolio.html:374
+msgid "Modifier"
+msgstr "Edit"
+
+#: frontend/templates/finance/budget_goals.html:264
+msgid "Supprimer ce projet ? Les versements restent dans ton historique."
+msgstr "Delete this project? The transfers stay in your history."
+
+#: frontend/templates/finance/budget_goals.html:266
+msgid "Supprimer le projet"
+msgstr "Delete the project"
+
+#: frontend/templates/finance/budget_goals.html:300
+msgid "Avec le plan"
+msgstr "With the plan"
+
+#: frontend/templates/finance/budget_goals.html:301
+msgid "À ton rythme actuel"
+msgstr "At your current pace"
+
+#: frontend/templates/finance/budget_goals.html:302
+msgid "Objectif"
+msgstr "Goal"
+
+#: frontend/templates/finance/budget_goals.html:339
+msgid "La date est déjà passée."
+msgstr "The date has already passed."
+
+#: frontend/templates/finance/budget_goals.html:341
+msgid " € à mettre de côté par mois pendant "
+msgstr " € to set aside per month for "
+
+#: frontend/templates/finance/budget_goals.html:341
+msgid " mois"
+msgstr " months"
+
+#: frontend/templates/finance/budget_plan.html:4
+msgid "Mon budget - BudgWealth"
+msgstr "My budget - BudgWealth"
+
+#: frontend/templates/finance/budget_plan.html:8
+msgid "Ton budget type, appliqué chaque mois"
+msgstr "Your standard budget, applied every month"
+
+#: frontend/templates/finance/budget_plan.html:12
+msgid "Premier budget"
+msgstr "First budget"
+
+#: frontend/templates/finance/budget_plan.html:13
+msgid "On l'a prérempli à partir de tes postes fixes, de tes abonnements et de tes dépenses des 3 derniers mois. Ajuste les montants puis enregistre."
+msgstr "We prefilled it from your fixed expenses, your subscriptions and your spending over the last 3 months. Adjust the amounts, then save."
+
+#: frontend/templates/finance/budget_plan.html:17
+msgid "Comment construire ton budget"
+msgstr "How to build your budget"
+
+#: frontend/templates/finance/budget_plan.html:18
+msgid "Ce qui rentre"
+msgstr "What comes in"
+
+#: frontend/templates/finance/budget_plan.html:18
+msgid "Ton revenu mensuel de référence"
+msgstr "Your reference monthly income"
+
+#: frontend/templates/finance/budget_plan.html:19
+msgid "Ce qui sort"
+msgstr "What goes out"
+
+#: frontend/templates/finance/budget_plan.html:19
+msgid "Charges fixes, variables, abonnements"
+msgstr "Fixed and variable expenses, subscriptions"
+
+#: frontend/templates/finance/budget_plan.html:20
+msgid "Ce que tu gardes"
+msgstr "What you keep"
+
+#: frontend/templates/finance/budget_plan.html:20
+msgid "Ton épargne, versée en début de mois"
+msgstr "Your savings, transferred at the start of the month"
+
+#: frontend/templates/finance/budget_plan.html:21
+msgid "Ton reste à vivre"
+msgstr "Your money left to live on"
+
+#: frontend/templates/finance/budget_plan.html:21
+msgid "Calculé en direct à droite"
+msgstr "Calculated live on the right"
+
+#: frontend/templates/finance/budget_plan.html:34 frontend/templates/finance/dashboard_budget.html:195 frontend/templates/finance/dashboard_hub.html:130 frontend/templates/finance/month.html:37 frontend/templates/finance/month.html:111 frontend/templates/finance/settings.html:469
+msgid "Revenus"
+msgstr "Income"
+
+#: frontend/templates/finance/budget_plan.html:35
+msgid "La base sur laquelle ton budget est construit."
+msgstr "The base your budget is built on."
+
+#: frontend/templates/finance/budget_plan.html:47
+msgid "en moyenne sur"
+msgstr "on average over"
+
+#: frontend/templates/finance/budget_plan.html:49
+msgid "Pas encore de salaire enregistré : on utilisera le montant fixe en attendant."
+msgstr "No salary recorded yet: the fixed amount will be used for now."
+
+#: frontend/templates/finance/budget_plan.html:52
+msgid "Tu indiques toi-même ton revenu mensuel."
+msgstr "You enter your monthly income yourself."
+
+#: frontend/templates/finance/budget_plan.html:79
+msgid "Loyer, assurances, énergie, téléphone…"
+msgstr "Rent, insurance, energy, phone…"
+
+#: frontend/templates/finance/budget_plan.html:81
+msgid "Streaming, sport, logiciels…"
+msgstr "Streaming, sport, software…"
+
+#: frontend/templates/finance/budget_plan.html:82
+msgid "Dépenses annuelles lissées : montant annuel ÷ 12."
+msgstr "Annual expenses spread out: annual amount ÷ 12."
+
+#: frontend/templates/finance/budget_plan.html:99
+msgid "+ Ajouter une ligne"
+msgstr "+ Add a line"
+
+#: frontend/templates/finance/budget_plan.html:109
+msgid "Ce que tu veux mettre de côté chaque mois."
+msgstr "What you want to set aside each month."
+
+#: frontend/templates/finance/budget_plan.html:111
+msgid "Gérer mes projets"
+msgstr "Manage my projects"
+
+#: frontend/templates/finance/budget_plan.html:121
+msgid "Suggestions"
+msgstr "Suggestions"
+
+#: frontend/templates/finance/budget_plan.html:122
+msgid "Montants suggérés"
+msgstr "Suggested amounts"
+
+#: frontend/templates/finance/budget_plan.html:127
+msgid "Mes projets ·"
+msgstr "My projects ·"
+
+#: frontend/templates/finance/budget_plan.html:129
+msgid "Tout le reste"
+msgstr "Everything else"
+
+#: frontend/templates/finance/budget_plan.html:133
+msgid "Astuce : programme un virement automatique vers ton livret le jour de ta paie. L'épargne passe avant les dépenses."
+msgstr "Tip: schedule an automatic transfer to your savings account on payday. Savings come before spending."
+
+#: frontend/templates/finance/budget_plan.html:141
+msgid "Enregistrer le budget"
+msgstr "Save the budget"
+
+#: frontend/templates/finance/budget_plan.html:143
+msgid "Les mois précédents gardent la version du budget qui était en vigueur."
+msgstr "Previous months keep the budget version that was in force."
+
+#: frontend/templates/finance/budget_plan.html:161
+msgid "Résumé du mois"
+msgstr "Month summary"
+
+#: frontend/templates/finance/budget_plan.html:165 frontend/templates/finance/budget_plan.html:406
+msgid "par mois, une fois tes charges payées et ton épargne mise de côté"
+msgstr "per month, once your expenses are paid and your savings set aside"
+
+#: frontend/templates/finance/budget_plan.html:181
+msgid "Ressources"
+msgstr "Resources"
+
+#: frontend/templates/finance/budget_plan.html:189
+msgid "Repère 50 / 30 / 20"
+msgstr "50 / 30 / 20 rule"
+
+#: frontend/templates/finance/budget_plan.html:192
+msgid "Charges fixes & provisions"
+msgstr "Fixed expenses & provisions"
+
+#: frontend/templates/finance/budget_plan.html:194
+#, python-format
+msgid "50 %% de tes ressources au maximum"
+msgstr "50%% of your resources at most"
+
+#: frontend/templates/finance/budget_plan.html:197
+msgid "Variables & abonnements"
+msgstr "Variable & subscriptions"
+
+#: frontend/templates/finance/budget_plan.html:199
+#, python-format
+msgid "30 %% au maximum : courses, sorties, loisirs"
+msgstr "30%% at most: groceries, outings, leisure"
+
+#: frontend/templates/finance/budget_plan.html:204
+#, python-format
+msgid "20 %% au minimum, c'est un bon repère"
+msgstr "20%% at least is a good benchmark"
+
+#: frontend/templates/finance/budget_plan.html:209
+msgid "Indicateurs du budget enregistré"
+msgstr "Saved budget indicators"
+
+#: frontend/templates/finance/budget_plan.html:215
+msgid "· seuil"
+msgstr "· threshold"
+
+#: frontend/templates/finance/budget_plan.html:221
+msgid "Loyer maximum conseillé :"
+msgstr "Recommended maximum rent:"
+
+#: frontend/templates/finance/budget_plan.html:221
+#, python-format
+msgid "€ (33 %% du revenu)."
+msgstr "€ (33%% of income)."
+
+#: frontend/templates/finance/budget_plan.html:228
+msgid "Uniquement pour l'alimentation. Coche « Payé en tickets restaurant » quand tu saisis une dépense."
+msgstr "Food only. Tick “Paid with meal vouchers” when you enter an expense."
+
+#: frontend/templates/finance/budget_plan.html:232
+msgid "Crédités ce mois"
+msgstr "Credited this month"
+
+#: frontend/templates/finance/budget_plan.html:232
+msgid "tickets ×"
+msgstr "vouchers ×"
+
+#: frontend/templates/finance/budget_plan.html:233
+msgid "Retenue sur salaire"
+msgstr "Salary deduction"
+
+#: frontend/templates/finance/budget_plan.html:234
+msgid "Dépensés"
+msgstr "Spent"
+
+#: frontend/templates/finance/budget_plan.html:235
+msgid "Restant"
+msgstr "Remaining"
+
+#: frontend/templates/finance/budget_plan.html:269
+msgid "Versions du budget"
+msgstr "Budget versions"
+
+#: frontend/templates/finance/budget_plan.html:273
+msgid "Depuis"
+msgstr "Since"
+
+#: frontend/templates/finance/budget_plan.html:274
+msgid "En vigueur"
+msgstr "In force"
+
+#: frontend/templates/finance/budget_plan.html:405
+msgid "Ton budget dépasse tes ressources : réduis une dépense ou ton épargne visée."
+msgstr "Your budget exceeds your resources: cut an expense or your savings target."
+
+#: frontend/templates/finance/budget_subscriptions.html:4
+msgid "Abonnements - BudgWealth"
+msgstr "Subscriptions - BudgWealth"
+
+#: frontend/templates/finance/budget_subscriptions.html:8
+msgid "Détectés automatiquement dans tes opérations bancaires"
+msgstr "Detected automatically in your bank transactions"
+
+#: frontend/templates/finance/budget_subscriptions.html:12
+msgid "Seulement"
+msgstr "Only"
+
+#: frontend/templates/finance/budget_subscriptions.html:12
+msgid "mois d'opérations"
+msgstr "months of transactions"
+
+#: frontend/templates/finance/budget_subscriptions.html:14
+msgid "Il faut au moins 3 mois de paiements pour reconnaître un abonnement mensuel."
+msgstr "At least 3 months of payments are needed to recognize a monthly subscription."
+
+#: frontend/templates/finance/budget_subscriptions.html:16
+msgid "Importe ton historique bancaire (12 mois)"
+msgstr "Import your bank history (12 months)"
+
+#: frontend/templates/finance/budget_subscriptions.html:18
+msgid "Synchronise tes mois précédents depuis la page de chaque mois."
+msgstr "Sync your previous months from each month's page."
+
+#: frontend/templates/finance/budget_subscriptions.html:26
+msgid "Abonnements actifs"
+msgstr "Active subscriptions"
+
+#: frontend/templates/finance/budget_subscriptions.html:31
+msgid "Par an"
+msgstr "Per year"
+
+#: frontend/templates/finance/budget_subscriptions.html:33
+msgid "au rythme actuel"
+msgstr "at the current rate"
+
+#: frontend/templates/finance/budget_subscriptions.html:36
+msgid "À valider"
+msgstr "To confirm"
+
+#: frontend/templates/finance/budget_subscriptions.html:38
+msgid "détectés dans tes opérations"
+msgstr "detected in your transactions"
+
+#: frontend/templates/finance/budget_subscriptions.html:41 frontend/templates/finance/budget_subscriptions.html:161
+msgid "Arrêtés"
+msgstr "Stopped"
+
+#: frontend/templates/finance/budget_subscriptions.html:43
+msgid "plus payés depuis l'échéance"
+msgstr "not paid since the due date"
+
+#: frontend/templates/finance/budget_subscriptions.html:51
+msgid "Calendrier des paiements"
+msgstr "Payment calendar"
+
+#: frontend/templates/finance/budget_subscriptions.html:54
+msgid "€ à venir"
+msgstr "€ upcoming"
+
+#: frontend/templates/finance/budget_subscriptions.html:55
+msgid "non payé"
+msgstr "not paid"
+
+#: frontend/templates/finance/budget_subscriptions.html:59 frontend/templates/finance/month.html:15
+msgid "Mois précédent"
+msgstr "Previous month"
+
+#: frontend/templates/finance/budget_subscriptions.html:61 frontend/templates/finance/month.html:22 frontend/templates/finance/month.html:26
+msgid "Mois suivant"
+msgstr "Next month"
+
+#: frontend/templates/finance/budget_subscriptions.html:62 frontend/templates/finance/dashboard_hub.html:177
+msgid "Aujourd'hui"
+msgstr "Today"
+
+#: frontend/templates/finance/budget_subscriptions.html:66
+msgid "Paiements d'abonnement de"
+msgstr "Subscription payments for"
+
+#: frontend/templates/finance/budget_subscriptions.html:91
+msgid "Non payé / arrêté"
+msgstr "Not paid / stopped"
+
+#: frontend/templates/finance/budget_subscriptions.html:99
+msgid "Détectés dans tes opérations"
+msgstr "Detected in your transactions"
+
+#: frontend/templates/finance/budget_subscriptions.html:100
+msgid "Ces paiements reviennent à intervalle régulier. Suis-les pour être alerté s'ils s'arrêtent."
+msgstr "These payments come back at regular intervals. Track them to be alerted if they stop."
+
+#: frontend/templates/finance/budget_subscriptions.html:113
+msgid "/ mois"
+msgstr "/ month"
+
+#: frontend/templates/finance/budget_subscriptions.html:113
+msgid "/ an"
+msgstr "/ year"
+
+#: frontend/templates/finance/budget_subscriptions.html:116
+msgid "paiements depuis le"
+msgstr "payments since"
+
+#: frontend/templates/finance/budget_subscriptions.html:117
+msgid "Dernier le"
+msgstr "Last on"
+
+#: frontend/templates/finance/budget_subscriptions.html:123
+msgid "Suivre"
+msgstr "Track"
+
+#: frontend/templates/finance/budget_subscriptions.html:128
+msgid "Ce n'est pas un abonnement"
+msgstr "Not a subscription"
+
+#: frontend/templates/finance/budget_subscriptions.html:141
+msgid "Mes abonnements"
+msgstr "My subscriptions"
+
+#: frontend/templates/finance/budget_subscriptions.html:142
+msgid "Rattachés automatiquement à chaque nouveau paiement importé. Sans paiement après l'échéance (+10 jours, +30 pour un annuel), ils passent en « Arrêté »."
+msgstr "Linked automatically to each new imported payment. With no payment after the due date (+10 days, +30 for a yearly one), they switch to “Stopped”."
+
+#: frontend/templates/finance/budget_subscriptions.html:152
+msgid "Aucun abonnement suivi pour l'instant."
+msgstr "No tracked subscriptions yet."
+
+#: frontend/templates/finance/budget_subscriptions.html:152
+msgid "Clique sur « Suivre » sur une suggestion ci-dessus."
+msgstr "Click “Track” on a suggestion above."
+
+#: frontend/templates/finance/budget_subscriptions.html:162
+msgid "Le paiement attendu n'est pas arrivé : tu as arrêté de payer. S'il réapparaît, l'abonnement redevient actif tout seul."
+msgstr "The expected payment did not arrive: you stopped paying. If it comes back, the subscription becomes active again by itself."
+
+#: frontend/templates/finance/budget_subscriptions.html:175
+msgid "paiements · dernier le"
+msgstr "payments · last on"
+
+#: frontend/templates/finance/budget_subscriptions.html:177
+msgid "Arrêté depuis"
+msgstr "Stopped since"
+
+#: frontend/templates/finance/budget_subscriptions.html:182
+msgid "Garder dans l'historique"
+msgstr "Keep in history"
+
+#: frontend/templates/finance/budget_subscriptions.html:187
+msgid "Ignorer"
+msgstr "Dismiss"
+
+#: frontend/templates/finance/budget_subscriptions.html:199
+msgid "abonnement(s) saisi(s) à la main génèrent toujours une ligne chaque mois."
+msgstr "manually entered subscription(s) still create an entry every month."
+
+#: frontend/templates/finance/budget_subscriptions.html:200
+msgid "Les gérer"
+msgstr "Manage them"
+
+#: frontend/templates/finance/dashboard_budget.html:5
+msgid "Budget - BudgWealth"
+msgstr "Budget - BudgWealth"
+
+#: frontend/templates/finance/dashboard_budget.html:9
+msgid "Tes tendances sur les 12 derniers mois"
+msgstr "Your trends over the last 12 months"
+
+#: frontend/templates/finance/dashboard_budget.html:14
+msgid "Pas encore d'historique"
+msgstr "No history yet"
+
+#: frontend/templates/finance/dashboard_budget.html:15
+msgid "Importe tes opérations bancaires pour voir tes tendances, ton taux d'épargne et la réussite de ton budget."
+msgstr "Import your bank transactions to see your trends, your savings rate and how well you keep to your budget."
+
+#: frontend/templates/finance/dashboard_budget.html:17
+msgid "Importer mon historique"
+msgstr "Import my history"
+
+#: frontend/templates/finance/dashboard_budget.html:24 frontend/templates/finance/dashboard_hub.html:257
+msgid "Revenus moyens"
+msgstr "Average income"
+
+#: frontend/templates/finance/dashboard_budget.html:26
+msgid "par mois ·"
+msgstr "per month ·"
+
+#: frontend/templates/finance/dashboard_budget.html:29 frontend/templates/finance/dashboard_hub.html:261
+msgid "Charges moyennes"
+msgstr "Average expenses"
+
+#: frontend/templates/finance/dashboard_budget.html:31
+msgid "par mois, hors épargne"
+msgstr "per month, excluding savings"
+
+#: frontend/templates/finance/dashboard_budget.html:36 frontend/templates/finance/dashboard_hub.html:152
+msgid "€ par mois en moyenne"
+msgstr "€ per month on average"
+
+#: frontend/templates/finance/dashboard_budget.html:41
+msgid "de tes revenus mis de côté"
+msgstr "of your income set aside"
+
+#: frontend/templates/finance/dashboard_budget.html:44
+msgid "Mois à l'équilibre"
+msgstr "Break-even months"
+
+#: frontend/templates/finance/dashboard_budget.html:46
+msgid "revenus ≥ charges"
+msgstr "income ≥ expenses"
+
+#: frontend/templates/finance/dashboard_budget.html:50
+msgid "Budget tenu"
+msgstr "Budget kept"
+
+#: frontend/templates/finance/dashboard_budget.html:52
+msgid "objectif d'épargne atteint"
+msgstr "savings goal reached"
+
+#: frontend/templates/finance/dashboard_budget.html:60
+msgid "abonnement"
+msgstr "subscription"
+
+#: frontend/templates/finance/dashboard_budget.html:60
+msgid "détecté"
+msgstr "detected"
+
+#: frontend/templates/finance/dashboard_budget.html:60
+msgid "à valider"
+msgstr "to confirm"
+
+#: frontend/templates/finance/dashboard_budget.html:62
+msgid "arrêté"
+msgstr "stopped"
+
+#: frontend/templates/finance/dashboard_budget.html:62
+msgid "(plus payé"
+msgstr "(no longer paid"
+
+#: frontend/templates/finance/dashboard_budget.html:64
+msgid "Voir mes abonnements →"
+msgstr "See my subscriptions →"
+
+#: frontend/templates/finance/dashboard_budget.html:72
+msgid "Évolution mensuelle"
+msgstr "Monthly trend"
+
+#: frontend/templates/finance/dashboard_budget.html:73
+msgid "Revenus, charges, épargne et solde · clique sur un mois pour l'ouvrir"
+msgstr "Income, expenses, savings and balance · click a month to open it"
+
+#: frontend/templates/finance/dashboard_budget.html:76
+msgid "Revenus, charges, épargne et solde sur 12 mois"
+msgstr "Income, expenses, savings and balance over 12 months"
+
+#: frontend/templates/finance/dashboard_budget.html:84
+msgid "Part des revenus mise de côté chaque mois"
+msgstr "Share of income set aside each month"
+
+#: frontend/templates/finance/dashboard_budget.html:84
+msgid ", comparée à ton objectif"
+msgstr ", compared with your goal"
+
+#: frontend/templates/finance/dashboard_budget.html:87
+msgid "Taux d'épargne mois par mois"
+msgstr "Savings rate month by month"
+
+#: frontend/templates/finance/dashboard_budget.html:93
+msgid "Réussite du budget"
+msgstr "Budget success"
+
+#: frontend/templates/finance/dashboard_budget.html:95
+msgid "Dépensé vs budget (barre rouge = dépassé) et épargne vs objectif"
+msgstr "Spent vs budget (red bar = over) and savings vs goal"
+
+#: frontend/templates/finance/dashboard_budget.html:95
+msgid "Crée ton budget pour suivre s'il est tenu chaque mois"
+msgstr "Create your budget to see whether you keep to it each month"
+
+#: frontend/templates/finance/dashboard_budget.html:98
+msgid "Créer"
+msgstr "Create"
+
+#: frontend/templates/finance/dashboard_budget.html:101
+msgid "Dépenses comparées au budget et épargne comparée à l'objectif"
+msgstr "Spending compared with the budget and savings compared with the goal"
+
+#: frontend/templates/finance/dashboard_budget.html:103
+msgid "Aucun budget enregistré pour l'instant."
+msgstr "No budget saved yet."
+
+#: frontend/templates/finance/dashboard_budget.html:113
+msgid "Évolution mois par mois · clique sur une catégorie de la légende pour la masquer"
+msgstr "Month by month · click a category in the legend to hide it"
+
+#: frontend/templates/finance/dashboard_budget.html:116
+msgid "Charges par catégorie sur 12 mois"
+msgstr "Expenses by category over 12 months"
+
+#: frontend/templates/finance/dashboard_budget.html:123
+msgid "Postes à surveiller"
+msgstr "Lines to watch"
+
+#: frontend/templates/finance/dashboard_budget.html:124
+msgid "Dépassés au moins 2 mois"
+msgstr "Over budget at least 2 months"
+
+#: frontend/templates/finance/dashboard_budget.html:133
+msgid "Dépassé"
+msgstr "Over"
+
+#: frontend/templates/finance/dashboard_budget.html:133
+msgid "mois sur"
+msgstr "months out of"
+
+#: frontend/templates/finance/dashboard_budget.html:133
+msgid "· prévu"
+msgstr "· planned"
+
+#: frontend/templates/finance/dashboard_budget.html:135
+msgid "/ mois en moyenne"
+msgstr "/ month on average"
+
+#: frontend/templates/finance/dashboard_budget.html:140
+msgid "Aucun poste ne dépasse régulièrement son budget."
+msgstr "No line regularly goes over its budget."
+
+#: frontend/templates/finance/dashboard_budget.html:142
+msgid "Disponible une fois ton budget créé."
+msgstr "Available once your budget is created."
+
+#: frontend/templates/finance/dashboard_budget.html:150 frontend/templates/finance/dashboard_hub.html:266
+msgid "actif"
+msgstr "active"
+
+#: frontend/templates/finance/dashboard_budget.html:154
+msgid "Coût des abonnements par mois"
+msgstr "Subscription cost per month"
+
+#: frontend/templates/finance/dashboard_budget.html:162 frontend/templates/finance/dashboard_hub.html:345
+msgid "Projets d'épargne"
+msgstr "Savings projects"
+
+#: frontend/templates/finance/dashboard_budget.html:163
+msgid "€ à mettre de côté par mois pour tout tenir"
+msgstr "€ to set aside per month to keep everything on track"
+
+#: frontend/templates/finance/dashboard_budget.html:186
+msgid "Récapitulatif mensuel"
+msgstr "Monthly summary"
+
+#: frontend/templates/finance/dashboard_budget.html:187
+msgid "Clique sur un mois pour voir son détail"
+msgstr "Click a month to see its details"
+
+#: frontend/templates/finance/dashboard_budget.html:196 frontend/templates/finance/dashboard_hub.html:134 frontend/templates/finance/month.html:41 frontend/templates/finance/month.html:114
+msgid "Charges"
+msgstr "Expenses"
+
+#: frontend/templates/finance/dashboard_budget.html:198 frontend/templates/finance/month.html:49
+msgid "Solde"
+msgstr "Balance"
+
+#: frontend/templates/finance/dashboard_budget.html:205
+msgid "(en cours)"
+msgstr "(in progress)"
+
+#: frontend/templates/finance/dashboard_hub.html:5
+msgid "Accueil - BudgWealth"
+msgstr "Home - BudgWealth"
+
+#: frontend/templates/finance/dashboard_hub.html:12
+msgid "Bonjour"
+msgstr "Hello"
+
+#: frontend/templates/finance/dashboard_hub.html:13
+msgid "Voici où en sont ton budget et ton patrimoine."
+msgstr "Here is where your budget and your wealth stand."
+
+#: frontend/templates/finance/dashboard_hub.html:16
+msgid "Voir"
+msgstr "See"
+
+#: frontend/templates/finance/dashboard_hub.html:26
+msgid "Patrimoine financier"
+msgstr "Financial wealth"
+
+#: frontend/templates/finance/dashboard_hub.html:30
+msgid "sur un an"
+msgstr "over a year"
+
+#: frontend/templates/finance/dashboard_hub.html:33
+msgid "Livrets et placements réunis"
+msgstr "Savings accounts and investments combined"
+
+#: frontend/templates/finance/dashboard_hub.html:35
+msgid "Ajoute tes livrets et ton PEA pour le suivre ici"
+msgstr "Add your savings accounts and your PEA to track it here"
+
+#: frontend/templates/finance/dashboard_hub.html:38
+msgid "Voir le détail de mon épargne"
+msgstr "See my savings in detail"
+
+#: frontend/templates/finance/dashboard_hub.html:44
+msgid "Évolution du patrimoine"
+msgstr "Wealth over time"
+
+#: frontend/templates/finance/dashboard_hub.html:47
+msgid "Versé vers l'épargne, 6 derniers mois"
+msgstr "Transferred to savings, last 6 months"
+
+#: frontend/templates/finance/dashboard_hub.html:48
+msgid "Versements vers l'épargne des 6 derniers mois"
+msgstr "Transfers to savings over the last 6 months"
+
+#: frontend/templates/finance/dashboard_hub.html:53
+msgid "Livrets :"
+msgstr "Savings accounts:"
+
+#: frontend/templates/finance/dashboard_hub.html:53
+#, python-format
+msgid "%% du patrimoine"
+msgstr "%% of wealth"
+
+#: frontend/templates/finance/dashboard_hub.html:63 frontend/templates/finance/savings_overview.html:39
+msgid "Placements"
+msgstr "Investments"
+
+#: frontend/templates/finance/dashboard_hub.html:67 frontend/templates/finance/savings_overview.html:50
+msgid "Versé sur 12 mois"
+msgstr "Paid in over 12 months"
+
+#: frontend/templates/finance/dashboard_hub.html:72 frontend/templates/finance/savings_balances.html:95
+msgid "Intérêts / an"
+msgstr "Interest / year"
+
+#: frontend/templates/finance/dashboard_hub.html:79 frontend/templates/finance/savings_overview.html:19
+msgid "Ajouter un livret"
+msgstr "Add a savings account"
+
+#: frontend/templates/finance/dashboard_hub.html:80
+msgid "Ajouter un PEA / CTO"
+msgstr "Add a PEA / brokerage account"
+
+#: frontend/templates/finance/dashboard_hub.html:90 frontend/templates/finance/savings_balances.html:102
+msgid "Encore"
+msgstr "Still"
+
+#: frontend/templates/finance/dashboard_hub.html:90
+msgid "jours"
+msgstr "days"
+
+#: frontend/templates/finance/dashboard_hub.html:90
+msgid "Dernier jour du mois"
+msgstr "Last day of the month"
+
+#: frontend/templates/finance/dashboard_hub.html:101
+#, python-format
+msgid "%% du budget dépensé"
+msgstr "%% of the budget spent"
+
+#: frontend/templates/finance/dashboard_hub.html:103
+msgid "Reste"
+msgstr "Left"
+
+#: frontend/templates/finance/dashboard_hub.html:113
+#, python-format
+msgid "%% du budget ·"
+msgstr "%% of the budget ·"
+
+#: frontend/templates/finance/dashboard_hub.html:116
+msgid "Par jour, d'ici la fin du mois"
+msgstr "Per day, until the end of the month"
+
+#: frontend/templates/finance/dashboard_hub.html:118
+msgid "pour tes dépenses variables"
+msgstr "for your variable expenses"
+
+#: frontend/templates/finance/dashboard_hub.html:145
+msgid "Charges vs ta moyenne"
+msgstr "Expenses vs your average"
+
+#: frontend/templates/finance/dashboard_hub.html:150
+msgid "Avancement du mois"
+msgstr "Month progress"
+
+#: frontend/templates/finance/dashboard_hub.html:152
+msgid "€ dépensés pour"
+msgstr "€ spent for"
+
+#: frontend/templates/finance/dashboard_hub.html:157
+msgid "Crée ton budget"
+msgstr "Create your budget"
+
+#: frontend/templates/finance/dashboard_hub.html:157
+msgid "Prérempli d'après tes dépenses, prêt en 2 minutes"
+msgstr "Prefilled from your spending, ready in 2 minutes"
+
+#: frontend/templates/finance/dashboard_hub.html:162
+msgid "Voir toutes les opérations du mois"
+msgstr "See all of this month's transactions"
+
+#: frontend/templates/finance/dashboard_hub.html:170
+msgid "Ton compte courant d'ici le"
+msgstr "Your current account until"
+
+#: frontend/templates/finance/dashboard_hub.html:179
+msgid "Point bas"
+msgstr "Low point"
+
+#: frontend/templates/finance/dashboard_hub.html:180
+msgid "À épargner sans risque"
+msgstr "Safe to save"
+
+#: frontend/templates/finance/dashboard_hub.html:193
+msgid "Dernier solde du"
+msgstr "Last balance from"
+
+#: frontend/templates/finance/dashboard_hub.html:193
+msgid "synchronise ta banque pour l'actualiser."
+msgstr "sync your bank to update it."
+
+#: frontend/templates/finance/dashboard_hub.html:194
+msgid "Voir la prévision"
+msgstr "See the forecast"
+
+#: frontend/templates/finance/dashboard_hub.html:196
+msgid "Le solde de ton compte courant est relevé à la prochaine synchronisation bancaire, ou tu peux le saisir."
+msgstr "Your current account balance is read at the next bank sync, or you can enter it."
+
+#: frontend/templates/finance/dashboard_hub.html:197
+msgid "Saisir mon solde"
+msgstr "Enter my balance"
+
+#: frontend/templates/finance/dashboard_hub.html:204
+msgid "Objectif d'épargne"
+msgstr "Savings goal"
+
+#: frontend/templates/finance/dashboard_hub.html:204 frontend/templates/finance/savings_balances.html:84
+msgid "au"
+msgstr "as of"
+
+#: frontend/templates/finance/dashboard_hub.html:208
+msgid "de côté"
+msgstr "set aside"
+
+#: frontend/templates/finance/dashboard_hub.html:208
+msgid "€ / mois à mettre de côté"
+msgstr "€ / month to set aside"
+
+#: frontend/templates/finance/dashboard_hub.html:214
+msgid "Fixe un objectif d'épargne"
+msgstr "Set a savings goal"
+
+#: frontend/templates/finance/dashboard_hub.html:214
+msgid "Un montant, une date : combien mettre de côté chaque mois"
+msgstr "An amount, a date: how much to set aside each month"
+
+#: frontend/templates/finance/dashboard_hub.html:224
+msgid "Tes repères"
+msgstr "Your benchmarks"
+
+#: frontend/templates/finance/dashboard_hub.html:225
+msgid "Sur les"
+msgstr "Over the"
+
+#: frontend/templates/finance/dashboard_hub.html:225
+msgid "derniers mois"
+msgstr "last months"
+
+#: frontend/templates/finance/dashboard_hub.html:225
+msgid "Dès que tu auras un mois complet"
+msgstr "As soon as you have a full month"
+
+#: frontend/templates/finance/dashboard_hub.html:236
+msgid "Repère"
+msgstr "Benchmark"
+
+#: frontend/templates/finance/dashboard_hub.html:238
+msgid "Ton objectif :"
+msgstr "Your goal:"
+
+#: frontend/templates/finance/dashboard_hub.html:238
+#, python-format
+msgid "Repère conseillé : 20 %% de tes revenus"
+msgstr "Recommended benchmark: 20%% of your income"
+
+#: frontend/templates/finance/dashboard_hub.html:244
+msgid "Matelas de sécurité"
+msgstr "Emergency fund"
+
+#: frontend/templates/finance/dashboard_hub.html:249
+msgid "3 mois"
+msgstr "3 months"
+
+#: frontend/templates/finance/dashboard_hub.html:251
+msgid "de dépenses couvertes par tes livrets · conseillé : 3 à 6 mois"
+msgstr "of expenses covered by your savings accounts · recommended: 3 to 6 months"
+
+#: frontend/templates/finance/dashboard_hub.html:266
+msgid "/ mois ·"
+msgstr "/ month ·"
+
+#: frontend/templates/finance/dashboard_hub.html:270
+msgid "Analyse complète"
+msgstr "Full analysis"
+
+#: frontend/templates/finance/dashboard_hub.html:277
+msgid "Tes 6 derniers mois"
+msgstr "Your last 6 months"
+
+#: frontend/templates/finance/dashboard_hub.html:278
+msgid "Revenus, charges et épargne · clique sur un mois pour l'ouvrir"
+msgstr "Income, expenses and savings · click a month to open it"
+
+#: frontend/templates/finance/dashboard_hub.html:281
+msgid "Revenus, charges et épargne des 6 derniers mois"
+msgstr "Income, expenses and savings over the last 6 months"
+
+#: frontend/templates/finance/dashboard_hub.html:288
+msgid "Où part ton argent"
+msgstr "Where your money goes"
+
+#: frontend/templates/finance/dashboard_hub.html:289
+msgid "€ de charges en"
+msgstr "€ of expenses in"
+
+#: frontend/templates/finance/dashboard_hub.html:305
+msgid "Aucune charge ce mois-ci pour l'instant."
+msgstr "No expenses this month yet."
+
+#: frontend/templates/finance/dashboard_hub.html:313
+msgid "Dernières opérations"
+msgstr "Latest transactions"
+
+#: frontend/templates/finance/dashboard_hub.html:314
+msgid "Les plus récentes, tous comptes confondus"
+msgstr "The most recent, across all accounts"
+
+#: frontend/templates/finance/dashboard_hub.html:334
+msgid "Aucune opération pour l'instant."
+msgstr "No transactions yet."
+
+#: frontend/templates/finance/dashboard_hub.html:335 frontend/templates/finance/month.html:70
+msgid "Connecter ma banque"
+msgstr "Connect my bank"
+
+#: frontend/templates/finance/dashboard_hub.html:346
+msgid "€ par mois pour tout tenir"
+msgstr "€ per month to keep everything on track"
+
+#: frontend/templates/finance/dashboard_hub.html:346
+msgid "Un voyage, une voiture, un apport…"
+msgstr "A trip, a car, a down payment…"
+
+#: frontend/templates/finance/dashboard_hub.html:359
+msgid "€ sur"
+msgstr "€ of"
+
+#: frontend/templates/finance/dashboard_hub.html:364
+msgid "Donne un nom et une date à tes envies : on calcule ce qu'il faut mettre de côté chaque mois."
+msgstr "Give your goals a name and a date: we work out how much to set aside each month."
+
+#: frontend/templates/finance/dashboard_hub.html:372
+msgid "Prochains prélèvements"
+msgstr "Upcoming payments"
+
+#: frontend/templates/finance/dashboard_hub.html:373
+msgid "€ d'abonnements d'ici la fin du mois"
+msgstr "€ of subscriptions before the end of the month"
+
+#: frontend/templates/finance/dashboard_hub.html:373
+msgid "Abonnements de"
+msgstr "Subscriptions for"
+
+#: frontend/templates/finance/dashboard_hub.html:395
+msgid "Tous les abonnements du mois sont payés ("
+msgstr "All of this month's subscriptions are paid ("
+
+#: frontend/templates/finance/dashboard_hub.html:397
+msgid "Aucun abonnement suivi pour l'instant : ils sont détectés automatiquement après l'import bancaire."
+msgstr "No tracked subscriptions yet: they are detected automatically after the bank import."
+
+#: frontend/templates/finance/month.html:5
+msgid "- BudgWealth"
+msgstr "- BudgWealth"
+
+#: frontend/templates/finance/month.html:11
+msgid "· en cours"
+msgstr "· in progress"
+
+#: frontend/templates/finance/month.html:14
+msgid "Changer de mois"
+msgstr "Change month"
+
+#: frontend/templates/finance/month.html:19
+msgid "Ce mois-ci"
+msgstr "This month"
+
+#: frontend/templates/finance/month.html:22
+msgid "Vous êtes sur le mois en cours"
+msgstr "You are on the current month"
+
+#: frontend/templates/finance/month.html:50
+msgid "revenus − charges"
+msgstr "income − expenses"
+
+#: frontend/templates/finance/month.html:56
+msgid "Import depuis la banque"
+msgstr "Import from the bank"
+
+#: frontend/templates/finance/month.html:59
+msgid "Connectez votre banque pour importer vos opérations automatiquement."
+msgstr "Connect your bank to import your transactions automatically."
+
+#: frontend/templates/finance/month.html:61
+msgid "Importez d'abord vos 12 derniers mois pour activer la synchronisation."
+msgstr "First import your last 12 months to enable sync."
+
+#: frontend/templates/finance/month.html:65
+msgid "Importe les opérations de"
+msgstr "Import the transactions for"
+
+#: frontend/templates/finance/month.html:65
+msgid "depuis le Crédit Agricole."
+msgstr "from Crédit Agricole."
+
+#: frontend/templates/finance/month.html:72
+msgid "Importer l'historique"
+msgstr "Import history"
+
+#: frontend/templates/finance/month.html:77 frontend/templates/finance/settings.html:149
+msgid "Synchroniser avec la banque"
+msgstr "Sync with the bank"
+
+#: frontend/templates/finance/month.html:85
+msgid "Ce mois n'a pas encore été démarré."
+msgstr "This month has not been started yet."
+
+#: frontend/templates/finance/month.html:87
+msgid "Démarrez-le pour générer automatiquement vos postes fixes (loyer, salaire...)."
+msgstr "Start it to generate your fixed entries automatically (rent, salary...)."
+
+#: frontend/templates/finance/month.html:89
+msgid "Vous n'avez pas encore de poste fixe : vous pouvez tout de même démarrer le mois et ajouter vos dépenses au fur et à mesure."
+msgstr "You have no fixed entries yet: you can still start the month and add your expenses as you go."
+
+#: frontend/templates/finance/month.html:94
+msgid "Démarrer ce mois"
+msgstr "Start this month"
+
+#: frontend/templates/finance/month.html:104
+msgid "Opérations du mois"
+msgstr "This month's transactions"
+
+#: frontend/templates/finance/month.html:105 frontend/templates/finance/savings_portfolio.html:342
+msgid "opération"
+msgstr "transaction"
+
+#: frontend/templates/finance/month.html:108
+msgid "Filtrer les opérations"
+msgstr "Filter transactions"
+
+#: frontend/templates/finance/month.html:136
+msgid "Aucune opération de ce type ce mois-ci."
+msgstr "No transactions of this type this month."
+
+#: frontend/templates/finance/month.html:138
+msgid "Aucune dépense ou revenu enregistré pour ce mois pour l'instant."
+msgstr "No expenses or income recorded for this month yet."
+
+#: frontend/templates/finance/month.html:145
+msgid "Postes fixes de ce mois"
+msgstr "This month's fixed entries"
+
+#: frontend/templates/finance/month.html:146 frontend/templates/finance/savings_fees.html:52 frontend/templates/finance/savings_portfolio.html:34
+msgid "ligne"
+msgstr "entry"
+
+#: frontend/templates/finance/month.html:153
+msgid "Pour ajuster le montant d'un poste fixe ce mois-ci, supprimez la ligne et ajoutez-en une nouvelle avec le bon montant."
+msgstr "To change the amount of a fixed entry this month, delete the entry and add a new one with the right amount."
+
+#: frontend/templates/finance/month.html:158 frontend/templates/finance/savings_portfolio.html:108 frontend/templates/finance/savings_simulation.html:21
+msgid "Ajouter une ligne"
+msgstr "Add an entry"
+
+#: frontend/templates/finance/month.html:190
+msgid "Créer une récurrence ou un abonnement depuis cette ligne"
+msgstr "Create a recurring item or subscription from this entry"
+
+#: frontend/templates/finance/month.html:213
+msgid "Besoin d'une nouvelle catégorie ou d'un nouveau poste fixe ?"
+msgstr "Need a new category or a new fixed entry?"
+
+#: frontend/templates/finance/month.html:214
+msgid "Gérer les catégories"
+msgstr "Manage categories"
+
+#: frontend/templates/finance/month.html:215
+msgid "Gérer les postes fixes"
+msgstr "Manage fixed entries"
+
+#: frontend/templates/finance/month.html:234
+msgid "Synchronisation avec la banque"
+msgstr "Sync with the bank"
+
+#: frontend/templates/finance/month.html:294
+msgid "La synchronisation a échoué."
+msgstr "The sync failed."
+
+#: frontend/templates/finance/month.html:323
+msgid "Impossible de lancer la synchronisation."
+msgstr "Could not start the sync."
+
+#: frontend/templates/finance/savings_balances.html:5
+msgid "Livrets - BudgWealth"
+msgstr "Savings accounts - BudgWealth"
+
+#: frontend/templates/finance/savings_balances.html:9
+msgid "Livrets, PEL, assurance vie : suivis par leur solde"
+msgstr "Savings accounts, PEL, life insurance: tracked by their balance"
+
+#: frontend/templates/finance/savings_balances.html:13
+msgid "Mes livrets"
+msgstr "My savings accounts"
+
+#: frontend/templates/finance/savings_balances.html:16
+msgid "€ au total"
+msgstr "€ in total"
+
+#: frontend/templates/finance/savings_balances.html:17 frontend/templates/finance/savings_overview.html:35
+msgid "€ d'intérêts par an"
+msgstr "€ of interest per year"
+
+#: frontend/templates/finance/savings_balances.html:17
+msgid "(taux moyen"
+msgstr "(average rate"
+
+#: frontend/templates/finance/savings_balances.html:21
+msgid "+ Ajouter un livret"
+msgstr "+ Add a savings account"
+
+#: frontend/templates/finance/savings_balances.html:26
+msgid "Tes livrets Crédit Agricole se mettent à jour tout seuls"
+msgstr "Your Crédit Agricole savings accounts update by themselves"
+
+#: frontend/templates/finance/savings_balances.html:27
+msgid "À chaque synchronisation bancaire, leur solde est relevé ici. Les autres se mettent à jour à la main."
+msgstr "At each bank sync, their balance is recorded here. The others are updated by hand."
+
+#: frontend/templates/finance/savings_balances.html:33
+msgid "Nouveau livret"
+msgstr "New savings account"
+
+#: frontend/templates/finance/savings_balances.html:62
+msgid "Ajouter le livret"
+msgstr "Add the savings account"
+
+#: frontend/templates/finance/savings_balances.html:78
+msgid "Plafond atteint"
+msgstr "Ceiling reached"
+
+#: frontend/templates/finance/savings_balances.html:84
+msgid "relevé bancaire"
+msgstr "bank statement"
+
+#: frontend/templates/finance/savings_balances.html:84
+msgid "aucun solde saisi"
+msgstr "no balance entered"
+
+#: frontend/templates/finance/savings_balances.html:85
+msgid "€ sur 12 mois"
+msgstr "€ over 12 months"
+
+#: frontend/templates/finance/savings_balances.html:90
+msgid "Évolution du solde de"
+msgstr "Balance history of"
+
+#: frontend/templates/finance/savings_balances.html:94
+msgid "Taux"
+msgstr "Rate"
+
+#: frontend/templates/finance/savings_balances.html:96
+msgid "Plafond"
+msgstr "Ceiling"
+
+#: frontend/templates/finance/savings_balances.html:96
+msgid "Aucun"
+msgstr "None"
+
+#: frontend/templates/finance/savings_balances.html:102
+msgid "Plafond atteint : seuls les intérêts peuvent encore le faire grossir."
+msgstr "Ceiling reached: only interest can still make it grow."
+
+#: frontend/templates/finance/savings_balances.html:102
+msgid "€ de versements possibles."
+msgstr "€ of deposits still possible."
+
+#: frontend/templates/finance/savings_balances.html:117
+msgid "Mettre à jour le solde"
+msgstr "Update the balance"
+
+#: frontend/templates/finance/savings_balances.html:124
+msgid "Historique ("
+msgstr "History ("
+
+#: frontend/templates/finance/savings_balances.html:131
+msgid "Supprimer ce relevé ?"
+msgstr "Delete this balance entry?"
+
+#: frontend/templates/finance/savings_balances.html:133
+msgid "Supprimer le relevé du"
+msgstr "Delete the balance entry of"
+
+#: frontend/templates/finance/savings_balances.html:171
+msgid "Supprimer ce livret et son historique de soldes ?"
+msgstr "Delete this savings account and its balance history?"
+
+#: frontend/templates/finance/savings_balances.html:173
+msgid "Supprimer le livret"
+msgstr "Delete the savings account"
+
+#: frontend/templates/finance/savings_fees.html:5
+msgid "Frais - BudgWealth"
+msgstr "Fees - BudgWealth"
+
+#: frontend/templates/finance/savings_fees.html:9
+msgid "Ce que te coûtent tes placements : courtage, droits de garde et frais des ETF"
+msgstr "What your investments cost you: brokerage, custody fees and ETF fees"
+
+#: frontend/templates/finance/savings_fees.html:13
+msgid "Pas encore de PEA ni de compte-titres"
+msgstr "No PEA or brokerage account yet"
+
+#: frontend/templates/finance/savings_fees.html:14
+msgid "Les frais se calculent à partir des lignes de ton portefeuille."
+msgstr "Fees are calculated from your portfolio holdings."
+
+#: frontend/templates/finance/savings_fees.html:15 frontend/templates/finance/savings_simulation.html:15
+msgid "Créer mon portefeuille"
+msgstr "Create my portfolio"
+
+#: frontend/templates/finance/savings_fees.html:24
+msgid "Frais payés"
+msgstr "Fees paid"
+
+#: frontend/templates/finance/savings_fees.html:26
+msgid "courtage et frais de compte, depuis le début"
+msgstr "brokerage and account fees, since the start"
+
+#: frontend/templates/finance/savings_fees.html:29 frontend/templates/finance/savings_fees.html:84
+msgid "Courtage"
+msgstr "Brokerage"
+
+#: frontend/templates/finance/savings_fees.html:31 frontend/templates/finance/savings_fees.html:95 frontend/templates/finance/savings_portfolio.html:287 frontend/templates/finance/savings_portfolio.html:328
+msgid "ordre"
+msgstr "order"
+
+#: frontend/templates/finance/savings_fees.html:31
+#, python-format
+msgid "%% par ordre en moyenne"
+msgstr "%% per order on average"
+
+#: frontend/templates/finance/savings_fees.html:36
+msgid "droits de garde, tenue de compte…"
+msgstr "custody fees, account maintenance…"
+
+#: frontend/templates/finance/savings_fees.html:39
+msgid "Frais des ETF"
+msgstr "ETF fees"
+
+#: frontend/templates/finance/savings_fees.html:41
+msgid "estimés depuis le début, prélevés dans le cours"
+msgstr "estimated since the start, taken from the price"
+
+#: frontend/templates/finance/savings_fees.html:44
+msgid "Coût annuel estimé"
+msgstr "Estimated annual cost"
+
+#: frontend/templates/finance/savings_fees.html:45 frontend/templates/finance/savings_overview.html:119
+msgid "€ / an"
+msgstr "€ / year"
+
+#: frontend/templates/finance/savings_fees.html:46
+#, python-format
+msgid "%% du portefeuille"
+msgstr "%% of the portfolio"
+
+#: frontend/templates/finance/savings_fees.html:46
+msgid "· TER moyen"
+msgstr "· average TER"
+
+#: frontend/templates/finance/savings_fees.html:52
+msgid "Frais courants inconnus pour"
+msgstr "Ongoing charges unknown for"
+
+#: frontend/templates/finance/savings_fees.html:53
+msgid ". Indique leur TER (fiche de l'ETF) dans le"
+msgstr ". Enter their TER (from the ETF factsheet) in the"
+
+#: frontend/templates/finance/savings_fees.html:53
+msgid "portefeuille"
+msgstr "portfolio"
+
+#: frontend/templates/finance/savings_fees.html:53
+msgid "(« Modifier ») pour une estimation complète."
+msgstr "(“Edit”) for a complete estimate."
+
+#: frontend/templates/finance/savings_fees.html:61
+msgid "Frais cumulés"
+msgstr "Cumulative fees"
+
+#: frontend/templates/finance/savings_fees.html:62
+msgid "Courtage, frais de compte et frais courants des ETF depuis le premier achat"
+msgstr "Brokerage, account fees and ETF ongoing charges since the first purchase"
+
+#: frontend/templates/finance/savings_fees.html:66
+msgid "Frais cumulés dans le temps"
+msgstr "Cumulative fees over time"
+
+#: frontend/templates/finance/savings_fees.html:74
+msgid "Frais par ligne"
+msgstr "Fees by holding"
+
+#: frontend/templates/finance/savings_fees.html:75
+msgid "Courtage payé et coût annuel des frais courants"
+msgstr "Brokerage paid and annual cost of ongoing charges"
+
+#: frontend/templates/finance/savings_fees.html:83 frontend/templates/finance/savings_portfolio.html:221 frontend/templates/finance/savings_simulation.html:214
+msgid "Ligne"
+msgstr "Holding"
+
+#: frontend/templates/finance/savings_fees.html:85
+msgid "Frais courants"
+msgstr "Ongoing charges"
+
+#: frontend/templates/finance/savings_fees.html:86
+msgid "Coût / an"
+msgstr "Cost / year"
+
+#: frontend/templates/finance/savings_fees.html:95
+#, python-format
+msgid "%% du montant"
+msgstr "%% of the amount"
+
+#: frontend/templates/finance/savings_fees.html:99
+msgid "à renseigner"
+msgstr "to fill in"
+
+#: frontend/templates/finance/savings_fees.html:107
+msgid "Aucune ligne en portefeuille."
+msgstr "No holdings in the portfolio."
+
+#: frontend/templates/finance/savings_fees.html:114
+msgid "Ajouter des frais de compte"
+msgstr "Add account fees"
+
+#: frontend/templates/finance/savings_fees.html:115
+msgid "Droits de garde, frais de tenue, frais de transfert…"
+msgstr "Custody fees, maintenance fees, transfer fees…"
+
+#: frontend/templates/finance/savings_fees.html:150
+msgid "Frais enregistrés"
+msgstr "Recorded fees"
+
+#: frontend/templates/finance/savings_fees.html:156
+msgid "Courtage ·"
+msgstr "Brokerage ·"
+
+#: frontend/templates/finance/savings_fees.html:158
+msgid "Supprimer ces frais ?"
+msgstr "Delete these fees?"
+
+#: frontend/templates/finance/savings_fees.html:173
+msgid "Sur 10 ans, à ce rythme : environ"
+msgstr "Over 10 years, at this rate: about"
+
+#: frontend/templates/finance/savings_fees.html:173
+msgid "€ de frais"
+msgstr "€ of fees"
+
+#: frontend/templates/finance/savings_fees.html:174
+msgid "Estimation à valeur constante (frais courants des ETF + frais de compte des 12 derniers mois). Ton gain total serait de"
+msgstr "Estimate at constant value (ETF ongoing charges + account fees of the last 12 months). Your total gain would be"
+
+#: frontend/templates/finance/savings_fees.html:174
+msgid "€ sans le courtage ni les frais de compte, contre"
+msgstr "€ without brokerage or account fees, versus"
+
+#: frontend/templates/finance/savings_fees.html:174
+msgid "€ aujourd'hui."
+msgstr "€ today."
+
+#: frontend/templates/finance/savings_overview.html:5
+msgid "Épargne - BudgWealth"
+msgstr "Savings - BudgWealth"
+
+#: frontend/templates/finance/savings_overview.html:9
+msgid "Tous tes supports d'épargne et de placement, au même endroit"
+msgstr "All your savings and investment accounts, in one place"
+
+#: frontend/templates/finance/savings_overview.html:16
+msgid "Ajoute tes supports d'épargne"
+msgstr "Add your savings accounts"
+
+#: frontend/templates/finance/savings_overview.html:17
+msgid "Les livrets se suivent par leur solde. Le PEA et le compte-titres se suivent ligne par ligne, avec les cours de Yahoo Finance, les frais et l'allocation."
+msgstr "Savings accounts are tracked by their balance. The PEA and brokerage account are tracked holding by holding, with Yahoo Finance prices, fees and allocation."
+
+#: frontend/templates/finance/savings_overview.html:20
+msgid "Ajouter un PEA ou un compte-titres"
+msgstr "Add a PEA or brokerage account"
+
+#: frontend/templates/finance/savings_overview.html:28
+msgid "Épargne totale"
+msgstr "Total savings"
+
+#: frontend/templates/finance/savings_overview.html:30
+msgid "support"
+msgstr "account"
+
+#: frontend/templates/finance/savings_overview.html:35
+msgid "livret"
+msgstr "savings account"
+
+#: frontend/templates/finance/savings_overview.html:41
+msgid "€ de plus-value latente"
+msgstr "€ of unrealized gain"
+
+#: frontend/templates/finance/savings_overview.html:44
+msgid "Gain des placements"
+msgstr "Investment gain"
+
+#: frontend/templates/finance/savings_overview.html:46
+msgid "après"
+msgstr "after"
+
+#: frontend/templates/finance/savings_overview.html:46
+msgid "€ de frais payés"
+msgstr "€ of fees paid"
+
+#: frontend/templates/finance/savings_overview.html:52
+msgid "vers l'épargne, d'après ton budget"
+msgstr "to savings, according to your budget"
+
+#: frontend/templates/finance/savings_overview.html:60
+msgid "Évolution de ton épargne"
+msgstr "Your savings over time"
+
+#: frontend/templates/finance/savings_overview.html:61
+msgid "Livrets d'après leurs relevés de solde, titres d'après les cours de clôture"
+msgstr "Savings accounts from their balance entries, securities from closing prices"
+
+#: frontend/templates/finance/savings_overview.html:69
+msgid "Évolution de l'épargne : livrets et titres"
+msgstr "Savings over time: savings accounts and securities"
+
+#: frontend/templates/finance/savings_overview.html:71
+msgid "L'évolution apparaîtra dès que tu auras saisi un solde ou une première ligne."
+msgstr "The chart will appear as soon as you enter a balance or a first holding."
+
+#: frontend/templates/finance/savings_overview.html:77
+msgid "Par support"
+msgstr "By account"
+
+#: frontend/templates/finance/savings_overview.html:77
+msgid "Où est placée ton épargne"
+msgstr "Where your savings are held"
+
+#: frontend/templates/finance/savings_overview.html:77 frontend/templates/finance/savings_overview.html:78 frontend/templates/finance/savings_portfolio.html:354
+msgid "Total"
+msgstr "Total"
+
+#: frontend/templates/finance/savings_overview.html:78 frontend/templates/finance/savings_portfolio.html:311
+msgid "Par classe d'actifs"
+msgstr "By asset class"
+
+#: frontend/templates/finance/savings_overview.html:78
+msgid "Livrets, actions, obligations, liquidités…"
+msgstr "Savings accounts, equities, bonds, cash…"
+
+#: frontend/templates/finance/savings_overview.html:85
+msgid "Mes supports"
+msgstr "My accounts"
+
+#: frontend/templates/finance/savings_overview.html:86
+msgid "Clique sur un support pour le détail"
+msgstr "Click an account for details"
+
+#: frontend/templates/finance/savings_overview.html:89
+msgid "+ Livret"
+msgstr "+ Savings account"
+
+#: frontend/templates/finance/savings_overview.html:90
+msgid "+ PEA / CTO"
+msgstr "+ PEA / brokerage"
+
+#: frontend/templates/finance/savings_overview.html:97
+msgid "Support"
+msgstr "Account"
+
+#: frontend/templates/finance/savings_overview.html:98 frontend/templates/finance/savings_portfolio.html:32 frontend/templates/finance/savings_portfolio.html:225 frontend/templates/finance/savings_portfolio.html:310 frontend/templates/finance/savings_portfolio.html:311
+msgid "Valeur"
+msgstr "Value"
+
+#: frontend/templates/finance/savings_overview.html:99 frontend/templates/finance/savings_portfolio.html:227 frontend/templates/finance/savings_simulation.html:215
+msgid "Poids"
+msgstr "Weight"
+
+#: frontend/templates/finance/savings_overview.html:100 frontend/templates/finance/savings_simulation.html:216
+msgid "Rendement"
+msgstr "Return"
+
+#: frontend/templates/finance/savings_portfolio.html:5
+msgid "Portefeuille - BudgWealth"
+msgstr "Portfolio - BudgWealth"
+
+#: frontend/templates/finance/savings_portfolio.html:9
+msgid "PEA et compte-titres, valorisés avec les cours Yahoo Finance"
+msgstr "PEA and brokerage account, valued with Yahoo Finance prices"
+
+#: frontend/templates/finance/savings_portfolio.html:13
+msgid "Crée ton PEA ou ton compte-titres"
+msgstr "Create your PEA or brokerage account"
+
+#: frontend/templates/finance/savings_portfolio.html:14
+msgid "Tu pourras ensuite y ajouter tes lignes (ISIN, nom ou ticker), avec la date, le prix d'achat et les frais."
+msgstr "You can then add your holdings (ISIN, name or ticker), with the date, purchase price and fees."
+
+#: frontend/templates/finance/savings_portfolio.html:15 frontend/templates/finance/savings_portfolio.html:24
+msgid "Créer le compte"
+msgstr "Create the account"
+
+#: frontend/templates/finance/savings_portfolio.html:23
+msgid "Nouveau compte"
+msgstr "New account"
+
+#: frontend/templates/finance/savings_portfolio.html:34
+msgid "dont"
+msgstr "including"
+
+#: frontend/templates/finance/savings_portfolio.html:34
+msgid "€ de liquidités"
+msgstr "€ in cash"
+
+#: frontend/templates/finance/savings_portfolio.html:37
+msgid "Investi"
+msgstr "Invested"
+
+#: frontend/templates/finance/savings_portfolio.html:39
+msgid "prix de revient, frais inclus"
+msgstr "cost basis, fees included"
+
+#: frontend/templates/finance/savings_portfolio.html:42
+msgid "Plus-value latente"
+msgstr "Unrealized gain"
+
+#: frontend/templates/finance/savings_portfolio.html:47
+msgid "Gain total"
+msgstr "Total gain"
+
+#: frontend/templates/finance/savings_portfolio.html:49
+msgid "réalisé"
+msgstr "realized"
+
+#: frontend/templates/finance/savings_portfolio.html:49
+msgid "€ · dividendes"
+msgstr "€ · dividends"
+
+#: frontend/templates/finance/savings_portfolio.html:53
+msgid "Rendement annualisé"
+msgstr "Annualized return"
+
+#: frontend/templates/finance/savings_portfolio.html:55
+msgid "par an, depuis le"
+msgstr "per year, since"
+
+#: frontend/templates/finance/savings_portfolio.html:57
+msgid "Performance"
+msgstr "Performance"
+
+#: frontend/templates/finance/savings_portfolio.html:59
+msgid "depuis le"
+msgstr "since"
+
+#: frontend/templates/finance/savings_portfolio.html:59
+msgid "sur le total investi"
+msgstr "on the total invested"
+
+#: frontend/templates/finance/savings_portfolio.html:63
+msgid "Dernière séance"
+msgstr "Last session"
+
+#: frontend/templates/finance/savings_portfolio.html:72
+msgid "Cours indisponibles pour"
+msgstr "Prices unavailable for"
+
+#: frontend/templates/finance/savings_portfolio.html:72
+msgid "titre"
+msgstr "security"
+
+#: frontend/templates/finance/savings_portfolio.html:73
+msgid ". Ces lignes sont valorisées à leur prix de revient."
+msgstr ". These holdings are valued at their cost basis."
+
+#: frontend/templates/finance/savings_portfolio.html:82
+msgid "Plafond du PEA"
+msgstr "PEA ceiling"
+
+#: frontend/templates/finance/savings_portfolio.html:86
+msgid "Versements estimés (achats − ventes + liquidités) · encore"
+msgstr "Estimated deposits (buys − sells + cash) · still"
+
+#: frontend/templates/finance/savings_portfolio.html:86
+msgid "€ possibles"
+msgstr "€ possible"
+
+#: frontend/templates/finance/savings_portfolio.html:91
+msgid "PEA de plus de 5 ans"
+msgstr "PEA older than 5 years"
+
+#: frontend/templates/finance/savings_portfolio.html:92
+msgid "Retraits possibles sans clôture, gains exonérés d'impôt sur le revenu (prélèvements sociaux dus)."
+msgstr "Withdrawals possible without closing it, gains exempt from income tax (social charges still due)."
+
+#: frontend/templates/finance/savings_portfolio.html:94
+msgid "d'ancienneté"
+msgstr "old"
+
+#: frontend/templates/finance/savings_portfolio.html:95
+msgid "Avantage fiscal à partir du"
+msgstr "Tax advantage from"
+
+#: frontend/templates/finance/savings_portfolio.html:95
+msgid ". Un retrait avant cette date clôture le plan."
+msgstr ". A withdrawal before this date closes the plan."
+
+#: frontend/templates/finance/savings_portfolio.html:98
+msgid "Indique la date d'ouverture du PEA (« Modifier le compte ») pour suivre son ancienneté fiscale."
+msgstr "Enter the PEA's opening date (“Edit the account”) to track its tax age."
+
+#: frontend/templates/finance/savings_portfolio.html:109
+msgid "Cherche le titre par son ISIN, son nom ou son ticker, puis indique la date, le prix et les frais. Pour un portefeuille existant, choisis « Déjà détenu » : le nombre de parts et ton prix de revient unitaire (PRU)."
+msgstr "Search for the security by ISIN, name or ticker, then enter the date, price and fees. For an existing portfolio, choose “Already held”: the number of units and your average cost per unit."
+
+#: frontend/templates/finance/savings_portfolio.html:111
+msgid "+ Nouveau compte"
+msgstr "+ New account"
+
+#: frontend/templates/finance/savings_portfolio.html:142
+msgid "ISIN, nom ou ticker · ex. LU1681043599, Amundi MSCI World, CW8.PA"
+msgstr "ISIN, name or ticker · e.g. LU1681043599, Amundi MSCI World, CW8.PA"
+
+#: frontend/templates/finance/savings_portfolio.html:150
+msgid "Changer"
+msgstr "Change"
+
+#: frontend/templates/finance/savings_portfolio.html:154
+msgid "Mes titres :"
+msgstr "My securities:"
+
+#: frontend/templates/finance/savings_portfolio.html:163
+msgid "Nombre de parts"
+msgstr "Number of units"
+
+#: frontend/templates/finance/savings_portfolio.html:167
+msgid "Prix de revient unitaire : prix moyen payé par part, frais compris"
+msgstr "Average cost per unit: average price paid per unit, fees included"
+
+#: frontend/templates/finance/savings_portfolio.html:189
+msgid "Ajouter la ligne"
+msgstr "Add the entry"
+
+#: frontend/templates/finance/savings_portfolio.html:200
+msgid "Évolution du portefeuille"
+msgstr "Portfolio over time"
+
+#: frontend/templates/finance/savings_portfolio.html:201
+msgid "Valeur des titres face au montant investi, jour par jour"
+msgstr "Value of the securities versus the amount invested, day by day"
+
+#: frontend/templates/finance/savings_portfolio.html:205
+msgid "Valeur du portefeuille comparée au montant investi"
+msgstr "Portfolio value compared with the amount invested"
+
+#: frontend/templates/finance/savings_portfolio.html:212
+msgid "Positions"
+msgstr "Holdings"
+
+#: frontend/templates/finance/savings_portfolio.html:213
+msgid "PRU frais inclus · « Modifier » pour classer un titre ou indiquer ses frais courants"
+msgstr "Average cost incl. fees · “Edit” to classify a security or enter its ongoing charges"
+
+#: frontend/templates/finance/savings_portfolio.html:223
+msgid "PRU"
+msgstr "Avg. cost"
+
+#: frontend/templates/finance/savings_portfolio.html:224
+msgid "Cours"
+msgstr "Price"
+
+#: frontend/templates/finance/savings_portfolio.html:226
+msgid "+/− value"
+msgstr "Gain / loss"
+
+#: frontend/templates/finance/savings_portfolio.html:247
+msgid "Cours indisponible"
+msgstr "Price unavailable"
+
+#: frontend/templates/finance/savings_portfolio.html:274
+#, python-format
+msgid "Frais courants (%%/an)"
+msgstr "Ongoing charges (%%/year)"
+
+#: frontend/templates/finance/savings_portfolio.html:287
+msgid "Cotation"
+msgstr "Listing"
+
+#: frontend/templates/finance/savings_portfolio.html:287
+msgid "· courtage payé"
+msgstr "· brokerage paid"
+
+#: frontend/templates/finance/savings_portfolio.html:287
+msgid "€ en"
+msgstr "€ in"
+
+#: frontend/templates/finance/savings_portfolio.html:291
+msgid "Supprimer cette ligne et tout son historique (achats, ventes, dividendes) ?"
+msgstr "Delete this holding and its whole history (buys, sells, dividends)?"
+
+#: frontend/templates/finance/savings_portfolio.html:294
+msgid "Supprimer la ligne du portefeuille"
+msgstr "Delete the holding from the portfolio"
+
+#: frontend/templates/finance/savings_portfolio.html:304
+msgid "Aucune position ouverte : toutes les lignes ont été vendues."
+msgstr "No open positions: all holdings have been sold."
+
+#: frontend/templates/finance/savings_portfolio.html:310
+msgid "Par ligne"
+msgstr "By holding"
+
+#: frontend/templates/finance/savings_portfolio.html:312
+msgid "Par zone"
+msgstr "By region"
+
+#: frontend/templates/finance/savings_portfolio.html:312
+msgid "Titres"
+msgstr "Securities"
+
+#: frontend/templates/finance/savings_portfolio.html:319
+msgid "Lignes soldées"
+msgstr "Closed holdings"
+
+#: frontend/templates/finance/savings_portfolio.html:320
+msgid "Titres entièrement vendus"
+msgstr "Securities sold entirely"
+
+#: frontend/templates/finance/savings_portfolio.html:328
+msgid "€ de courtage"
+msgstr "€ of brokerage"
+
+#: frontend/templates/finance/savings_portfolio.html:328
+msgid "€ de dividendes"
+msgstr "€ of dividends"
+
+#: frontend/templates/finance/savings_portfolio.html:330
+msgid "plus-value réalisée"
+msgstr "realized gain"
+
+#: frontend/templates/finance/savings_portfolio.html:341
+msgid "Historique des opérations"
+msgstr "Transaction history"
+
+#: frontend/templates/finance/savings_portfolio.html:342
+msgid "· « Modifier » pour corriger une ligne"
+msgstr "· “Edit” to correct an entry"
+
+#: frontend/templates/finance/savings_portfolio.html:352
+msgid "Prix"
+msgstr "Price"
+
+#: frontend/templates/finance/savings_portfolio.html:417
+msgid "Supprimer cette opération ?"
+msgstr "Delete this transaction?"
+
+#: frontend/templates/finance/savings_portfolio.html:420
+msgid "Supprimer l'opération"
+msgstr "Delete the transaction"
+
+#: frontend/templates/finance/savings_portfolio.html:434
+msgid "Modifier le compte «"
+msgstr "Edit the account “"
+
+#: frontend/templates/finance/savings_portfolio.html:437
+msgid "Supprimer ce compte et toutes ses lignes ?"
+msgstr "Delete this account and all its holdings?"
+
+#: frontend/templates/finance/savings_portfolio.html:439
+msgid "Supprimer le compte"
+msgstr "Delete the account"
+
+#: frontend/templates/finance/savings_simulation.html:5
+msgid "Simulation du PEA - BudgWealth"
+msgstr "PEA simulation - BudgWealth"
+
+#: frontend/templates/finance/savings_simulation.html:9
+msgid "100 scénarios économiques pour ton PEA, calibrés sur l'historique, avec et sans inflation"
+msgstr "100 economic scenarios for your PEA, calibrated on history, with and without inflation"
+
+#: frontend/templates/finance/savings_simulation.html:13
+msgid "Pas encore de PEA"
+msgstr "No PEA yet"
+
+#: frontend/templates/finance/savings_simulation.html:14
+msgid "La simulation part des lignes de ton PEA : crée-le et ajoute tes titres d'abord."
+msgstr "The simulation starts from your PEA holdings: create it and add your securities first."
+
+#: frontend/templates/finance/savings_simulation.html:19
+msgid "Ton PEA n'a pas encore de ligne"
+msgstr "Your PEA has no holdings yet"
+
+#: frontend/templates/finance/savings_simulation.html:20
+msgid "Ajoute tes titres (ou « Déjà détenu » pour un portefeuille existant) pour lancer la simulation."
+msgstr "Add your securities (or “Already held” for an existing portfolio) to run the simulation."
+
+#: frontend/templates/finance/savings_simulation.html:30
+msgid "Rendements, volatilités, corrélations et inflation sont calibrés sur les 10 dernières années : tu choisis seulement l'horizon et tes versements."
+msgstr "Returns, volatilities, correlations and inflation are calibrated on the last 10 years: you only choose the horizon and your contributions."
+
+#: frontend/templates/finance/savings_simulation.html:33
+msgid "↻ Nouveau tirage"
+msgstr "↻ New draw"
+
+#: frontend/templates/finance/savings_simulation.html:34
+msgid "Simuler"
+msgstr "Simulate"
+
+#: frontend/templates/finance/savings_simulation.html:51
+msgid "Valeur aujourd'hui"
+msgstr "Value today"
+
+#: frontend/templates/finance/savings_simulation.html:53
+msgid "titres et liquidités du PEA"
+msgstr "PEA securities and cash"
+
+#: frontend/templates/finance/savings_simulation.html:56
+#, python-format
+msgid "Médiane dans %(years)s an"
+msgid_plural "Médiane dans %(years)s ans"
+msgstr[0] "Median in %(years)s year"
+msgstr[1] "Median in %(years)s years"
+
+#: frontend/templates/finance/savings_simulation.html:58
+msgid "sans inflation"
+msgstr "without inflation"
+
+#: frontend/templates/finance/savings_simulation.html:61
+msgid "En euros d'aujourd'hui"
+msgstr "In today's euros"
+
+#: frontend/templates/finance/savings_simulation.html:63
+msgid "avec inflation"
+msgstr "with inflation"
+
+#: frontend/templates/finance/savings_simulation.html:66
+#, python-format
+msgid "Fourchette 90 %%"
+msgstr "90%% range"
+
+#: frontend/templates/finance/savings_simulation.html:68
+#, python-format
+msgid "5 %% des scénarios font moins, 5 %% font plus"
+msgstr "5%% of scenarios end lower, 5%% end higher"
+
+#: frontend/templates/finance/savings_simulation.html:71
+msgid "Risque de perte"
+msgstr "Risk of loss"
+
+#: frontend/templates/finance/savings_simulation.html:73
+msgid "des scénarios finissent sous le capital investi ·"
+msgstr "of scenarios end below the capital invested ·"
+
+#: frontend/templates/finance/savings_simulation.html:73
+#, python-format
+msgid "%% en pouvoir d'achat"
+msgstr "%% in purchasing power"
+
+#: frontend/templates/finance/savings_simulation.html:81
+msgid "100 scénarios"
+msgstr "100 scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:82
+#, python-format
+msgid "Chaque fine ligne est un futur possible ; la zone foncée contient la moitié des scénarios, la claire 90 %%."
+msgstr "Each thin line is a possible future; the dark band holds half of the scenarios, the light one 90%%."
+
+#: frontend/templates/finance/savings_simulation.html:82
+msgid "Les scénarios les plus extrêmes sortent du cadre."
+msgstr "The most extreme scenarios run off the chart."
+
+#: frontend/templates/finance/savings_simulation.html:84
+msgid "Affichage"
+msgstr "Display"
+
+#: frontend/templates/finance/savings_simulation.html:85 frontend/templates/finance/savings_simulation.html:139
+msgid "Sans inflation"
+msgstr "Without inflation"
+
+#: frontend/templates/finance/savings_simulation.html:86 frontend/templates/finance/savings_simulation.html:140
+msgid "Avec inflation"
+msgstr "With inflation"
+
+#: frontend/templates/finance/savings_simulation.html:89
+msgid "Valeur du PEA dans les 100 scénarios"
+msgstr "PEA value across the 100 scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:97
+#, python-format
+msgid "Où finit ton PEA dans %(years)s an"
+msgid_plural "Où finit ton PEA dans %(years)s ans"
+msgstr[0] "Where your PEA ends up in %(years)s year"
+msgstr[1] "Where your PEA ends up in %(years)s years"
+
+#: frontend/templates/finance/savings_simulation.html:98
+msgid "Répartition des 100 scénarios à l'horizon : en rouge ceux qui finissent sous le capital investi."
+msgstr "Spread of the 100 scenarios at the horizon: in red, those ending below the capital invested."
+
+#: frontend/templates/finance/savings_simulation.html:101
+msgid "Répartition des valeurs finales des 100 scénarios"
+msgstr "Spread of the final values of the 100 scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:107
+msgid "de scénarios en perte"
+msgstr "of scenarios at a loss"
+
+#: frontend/templates/finance/savings_simulation.html:108
+msgid "en gain"
+msgstr "at a gain"
+
+#: frontend/templates/finance/savings_simulation.html:116
+msgid "Du pire au meilleur"
+msgstr "From worst to best"
+
+#: frontend/templates/finance/savings_simulation.html:117
+msgid "Capital investi à l'horizon :"
+msgstr "Capital invested at the horizon:"
+
+#: frontend/templates/finance/savings_simulation.html:117
+msgid "(versements compris)"
+msgstr "(contributions included)"
+
+#: frontend/templates/finance/savings_simulation.html:117
+msgid "ligne pointillée"
+msgstr "dashed line"
+
+#: frontend/templates/finance/savings_simulation.html:120
+msgid "Valeur finale selon le scénario, sans et avec inflation"
+msgstr "Final value by scenario, without and with inflation"
+
+#: frontend/templates/finance/savings_simulation.html:122
+msgid "Pire baisse en route"
+msgstr "Worst drop along the way"
+
+#: frontend/templates/finance/savings_simulation.html:122
+msgid "médiane des scénarios"
+msgstr "median of the scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:123
+msgid "Après prélèvements"
+msgstr "After social charges"
+
+#: frontend/templates/finance/savings_simulation.html:123
+#, python-format
+msgid "médiane, 17,2 %% des gains"
+msgstr "median, 17.2%% of gains"
+
+#: frontend/templates/finance/savings_simulation.html:124
+msgid "Inflation moyenne"
+msgstr "Average inflation"
+
+#: frontend/templates/finance/savings_simulation.html:124
+msgid "par an (médiane)"
+msgstr "per year (median)"
+
+#: frontend/templates/finance/savings_simulation.html:131
+msgid "Tous les chiffres à l'horizon"
+msgstr "All the figures at the horizon"
+
+#: frontend/templates/finance/savings_simulation.html:132
+msgid "percentiles, moyenne, probabilité de perte"
+msgstr "percentiles, mean, probability of loss"
+
+#: frontend/templates/finance/savings_simulation.html:144
+#, python-format
+msgid "Scénario défavorable (5 %%)"
+msgstr "Unfavourable scenario (5%%)"
+
+#: frontend/templates/finance/savings_simulation.html:145
+#, python-format
+msgid "Prudent (25 %%)"
+msgstr "Cautious (25%%)"
+
+#: frontend/templates/finance/savings_simulation.html:146
+msgid "Médian"
+msgstr "Median"
+
+#: frontend/templates/finance/savings_simulation.html:147
+#, python-format
+msgid "Favorable (75 %%)"
+msgstr "Favourable (75%%)"
+
+#: frontend/templates/finance/savings_simulation.html:148
+#, python-format
+msgid "Très favorable (95 %%)"
+msgstr "Very favourable (95%%)"
+
+#: frontend/templates/finance/savings_simulation.html:149
+msgid "Moyenne"
+msgstr "Mean"
+
+#: frontend/templates/finance/savings_simulation.html:150
+msgid "Probabilité de perte"
+msgstr "Probability of loss"
+
+#: frontend/templates/finance/savings_simulation.html:151
+msgid "Pire baisse en cours de route (médiane)"
+msgstr "Worst drop along the way (median)"
+
+#: frontend/templates/finance/savings_simulation.html:152
+#, python-format
+msgid "Médiane après prélèvements sociaux (17,2 %% des gains)"
+msgstr "Median after social charges (17.2%% of gains)"
+
+#: frontend/templates/finance/savings_simulation.html:156
+#, python-format
+msgid "Attention : ton PEA aura moins de 5 ans à l'horizon, un retrait le clôturerait et les gains seraient imposés à 30 %%."
+msgstr "Careful: your PEA will be less than 5 years old at the horizon; a withdrawal would close it and gains would be taxed at 30%%."
+
+#: frontend/templates/finance/savings_simulation.html:164
+msgid "Corrélations"
+msgstr "Correlations"
+
+#: frontend/templates/finance/savings_simulation.html:165
+msgid "Rendements mensuels et chocs d'inflation sur 10 ans : plus la case est foncée, plus les deux bougent ensemble"
+msgstr "Monthly returns and inflation shocks over 10 years: the darker the cell, the more the two move together"
+
+#: frontend/templates/finance/savings_simulation.html:193
+msgid "sens opposés"
+msgstr "opposite directions"
+
+#: frontend/templates/finance/savings_simulation.html:195
+msgid "ensemble"
+msgstr "together"
+
+#: frontend/templates/finance/savings_simulation.html:204
+msgid "Calibration historique"
+msgstr "Historical calibration"
+
+#: frontend/templates/finance/savings_simulation.html:205
+msgid "Cours mensuels ajustés des dividendes, 10 ans au plus · bêta face au"
+msgstr "Monthly prices adjusted for dividends, up to 10 years · beta against the"
+
+#: frontend/templates/finance/savings_simulation.html:209
+msgid "Rendement et volatilité de chaque ligne"
+msgstr "Return and volatility of each holding"
+
+#: frontend/templates/finance/savings_simulation.html:217 frontend/templates/finance/savings_simulation.html:293
+msgid "Volatilité"
+msgstr "Volatility"
+
+#: frontend/templates/finance/savings_simulation.html:218
+msgid "Bêta"
+msgstr "Beta"
+
+#: frontend/templates/finance/savings_simulation.html:227 frontend/templates/finance/savings_simulation.html:241
+#, python-format
+msgid "%(years)s ans d'historique"
+msgstr "%(years)s years of history"
+
+#: frontend/templates/finance/savings_simulation.html:227
+msgid "historique trop court : celui du STOXX Europe 600"
+msgstr "history too short: uses the STOXX Europe 600's"
+
+#: frontend/templates/finance/savings_simulation.html:227
+msgid "aucune donnée : valeurs par défaut"
+msgstr "no data: default values"
+
+#: frontend/templates/finance/savings_simulation.html:241
+msgid "Marché de référence"
+msgstr "Reference market"
+
+#: frontend/templates/finance/savings_simulation.html:254
+msgid "Rendement = dérive annuelle du mouvement brownien, estimée sur la moyenne historique. Sur 10 ans, l'incertitude sur cette moyenne reste large (± 2 × volatilité ÷ √10) : un titre qui a beaucoup monté est projeté sur la même pente."
+msgstr "Return = annual drift of the Brownian motion, estimated from the historical average. Over 10 years, the uncertainty on this average remains wide (± 2 × volatility ÷ √10): a security that rose a lot is projected on the same slope."
+
+#: frontend/templates/finance/savings_simulation.html:256
+msgid "STOXX Europe 600 indisponible : pas de bêta ni de repli sur le marché."
+msgstr "STOXX Europe 600 unavailable: no beta and no market fallback."
+
+#: frontend/templates/finance/savings_simulation.html:258
+msgid "€ de liquidités, supposées non rémunérées."
+msgstr "€ of cash, assumed to earn nothing."
+
+#: frontend/templates/finance/savings_simulation.html:268
+msgid "Modèle de Vasicek estimé sur l'IPCH France (Eurostat),"
+msgstr "Vasicek model estimated on French HICP (Eurostat),"
+
+#: frontend/templates/finance/savings_simulation.html:270
+#, python-format
+msgid "Eurostat indisponible : hypothèses par défaut (cible 2 %%)."
+msgstr "Eurostat unavailable: default assumptions (2%% target)."
+
+#: frontend/templates/finance/savings_simulation.html:275
+msgid "Éventail des scénarios d'inflation"
+msgstr "Range of inflation scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:278
+msgid "Dernière inflation connue"
+msgstr "Latest known inflation"
+
+#: frontend/templates/finance/savings_simulation.html:280
+msgid "point de départ des scénarios"
+msgstr "starting point of the scenarios"
+
+#: frontend/templates/finance/savings_simulation.html:283
+msgid "Moyenne de long terme (θ)"
+msgstr "Long-term mean (θ)"
+
+#: frontend/templates/finance/savings_simulation.html:285
+msgid "niveau vers lequel elle revient"
+msgstr "level it reverts to"
+
+#: frontend/templates/finance/savings_simulation.html:288
+msgid "Vitesse de retour (κ)"
+msgstr "Reversion speed (κ)"
+
+#: frontend/templates/finance/savings_simulation.html:290
+#, python-format
+msgid "l'écart se réduit de moitié en %(years)s ans"
+msgstr "the gap halves in %(years)s years"
+
+#: frontend/templates/finance/savings_simulation.html:295
+msgid "par an"
+msgstr "per year"
+
+#: frontend/templates/finance/savings_simulation.html:302
+msgid "Comment sont construits les scénarios"
+msgstr "How the scenarios are built"
+
+#: frontend/templates/finance/savings_simulation.html:303
+msgid "Chaque ligne suit un mouvement brownien géométrique au pas mensuel, avec le rendement et la volatilité observés sur son historique (dividendes réinvestis). L'inflation suit un modèle de Vasicek estimé sur l'inflation française. Les chocs des lignes et de l'inflation sont tirés ensemble avec la matrice de corrélation historique (décomposition de Cholesky). Les montants « avec inflation » sont en euros d'aujourd'hui. Pas de frais ni de rééquilibrage : les versements suivent les poids actuels et s'arrêtent au plafond du PEA. Une simulation n'est pas une prévision."
+msgstr "Each holding follows a geometric Brownian motion with a monthly step, using the return and volatility observed in its history (dividends reinvested). Inflation follows a Vasicek model estimated on French inflation. Shocks to the holdings and to inflation are drawn together using the historical correlation matrix (Cholesky decomposition). Amounts “with inflation” are in today's euros. No fees or rebalancing: contributions follow the current weights and stop at the PEA ceiling. A simulation is not a forecast."
+
+#: frontend/templates/finance/settings.html:4
+msgid "Paramètres - BudgWealth"
+msgstr "Settings - BudgWealth"
+
+#: frontend/templates/finance/settings.html:8
+msgid "Votre espace"
+msgstr "Your space"
+
+#: frontend/templates/finance/settings.html:19
+msgid "Postes fixes & abonnements"
+msgstr "Fixed entries & subscriptions"
+
+#: frontend/templates/finance/settings.html:25
+msgid "Sauvegarde & export"
+msgstr "Backup & export"
+
+#: frontend/templates/finance/settings.html:35 frontend/templates/finance/settings.html:41
+msgid "Langue"
+msgstr "Language"
+
+#: frontend/templates/finance/settings.html:36
+msgid "Langue de tout le site. Tes catégories et libellés bancaires restent tels quels."
+msgstr "Language of the whole site. Your categories and bank labels stay as they are."
+
+#: frontend/templates/finance/settings.html:54
+msgid "Vos informations"
+msgstr "Your details"
+
+#: frontend/templates/finance/settings.html:62
+msgid "Email"
+msgstr "Email"
+
+#: frontend/templates/finance/settings.html:73
+msgid "Changer de mot de passe"
+msgstr "Change password"
+
+#: frontend/templates/finance/settings.html:77
+msgid "Mot de passe actuel"
+msgstr "Current password"
+
+#: frontend/templates/finance/settings.html:81
+msgid "Nouveau mot de passe"
+msgstr "New password"
+
+#: frontend/templates/finance/settings.html:85
+msgid "Confirmer le nouveau mot de passe"
+msgstr "Confirm the new password"
+
+#: frontend/templates/finance/settings.html:89
+msgid "Mettre à jour le mot de passe"
+msgstr "Update the password"
+
+#: frontend/templates/finance/settings.html:97 frontend/templates/finance/settings.html:102
+msgid "Se déconnecter"
+msgstr "Log out"
+
+#: frontend/templates/finance/settings.html:98
+msgid "Vous serez déconnecté de cet appareil."
+msgstr "You will be logged out on this device."
+
+#: frontend/templates/finance/settings.html:113
+msgid "Crédit Agricole"
+msgstr "Crédit Agricole"
+
+#: frontend/templates/finance/settings.html:115
+msgid "Ces informations servent à ouvrir votre espace client pour importer vos opérations. Votre code personnel n'est jamais enregistré : vous le tapez vous-même sur le site de la banque à chaque synchronisation."
+msgstr "These details are used to open your online banking to import your transactions. Your personal code is never stored: you type it yourself on the bank's website at each sync."
+
+#: frontend/templates/finance/settings.html:133
+msgid "Votre historique n'a pas encore été importé."
+msgstr "Your history has not been imported yet."
+
+#: frontend/templates/finance/settings.html:134
+msgid "Importer mes 12 derniers mois"
+msgstr "Import my last 12 months"
+
+#: frontend/templates/finance/settings.html:140
+msgid "Supprimer la connexion bancaire"
+msgstr "Delete the bank connection"
+
+#: frontend/templates/finance/settings.html:147
+msgid "Comment ça marche"
+msgstr "How it works"
+
+#: frontend/templates/finance/settings.html:149
+msgid "Sur la page d'un mois, cliquez sur"
+msgstr "On a month's page, click"
+
+#: frontend/templates/finance/settings.html:150
+msgid "Une fenêtre Crédit Agricole s'affiche uniquement pour que vous tapiez votre code personnel."
+msgstr "A Crédit Agricole window opens only so you can type your personal code."
+
+#: frontend/templates/finance/settings.html:151
+msgid "Elle disparaît aussitôt : les opérations du mois sont téléchargées et importées en arrière-plan."
+msgstr "It closes right away: the month's transactions are downloaded and imported in the background."
+
+#: frontend/templates/finance/settings.html:154
+msgid "Les virements vers vos livrets sont classés en « Épargne », les opérations déjà importées ne sont jamais dupliquées. La banque donne accès aux 12 derniers mois."
+msgstr "Transfers to your savings accounts are categorized as “Savings”, and transactions already imported are never duplicated. The bank gives access to the last 12 months."
+
+#: frontend/templates/finance/settings.html:157
+msgid "Dernières synchronisations"
+msgstr "Latest syncs"
+
+#: frontend/templates/finance/settings.html:163
+msgid "importée(s)"
+msgstr "imported"
+
+#: frontend/templates/finance/settings.html:165
+msgid "Échec"
+msgstr "Failed"
+
+#: frontend/templates/finance/settings.html:180
+msgid "Ajouter un poste fixe ou un abonnement"
+msgstr "Add a fixed entry or a subscription"
+
+#: frontend/templates/finance/settings.html:181
+msgid "Un poste fixe se génère au démarrage du mois. Un abonnement se génère automatiquement selon sa fréquence."
+msgstr "A fixed entry is created when the month starts. A subscription is created automatically according to its frequency."
+
+#: frontend/templates/finance/settings.html:189 frontend/templates/finance/settings.html:270
+msgid "Nature"
+msgstr "Kind"
+
+#: frontend/templates/finance/settings.html:197 frontend/templates/finance/settings.html:284
+msgid "Montant par défaut"
+msgstr "Default amount"
+
+#: frontend/templates/finance/settings.html:217 frontend/templates/finance/settings.html:321
+msgid "Date de départ"
+msgstr "Start date"
+
+#: frontend/templates/finance/settings.html:221 frontend/templates/finance/settings.html:325
+msgid "Date de fin"
+msgstr "End date"
+
+#: frontend/templates/finance/settings.html:241
+msgid "Vos postes fixes et abonnements"
+msgstr "Your fixed entries and subscriptions"
+
+#: frontend/templates/finance/settings.html:251
+msgid "· Fin le"
+msgstr "· Ends on"
+
+#: frontend/templates/finance/settings.html:258
+msgid "Inactif"
+msgstr "Inactive"
+
+#: frontend/templates/finance/settings.html:259
+msgid "Modifier ▾"
+msgstr "Edit ▾"
+
+#: frontend/templates/finance/settings.html:339
+msgid "Date d'annulation"
+msgstr "Cancellation date"
+
+#: frontend/templates/finance/settings.html:342
+msgid "Annuler l'abonnement"
+msgstr "Cancel the subscription"
+
+#: frontend/templates/finance/settings.html:348
+msgid "Supprimer définitivement"
+msgstr "Delete permanently"
+
+#: frontend/templates/finance/settings.html:355
+msgid "Aucun poste fixe ou abonnement pour l'instant."
+msgstr "No fixed entries or subscriptions yet."
+
+#: frontend/templates/finance/settings.html:364
+msgid "Ajouter une catégorie"
+msgstr "Add a category"
+
+#: frontend/templates/finance/settings.html:388
+msgid "Ajouter une sous-catégorie"
+msgstr "Add a subcategory"
+
+#: frontend/templates/finance/settings.html:392
+msgid "Catégorie parente"
+msgstr "Parent category"
+
+#: frontend/templates/finance/settings.html:422
+msgid "Supprimer cette catégorie et toutes ses sous-catégories ?"
+msgstr "Delete this category and all its subcategories?"
+
+#: frontend/templates/finance/settings.html:448
+msgid "Toute la catégorie"
+msgstr "Whole category"
+
+#: frontend/templates/finance/settings.html:462
+msgid "Aucune catégorie dans ce groupe."
+msgstr "No category in this group."
+
+#: frontend/templates/finance/settings.html:483
+msgid "Aucune catégorie de revenus."
+msgstr "No income category."
+
+#: frontend/templates/finance/settings.html:497
+msgid "Sauvegardes"
+msgstr "Backups"
+
+#: frontend/templates/finance/settings.html:498
+msgid "Une copie de ta base est faite chaque jour à l'ouverture de l'app, et avant chaque mise à jour. Les 14 dernières copies quotidiennes sont gardées."
+msgstr "A copy of your database is made every day when the app opens, and before each update. The last 14 daily copies are kept."
+
+#: frontend/templates/finance/settings.html:502
+msgid "Sauvegarder maintenant"
+msgstr "Back up now"
+
+#: frontend/templates/finance/settings.html:512
+msgid "Automatique"
+msgstr "Automatic"
+
+#: frontend/templates/finance/settings.html:512
+msgid "Manuelle"
+msgstr "Manual"
+
+#: frontend/templates/finance/settings.html:512
+msgid "Avant mise à jour"
+msgstr "Before update"
+
+#: frontend/templates/finance/settings.html:512
+msgid "Avant restauration"
+msgstr "Before restore"
+
+#: frontend/templates/finance/settings.html:517
+msgid "Télécharger"
+msgstr "Download"
+
+#: frontend/templates/finance/settings.html:518
+msgid "Remplacer toutes tes données actuelles par cette sauvegarde ? Une copie de la base actuelle est faite avant."
+msgstr "Replace all your current data with this backup? A copy of the current database is made first."
+
+#: frontend/templates/finance/settings.html:520
+msgid "Restaurer"
+msgstr "Restore"
+
+#: frontend/templates/finance/settings.html:527
+msgid "Aucune sauvegarde pour l'instant."
+msgstr "No backup yet."
+
+#: frontend/templates/finance/settings.html:533
+msgid "Exporter mes données"
+msgstr "Export my data"
+
+#: frontend/templates/finance/settings.html:534
+msgid "Pour les ouvrir dans Excel ou Numbers, ou les garder ailleurs."
+msgstr "To open them in Excel or Numbers, or keep them elsewhere."
+
+#: frontend/templates/finance/settings.html:536
+msgid "Tout (Excel)"
+msgstr "Everything (Excel)"
+
+#: frontend/templates/finance/settings.html:537
+msgid "Opérations (CSV)"
+msgstr "Transactions (CSV)"
+
+#: frontend/templates/finance/settings.html:541
+msgid "Restaurer depuis un fichier"
+msgstr "Restore from a file"
+
+#: frontend/templates/finance/settings.html:542
+msgid "Nouvel ordinateur ? Importe une sauvegarde (.sqlite3) téléchargée depuis BudgWealth."
+msgstr "New computer? Import a backup (.sqlite3) downloaded from BudgWealth."
+
+#: frontend/templates/finance/settings.html:543
+msgid "Remplacer toutes tes données actuelles par ce fichier ? Une copie de la base actuelle est faite avant."
+msgstr "Replace all your current data with this file? A copy of the current database is made first."
+
+#: frontend/templates/finance/settings.html:546
+msgid "Importer et restaurer"
+msgstr "Import and restore"
+
+#: frontend/templates/finance/settings.html:550
+msgid "Où sont mes données ?"
+msgstr "Where is my data?"
+
+#: frontend/templates/finance/settings.html:551
+msgid "Base :"
+msgstr "Database:"
+
+#: frontend/templates/finance/settings.html:552
+msgid "Sauvegardes :"
+msgstr "Backups:"
